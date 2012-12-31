@@ -1,0 +1,107 @@
+spring security custom role configuration:
+=========================================
+
+in xml file configure the custom role class like
+
+<beans:bean id="accessDecisionManager" class="org.springframework.security.access.vote.AffirmativeBased">
+    <beans:property name="decisionVoters">
+        <beans:list>
+            <beans:bean class="org.springframework.security.web.access.expression.WebExpressionVoter"/>
+            <beans:bean class="org.springframework.security.access.vote.RoleVoter">
+                <beans:property name="rolePrefix" value=""/>
+            </beans:bean>
+            <beans:bean class="org.springframework.security.access.vote.AuthenticatedVoter"/>
+        </beans:list>
+    </beans:property>
+</beans:bean> 
+ 
+
+<http auto-config="true" access-decision-manager-ref="accessDecisionManager" use-expressions="true">
+
+
+
+  	<intercept-url pattern="/welcome*" access="permitAll"  />
+		<!-- <intercept-url pattern="/welcome*" access="hasRole('manager')"  /> -->
+		<!-- <intercept-url pattern="/user" access="hasRole('user')"  /> -->
+		<!-- <intercept-url pattern="/admin" access="hasRole('admin')"  /> -->
+
+		<form-login login-page="/login" default-target-url="/welcome"
+			authentication-failure-url="/loginfailed"  />
+		<logout logout-success-url="/logout" />
+	</http>
+
+
+
+
+
+
+complete spring-security.xml file:
+============================
+<beans:beans xmlns="http://www.springframework.org/schema/security"
+	xmlns:beans="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans
+	http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+	http://www.springframework.org/schema/security
+	http://www.springframework.org/schema/security/spring-security-3.1.xsd">
+
+<!-- custom roles -->
+
+<beans:bean id="accessDecisionManager" class="org.springframework.security.access.vote.AffirmativeBased">
+    <beans:property name="decisionVoters">
+        <beans:list>
+            <beans:bean class="org.springframework.security.web.access.expression.WebExpressionVoter"/>
+            <beans:bean class="org.springframework.security.access.vote.RoleVoter">
+                <beans:property name="rolePrefix" value=""/>
+            </beans:bean>
+            <beans:bean class="org.springframework.security.access.vote.AuthenticatedVoter"/>
+        </beans:list>
+    </beans:property>
+</beans:bean> 
+
+
+	<http auto-config="true" access-decision-manager-ref="accessDecisionManager" use-expressions="true">
+		<intercept-url pattern="/welcome*" access="permitAll"  />
+		<!-- <intercept-url pattern="/welcome*" access="hasRole('manager')"  /> -->
+		<!-- <intercept-url pattern="/user" access="hasRole('user')"  /> -->
+		<!-- <intercept-url pattern="/admin" access="hasRole('admin')"  /> -->
+
+		<form-login login-page="/login" default-target-url="/welcome"
+			authentication-failure-url="/loginfailed"  />
+		<logout logout-success-url="/logout" />
+	</http>
+
+
+	<authentication-manager>
+	<authentication-provider> 
+		  <!--   <password-encoder hash="sha-256" />  -->
+		    <jdbc-user-service data-source-ref="dataSource" 
+		        users-by-username-query="select id_ as username, pwd_ as password, true as enabled from act_id_user where id_=?" 
+		        authorities-by-username-query="SELECT u.id_ as username, r.group_id_ as authority FROM act_id_user u, act_id_membership r WHERE u.id_ = r.user_id_ AND u.id_=?"/> 
+		</authentication-provider>         
+	
+		<!-- <authentication-provider>
+			<jdbc-user-service data-source-ref="dataSource"
+	users-by-username-query="select username,password, enabled from users where username=?"
+	authorities-by-username-query="select u.username, ur.authority from users u, user_roles ur where u.user_id = ur.user_id and u.username =?  " />
+		</authentication-provider> -->
+	</authentication-manager>
+
+	<!-- <authentication-manager> <authentication-provider> <user-service> <user 
+		name="mkyong" password="123456" authorities="ROLE_USER" /> </user-service> 
+		</authentication-provider> </authentication-manager> -->
+		
+		
+</beans:beans>
+
+
+
+========================
+
+//In oracle
+
+<authentication-provider> 
+		  <!--   <password-encoder hash="sha-256" />  -->
+		    <jdbc-user-service data-source-ref="dataSource" 
+		        users-by-username-query="select id_ as username, pwd_ as password, 1 as enabled from act_id_user where id_=?" 
+		        authorities-by-username-query="SELECT u.id_ as username, r.group_id_ as authority FROM act_id_user u, act_id_membership r WHERE u.id_ = r.user_id_ AND u.id_=?"/> 
+		</authentication-provider> 

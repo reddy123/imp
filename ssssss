@@ -1,0 +1,171 @@
+===============================================
+Configuring spring mvc 3.1 with i18n:
+===============================================
+
+in spring xml file:
+========
+  <bean id="messageSource"
+		class="org.springframework.context.support.ReloadableResourceBundleMessageSource">
+		<property name="basename" value="classpath:travelUI" />
+		<property name="defaultEncoding" value="UTF-8" />
+	</bean>
+
+	<mvc:interceptors>
+
+		<bean id="localeChangeInterceptor"
+			class="org.springframework.web.servlet.i18n.LocaleChangeInterceptor">
+			<property name="paramName" value="language" />
+		</bean>
+	</mvc:interceptors>
+
+	<bean id="localeResolver"
+		class="org.springframework.web.servlet.i18n.CookieLocaleResolver">
+		<property name="defaultLocale" value="en" />
+	</bean>
+
+
+
+	<bean id="handlerMapping"
+		class="org.springframework.web.servlet.mvc.annotation.DefaultAnnotationHandlerMapping">
+		<!-- <property name="interceptors">
+			<ref bean="localeChangeInterceptor" />
+		</property> -->
+	</bean>
+============
+
+properties file like:
+
+travelUI_en.properties
+======================
+# use user controls
+Book-Domestic-Hotel=Book Domestic Hotel
+Going-to=Going to 
+Check-in=Check in
+Check-out=Check out
+Rooms=Rooms
+Guest-Details=Guest Details
+Adults=Adults
+Children=Children
+Ages-of-Children=Ages of Children
+Show-Hotels=Show Hotels
+
+travelUI_zn_SPAN.properties
+========================
+
+# use user controls
+Book-Domestic-Hotel=BTYk Domefrtic Hotfd
+Going-to=Goiyug to 
+Check-in=Chhuk in
+Check-out=Chhuk out
+Rooms=Rmooms
+Guest-Details=Gueht Deterfls
+Adults=Adulfhs
+Children=Childjken
+Ages-of-Children=Ages of Chvbv3dren
+Show-Hotels=Showy Hotysdels\
+
+
+in jsp we can write:
+================
+
+<a href="?language=en">en</a>
+<a href="?language=zn_SPAN">span</a>
+
+Current Locale : ${pageContext.response.locale}
+
+
+
+
+====================================
+spring mvc with tiles:
+====================================
+spring xml:
+===========
+	<bean id="viewResolver"
+		class="org.springframework.web.servlet.view.UrlBasedViewResolver">
+		<property name="viewClass">
+			<value>
+				org.springframework.web.servlet.view.tiles2.TilesView
+			</value>
+		</property>
+	</bean>
+		<bean id="tilesConfigurer"
+		class="org.springframework.web.servlet.view.tiles2.TilesConfigurer">
+		<property name="definitions">
+			<list>
+				<value>/WEB-INF/tiles.xml</value>
+			</list>
+		</property>
+	</bean>
+
+
+tiles.xml:
+==========
+
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE tiles-definitions PUBLIC
+       "-//Apache Software Foundation//DTD Tiles Configuration 2.0//EN"
+       "http://tiles.apache.org/dtds/tiles-config_2_0.dtd">
+<tiles-definitions>
+	<definition name="base.definition"
+		template="/WEB-INF/jsptiles/layout1.jsp">
+		<put-attribute name="title" value="" />
+		<put-attribute name="header" value="/WEB-INF/jsptiles/header.jsp" />
+		<put-attribute name="menu" value="/WEB-INF/jsptiles/menu.jsp" />
+		<put-attribute name="body" value="" />
+		<put-attribute name="footer" value="/WEB-INF/jsptiles/footer.jsp" />
+	</definition>
+	<definition name="Hotel" extends="base.definition">
+		<put-attribute name="title" value="Search Hotels" />
+		<put-attribute name="body" value="/WEB-INF/pages/Hotel.jsp" />
+	</definition>
+	<definition name="HotelDetails1" extends="base.definition">
+		<put-attribute name="title" value="Hotels List" />
+		<put-attribute name="body" value="/WEB-INF/pages/HotelDetails1.jsp" />
+	</definition>
+</tiles-definitions>
+
+
+//using properties file spring with jsp environment----------------
+
+
+//travelUI.properties
+Going-to=Going to Location
+
+
+
+
+
+//using jstl tag library we can do this way
+
+ <%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
+
+<fmt:bundle basename="travelUI">  
+                  <fmt:message key="Going-to"/>  
+         </fmt:bundle>
+
+<bean id="messageSource"
+  	class="org.springframework.context.support.ResourceBundleMessageSource">
+		<property name="basenames">
+			<list>
+				<value>travelUI</value>
+			</list>
+		</property>
+	</bean>
+
+
+// using spring tag library 
+
+
+<%@taglib uri="http://www.springframework.org/tags" prefix="spring"%>
+
+<spring:message code="Going-to"/>
+
+<bean id="messageSource"
+		class="org.springframework.context.support.ResourceBundleMessageSource">
+		<property name="basenames">
+			<list>
+				<value>travelUI</value>
+			</list>
+		</property>
+	</bean>

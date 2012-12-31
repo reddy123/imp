@@ -1,0 +1,357 @@
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+
+import javax.servlet.http.HttpServletRequest;
+
+import net.sf.jasperreports.engine.JRDataSource;
+import net.sf.jasperreports.engine.data.JRBeanCollectionDataSource;
+
+import org.activiti.engine.HistoryService;
+import org.activiti.engine.IdentityService;
+import org.activiti.engine.RepositoryService;
+import org.activiti.engine.RuntimeService;
+import org.activiti.engine.TaskService;
+import org.activiti.engine.history.HistoricProcessInstance;
+import org.activiti.engine.history.HistoricTaskInstance;
+import org.activiti.engine.task.Task;
+
+import org.codehaus.jackson.map.ObjectMapper;
+import org.codehaus.jackson.node.ObjectNode;
+import org.json.JSONObject;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.User;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.ModelMap;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
+
+import com.coxandkings.workflow.beans.HistoryProduct;
+import com.coxandkings.workflow.beans.ProcessLocking;
+import com.coxandkings.workflow.beans.ProductPojo;
+import com.coxandkings.workflow.beans.RemarkBean;
+import com.coxandkings.workflow.serviceInterface.IProcessLockingService;
+import com.coxandkings.workflow.serviceInterface.IProductService;
+import com.coxandkings.workflow.webservices.ActivitiRestClient;
+
+@Controller
+public class WorkFlowActivitiController {
+
+  @Autowired
+	RuntimeService runtimeService;
+	
+/*	@Autowired
+	ActivitiService service;
+*/
+	@Autowired
+	TaskService taskService;
+
+	@Autowired
+	HistoryService historyService;
+
+	@Autowired
+	RepositoryService repositoryService;
+
+	@Autowired
+	IProductService iProductService;
+
+	@Autowired
+	IdentityService identityService;
+
+	@Autowired
+	IProcessLockingService processLockingService;
+	
+	
+
+	String pid;
+
+	// For Creating Task =====modify
+
+	@RequestMapping(value = "/createTask", method = RequestMethod.GET)
+	public String createTask(ModelMap model) throws Exception {
+
+		/*List<JSONObject> usersList = getUsersByGroupId("configurator");
+		System.out.println("user List by group" + usersList);
+		model.addAttribute("userList", usersList);*/
+		
+		List<org.activiti.engine.identity.User> uli=identityService.createUserQuery().memberOfGroup("configurator").list();
+   		model.addAttribute("userList", uli);
+
+		return "CreateTask";
+	}
+	
+	// assign Task       =====modify
+	
+	@RequestMapping(value = "/asigneeTask", method = RequestMethod.POST)
+	public String asigneeTask(ModelMap model, HttpServletRequest request) {
+		
+		String username = getUser().getUsername();
+		//String name = request.getRemoteUser();
+		System.out.println("In Assigne method name is " + username);
+
+		try {
+			
+			/*String processDefinitionId = ActivitiRestClient
+					.getActivitiProcessDefinitionId();
+			pid = ActivitiRestClient
+					.startActivitiRequestProcess(processDefinitionId);*/
+			
+			pid=runtimeService.startProcessInstanceByKey("TravelERPWorkflow1").getProcessInstanceId();
+			
+			System.out.println("process-id === pid");
+			//String taskID = ActivitiRestClient.getRequestTaskID(pid, username);
+			
+			Task task = taskService.createTaskQuery().processInstanceId(pid).singleResult();
+			task.setAssignee(username);
+            task.setDescription(request.getParameter("productName"));
+			
+            
+			/*String taskSaveStatus = ActivitiRestClient.saveActivitiTask(taskID,
+					request.getParameter("productName"), username);*/
+			
+			taskService.saveTask(task);
+			
+			/*String taskCompliteStatus = ActivitiRestClient
+					.completeRequestTask(taskID);*/
+			
+			taskService.complete(task.getId());  // this task 1st complited... And  Task 2nd Started.... 
+			 
+			System.out.println("this task 1st complited... And  Task 2nd Started.... ");
+			/*System.out.println("Save Status " + taskSaveStatus
+					+ "  Complite Status " + taskCompliteStatus);
+			String newTaskID = ActivitiRestClient.getRequestTaskID(pid,
+					request.getParameter("assigneeTask"));*/
+			
+			List<Task> task2=taskService.createTaskQuery().processInstanceId(pid).list();
+			if ((task2.size()) == 1) {
+                task2.get(0).setDescription( request.getParameter("remarks"));
+                task2.get(0).setAssignee(request.getParameter("assigneeTask"));
+                task2.get(0).setOwner(username);
+                task2.get(0).setName(request.getParameter("productName"));
+                System.out.println("task id "+task2.get(0).getId());
+				}
+		
+			/*String taskSaveStatus2 = ActivitiRestClient.saveActivitiTask(
+					newTaskID, request.getParameter("productName"),
+					request.getParameter("assigneeTask"));*/
+			
+		
+			
+			// for Product Details
+
+			RemarkBean rbean = new RemarkBean();
+			rbean.setBy(username);
+			rbean.setRtimestamp(new Date().toString());
+			rbean.setText(request.getParameter("remarks"));
+
+			
+			ProductPojo productPojo = new ProductPojo();
+
+			productPojo.setProductName(request.getParameter("productName"));
+			productPojo.setProductId(UUID.randomUUID().toString()
+					.substring(0, 13));
+			productPojo.setProcessInstanceID(pid);
+			productPojo.addRemark(rbean);
+			productPojo.setCreatedBy(username);
+			productPojo.setRemarks(request.getParameter("remarks"));
+			productPojo.setDescription("Plz Enter Description");
+
+			 /* HashMap<String, Object> hp = new HashMap<String, Object>();
+              hp.put("productDetails", productPojo);
+              System.out.println(hp+" product store temprarly");
+             
+             taskService.setVariable(task2.get(0).getId(), "productDetails", hp);*/
+             
+             saveProductIntoActivitiDB(task2.get(0).getId(),productPojo);
+            //  service.saveVariable(task2.get(0).getId(), hp);
+              System.out.println("save variable");
+              taskService.saveTask(task2.get(0));
+              //service.saveTask(task2.get(0));
+              System.out.println("save assigne task");
+			/*JSONObject subob = new JSONObject(productPojo);
+			String res = ActivitiRestClient.saveProduct(newTaskID, subob);*/
+			
+			// JSONArray ss =(JSONArray)subob.get("remarkList");
+			// System.out.println("JSONArray Is "+ss.get(0));
+			// RemarkBean re=(RemarkBean)ss.get(0);
+			// System.out.println("Valeu-1 is "+re.getBy()
+			// +" Text Is "+re.getText());
+
+			saveProcessLokingDetails(productPojo);
+
+		} catch (Exception er) {
+			System.out.println("Exception in Assigne Task " + er);
+		}
+		List<ProductPojo> productList = iProductService.productList();
+		System.out.println(productList.size());
+
+		model.addAttribute("productList", productList);
+		return "redirect:welcome";
+	}
+	
+	
+	// View List of Task for Admin
+		@RequestMapping(value = "/ViewTaskCreate", method = RequestMethod.GET)
+		public String ViewTaskCreate(ModelMap model, HttpServletRequest request)
+				throws Exception {
+
+			String name = getUser().getUsername();
+			//String name = request.getRemoteUser();
+			// this is base on rest api
+			
+			//List<JSONObject> task = ActivitiRestClient.getTasks("assignee", name);
+			
+			 //List<JSONObject>  task=new ArrayList<JSONObject>();
+             
+             List<Task> temptask = taskService.createTaskQuery().taskAssignee(name).list();
+             /*for(Task t:temptask){
+                    task.add(new JSONObject(t.getAssignee()));
+                    task.add(new JSONObject(t.getDescription()));
+                    task.add(new JSONObject(t.getId()));
+                    task.add(new JSONObject(t.getCreateTime()));
+                    task.add(new JSONObject(t.getName()));
+                    task.add(new JSONObject(t.getProcessDefinitionId()));
+                    task.add(new JSONObject(t.getProcessDefinitionId()));
+                    task.add(new JSONObject(t.getTaskDefinitionKey()));
+    
+             }         */    
+             
+             
+             model.addAttribute("task", temptask);
+
+			return "ViewTaskForCreate";
+		}
+	
+
+		@RequestMapping(value = "/craeteProduct", method = RequestMethod.GET)
+		public String productCreatePageCall(ModelMap model,
+				HttpServletRequest request) throws Exception {
+
+			// this is base on REstAPI
+		/*	String ob = (String) ActivitiRestClient.getProductDetails(request
+					.getParameter("taskId"));
+			ObjectNode on = (ObjectNode) new ObjectMapper().readTree(ob);
+			System.out.println("In controller " + on);
+			ObjectMapper mapper = new ObjectMapper();
+			ProductPojo pojo = mapper.readValue(on, ProductPojo.class);*/
+			
+			System.out.println("task id"+request.getParameter("taskId"));
+			
+			/* HashMap<String, Object> hp1=(HashMap<String, Object>) taskService.getVariable(request.getParameter("taskId"), "productDetails");
+			 ProductPojo pojo=(ProductPojo) hp1.get("productDetails");
+			 System.out.println("product  "+pojo);*/
+			 
+			 ProductPojo pojo=(ProductPojo) getProductIntoActivitiDB(request.getParameter("taskId"));
+			 
+			ProductPojo oldValue = iProductService.getProductDetails(pojo
+					.getProductId());
+			if (oldValue != null) {
+				model.addAttribute("readonly", "readonly");
+				model.addAttribute("oldValue", oldValue);
+			}
+			// addRemarks(pojo);
+			List<RemarkBean> relist = pojo.getRemarkList();
+
+			for (RemarkBean bb : relist)
+				System.out.println("Remarks:----" + bb.getBy());
+
+			model.addAttribute("productPojo", pojo);
+			model.addAttribute("taskid", request.getParameter("taskId"));
+			System.out.println("Calling ProductCreationPage for Task Id : -- "
+					+ request.getParameter("taskId"));
+
+			return "ProductCreation";
+		}
+		
+		// This is with restapi
+
+		@RequestMapping(value = "/productCreate", method = RequestMethod.POST)
+		public String productCreate(
+				@ModelAttribute("productPojo") ProductPojo productPojo,
+				ModelMap model, HttpServletRequest request) throws Exception {
+
+			System.out
+					.println("This is inside Product Creation method where task2 done and task3 started....");
+
+			String name = getUser().getUsername();
+
+			String buttonValue = request.getParameter("button1");
+
+			if (buttonValue.equalsIgnoreCase("Save&Complete")) {
+
+				copyProduct(request.getParameter("taskId"), productPojo);
+
+				/*JSONObject jsonObj = new JSONObject(productPojo);
+				String res = ActivitiRestClient.saveProduct(
+						request.getParameter("taskId"), jsonObj);*/
+				
+				//taskService.setVariable(request.getParameter("taskId"), "", productPojo);
+				
+				saveProductIntoActivitiDB(request.getParameter("taskId"),productPojo);
+
+				/*ActivitiRestClient.updateGlobalVaribaleValue(request
+						.getParameter("taskId"));*/
+				
+				
+				// update global variables start
+				
+				List<String> ll = new ArrayList<String>();
+				ll.add("");			
+				taskService.setVariable(request.getParameter("taskId"), "list1", ll);
+				
+			  	 //taskService.setVariable(task.getId(),"discription1","approve");
+				taskService.setVariable(request.getParameter("taskId"), "discription1", "approve");	
+				taskService.setVariable(request.getParameter("taskId"), "requestApprove", "approve");	  
+
+				// update global variables end
+				
+				System.out.println("Inside the SaveAndComplite block");
+				/*String taskCompliteStatus = ActivitiRestClient
+						.completeRequestTask(request.getParameter("taskId"));*/
+				
+				String owner1="",taskDescription="", pname="";
+		    	  String prid=taskService.createTaskQuery().taskId(request.getParameter("taskId")).singleResult().getProcessInstanceId();
+				 
+		    	  Task task1= taskService.createTaskQuery().taskId(request.getParameter("taskId")).singleResult();
+		    	   owner1=task1.getOwner();
+		  		   taskDescription=task1.getDescription();
+		  		   pname=task1.getName();
+				taskService.complete(request.getParameter("taskId"));
+				
+				// // Task 2nd complited and Task 3rd Started....
+				
+				 List<Task> ta =  taskService.createTaskQuery().processInstanceId(prid).list();
+			        if(ta !=null)
+			        {
+			         for(Task tempTask:ta){
+			           	tempTask.setOwner(owner1);
+			        	tempTask.setDescription(taskDescription);
+			        	tempTask.setName(pname);
+			        	taskService.saveTask(tempTask);
+			        }
+			        }
+				
+
+			} else if (buttonValue.equalsIgnoreCase("Save")) {
+
+				System.out.println("Inside the save block");
+				copyProduct(request.getParameter("taskId"), productPojo);
+				
+				/*JSONObject jsonObj = new JSONObject(productPojo);
+				String res = ActivitiRestClient.saveProduct(
+						request.getParameter("taskId"), jsonObj);*/
+				
+				saveProductIntoActivitiDB(request.getParameter("taskId"),productPojo);
+			}
+			return "redirect:welcome";
+
+			// return "configrator_home";
+		}
+		

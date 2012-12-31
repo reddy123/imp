@@ -1,0 +1,241 @@
+/* Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.activiti.rest.api.task;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+
+import org.activiti.engine.ActivitiException;
+import org.activiti.engine.history.HistoricProcessInstance;
+import org.activiti.engine.history.HistoricTaskInstance;
+import org.activiti.engine.task.Task;
+import org.activiti.rest.api.ActivitiUtil;
+import org.activiti.rest.api.SecuredResource;
+import org.codehaus.jackson.JsonNode;
+import org.codehaus.jackson.map.ObjectMapper;
+import org.codehaus.jackson.node.ObjectNode;
+import org.restlet.representation.Representation;
+import org.restlet.resource.Put;
+
+/**
+ * @author Tijs Rademakers
+ */
+public class TaskOperationResource extends SecuredResource {
+  
+  @Put
+  public ObjectNode executeTaskOperation(Representation entity) {
+    if(authenticate() == false) return null;
+    
+    String taskId = (String) getRequest().getAttributes().get("taskId");
+    String operation = (String) getRequest().getAttributes().get("operation");
+    String description = (String) getRequest().getAttributes().get("description");
+    String  assignee = (String) getRequest().getAttributes().get("assignee");  
+    String  gValue = (String) getRequest().getAttributes().get("gValue"); 
+   
+    JsonNode startJSON1=null;
+   
+   
+    StringBuilder sb=new StringBuilder(); ;
+   
+    try {
+      String startParams = entity.getText();
+      JsonNode startJSON = new ObjectMapper().readTree(startParams);
+      
+      
+    System.out.println("vvvv"+startJSON);
+  	startJSON1=startJSON;
+     
+      Iterator<String> itName = startJSON.getFieldNames();
+      Map<String, Object> variables = new HashMap<String, Object>();
+      while(itName.hasNext()) {
+        String name = itName.next();
+       // System.out.println("Text Value is "+name.toString());
+        JsonNode valueNode = startJSON.path(name);
+     //   System.out.println("Value is "+valueNode.getTextValue());
+        if("true".equals(valueNode.getTextValue()) || "false".equals(valueNode.getTextValue())) {
+          variables.put(name, Boolean.valueOf(valueNode.getTextValue()));
+        } else {
+          variables.put(name, valueNode.getTextValue());
+        }
+      }
+      
+      if ("claim".equals(operation)) {
+    	  System.out.println("Claimed Call....");
+        ActivitiUtil.getTaskService().claim(taskId, loggedInUser);
+      } else if ("complete".equals(operation)) {
+    	  
+    	  String owner="",taskDescription="";
+    	  String prid=ActivitiUtil.getTaskService().createTaskQuery().taskId(taskId).singleResult().getProcessInstanceId();
+		 
+    	  Task task1= ActivitiUtil.getTaskService().createTaskQuery().taskId(taskId).singleResult();
+    	   owner=task1.getOwner();
+  		   taskDescription=task1.getDescription();
+  		   		  
+        variables.remove("taskId");
+        ActivitiUtil.getTaskService().complete(taskId, variables);
+        
+        List<Task> task2 =  ActivitiUtil.getTaskService().createTaskQuery().processInstanceId(prid).list();
+        if(task2 !=null)
+        {
+         for(Task tempTask:task2){
+           	tempTask.setOwner(owner);
+        	tempTask.setDescription(taskDescription);
+        	ActivitiUtil.getTaskService().saveTask(tempTask);
+        }
+        }
+		
+      }else if ("save".equals(operation)) {
+    	  System.out.println("Save Call");
+    	  String owner=assignee; 
+    	  
+    	  Task task= ActivitiUtil.getTaskService().createTaskQuery().taskId(taskId).singleResult();
+    	  task.setAssignee(assignee);   
+    	  System.out.println("before Task Onewr Is Empty "+task.getOwner());
+    	  if(task.getOwner()==null)
+    	  {
+    		System.out.println("After Task Onewr Is Empty "+task.getOwner());
+  	  		task.setOwner(owner);
+  	  		task.setDescription(description);
+    	  }
+  	  
+    	 ActivitiUtil.getTaskService().saveTask(task);
+    	 
+      }else if ("saveProduct".equals(operation)) {
+    	  	System.out.println("Product is from Client "+ "task ID is "+taskId+ " And JSON Data Is "+startJSON1);    	  
+  			
+    	  	/*HashMap<String, Object> hp = new HashMap<String, Object>();
+  			hp.put("currentProduct", startJSON1);
+  			ActivitiUtil.getTaskService().setVariables(taskId,hp);*/
+    	  
+    		ActivitiUtil.getTaskService().setVariable(taskId, "productDetails", startJSON1.toString());
+      }
+      else if ("getProduct".equals(operation)) {
+    	 
+    	  System.out.println("This is Product Details section");
+    	
+    	  String nodeText1=(String) ActivitiUtil.getTaskService().getVariable(taskId, "productDetails");
+  	  	  startJSON1 = new ObjectMapper().readTree(nodeText1);
+  	  	  
+  	  	System.out.println("Product Details  "+ "task ID is "+taskId+ " And JSON Data Is "+startJSON1);			
+  	  
+    }else if ("requestApprove".equals(operation)) {
+   	 
+  	  System.out.println("This is Updating Global Variable value");
+  	
+  	//taskService.setVariable(task.get(0).getId(), "requestApprove",value1);
+  	List<String> ll = new ArrayList<String>();
+	ll.add("");			
+	ActivitiUtil.getTaskService().setVariable(taskId, "list1", ll);
+	
+  	 //taskService.setVariable(task.getId(),"discription1","approve");
+  	 ActivitiUtil.getTaskService().setVariable(taskId, "discription1", "approve");	
+  	 ActivitiUtil.getTaskService().setVariable(taskId, "requestApprove", "approve");	  
+	  			
+	  
+  }else if ("acceptProduct".equals(operation)) {
+	   	 
+				System.out.println("This is AcceptProduct Block");
+				String prid = ActivitiUtil.getTaskService().createTaskQuery().taskId(taskId).singleResult().getProcessInstanceId();
+				Task task3 = ActivitiUtil.getTaskService().createTaskQuery().taskId(taskId).singleResult();
+				String tOwner = task3.getOwner();
+				String tDescription = task3.getDescription();
+	  	 	
+	  	//start syn
+	  	synchronized (this) {
+			if (gValue.equalsIgnoreCase("notapprove")) {
+	  	 ActivitiUtil.getTaskService().setVariable(taskId, "requestApprove", gValue);
+			}
+	  	}
+	  	// ActivitiUtil.getTaskService().setVariable(taskId, "requestApprove", gValue);
+		  //closing		
+	  	 variables.remove("taskId");
+	  	 ActivitiUtil.getTaskService().complete(taskId,variables);
+	  	 
+	  	 	String taskStatus = "";
+	        List<Task> task4 =  ActivitiUtil.getTaskService().createTaskQuery().processInstanceId(prid).list();
+	         for(Task tempTask:task4){
+	           	tempTask.setOwner(tOwner);
+	        	tempTask.setDescription(tDescription);
+	        	if (tempTask.getAssignee() == null) {
+					taskStatus = "done";
+				}
+	        	ActivitiUtil.getTaskService().saveTask(tempTask);
+	          }
+	  
+	         // for checking
+	         if (taskStatus.equalsIgnoreCase("done")) {
+
+	 			String sName = (String) ActivitiUtil.getTaskService().getVariable(task4.get(0).getId(), "requestApprove");
+	 			System.out.println("in done valeu of xml is " + sName);
+
+	 			if (sName.equalsIgnoreCase("approve")) {
+	 				System.out.println("In Appove block when done M  :--"	+ task4.get(0).getName());
+	 				task4.get(0).setAssignee("james");	 			
+	 				ActivitiUtil.getTaskService().setVariable(task4.get(0).getId(), "discription1",tDescription );
+	 				
+	 			} else if (sName.equalsIgnoreCase("notapprove")) {	 				
+	 				
+	 				List<HistoricTaskInstance> taskins = ActivitiUtil.getHistoryService().createHistoricTaskInstanceQuery().processInstanceId(prid).list();
+	 				task4.get(0).setAssignee(taskins.get(1).getAssignee());
+
+	 			} else {
+	 				System.out.println("nothing........");
+	 			}
+	 			ActivitiUtil.getTaskService().saveTask(task4.get(0));
+	 	  } //done
+	         
+  }else if ("setVariable".equals(operation)) {
+	  
+	  List<String> remarks1 = (ArrayList<String>) ActivitiUtil.getTaskService().getVariable(taskId, "list1");
+	  remarks1.add(gValue);
+	  ActivitiUtil.getTaskService().setVariable(taskId, "list1", remarks1);
+	 
+	  System.out.println("Variable===========setVariable");
+  }
+  else if ("getVariable".equals(operation)) {
+	
+	  List<String> remarks1 = (ArrayList<String>) ActivitiUtil.getTaskService().getVariable(taskId, "list1");
+	  System.out.println("rr "+remarks1);
+	 
+	 for( String rem:remarks1)
+		 sb.append(rem);
+	 System.out.println("pro2  "+sb);
+	 
+  }
+  else if ("deleteProcessInstanceID".equals(operation)) {
+	  System.out.println("in delete Prid-- Process Instance Id "+taskId);        
+	  ActivitiUtil.getRuntimeService().deleteProcessInstance(taskId, "Release Lock");
+	 System.out.println("Release Lock success");
+  }
+      
+      
+      else {
+        throw new ActivitiException("'" + operation + "' is not a valid operation");
+      }
+  }
+      
+     catch(Exception e) {
+      throw new ActivitiException("Did not receive the operation parameters", e);
+    }
+    
+    ObjectNode successNode = new ObjectMapper().createObjectNode();
+    successNode.put("success", true);
+    successNode.put("data", startJSON1);
+    successNode.put("var", sb.toString());
+    return successNode;
+  }
+}

@@ -1,0 +1,56 @@
+
+
+Cox and Kings is one of the largest and the oldest travel companies in the world, headquartered in UK. 
+
+The C&K group has around 45 subsidiaries across the world operating under the C&K and Ezeego1 brands. 
+
+In India, C&K operates two online brands www.coxandkings.com and www.ezeego1.co.in and are engaged in FIT and GIT holidays apart from regular OTA business. 
+
+C&K currently use a third party Vercheska’s (www.verchaska.com)  ProvisioTM solution for empowering their online channel.
+
+This is a SaaS based solution with limited flexibility that is unable to meet C&K’s dynamic business needs. 
+
+C&K wishes to develop a complete homegrown Travel ERP solution, which flexible, rich in functionality and will provide them an edge over competitors, in addition to the ownership of the IPR. 
+
+NIIT has been engaged with C&K for the Requirement Gathering and Analysis for this program. 
+
+C&K has shared a 600+ pages scope document with NIIT, which has been the basis of scoping and development estimation for this program.
+
+C&K group is starting a new subsidiary company www.TravelLikeMe.com, TLM which will be one of its kind travel website providing insight and advisory services by 
+
+industry veterans and experts along with some innovative travel tools which would assist consumers in effectively planning their travel. 
+
+TLM would act as one stop interactive travel researching platform, specifically focusing on engaging Indian customers to contribute to growing this community. 
+
+NIIT has been involved with requirement gathering and analysis for TLM, and development of TLM website has also been included in scope for this proposal.
+
+
+The C&K Travel ERP system will manage the business process flows and provide IBE functionality over web channel. The major features of the solution will include:
+•  Capability to setup and see products for transportation, accommodation, activities, holiday packages, and others like insurance, forex, etc
+•	Solution meeting the business and operational requirements for C&K internal (B2E), B2C and B2B users including Agencies and Corporates
+•	Support B2B2n model allowing C&K to roll out the application to other TMCs and travel companies 
+•	Capability of rolling out reverse XML and white-labeled sites in future
+•	Capability to manage inventory and pricing for various products
+•	State of the art IBE as a key distribution channel in order to increase online domestic and International sales integrating with over 75 supplier systems
+•	Flexibility to meet the new organization structure of C&K and integrating with various internal systems for financials, forex, CMS, active directory in addition to external supplier systems 
+•	A single solution catering to complete C&K group of companies
+•	An easy, convenient, configurable & user-friendly interface for operations and administration teams 
+•	Cost effective solution with rich functionality, state-of-the-art, flexible technologies and infrastructure which are scalable and in-line with the industry best practices including SOA
+•	Workflow and Approval Management
+
+The Travel ERP system would provide the following major functions:
+•	Administrative Functions
+o	User Management
+o	Master Management
+o	Product – Supplier Setup for air and non-air products
+o	Corporate Management
+o	Channel Management
+•	Sales Management across various channels like B2E, B2C, B2B, corporate
+•	Operations Management
+•	Finance Management
+•	Reporting
+•	Other Functionality
+o	Supplier extranet
+o	Courier Management
+o	Destination Information Management
+The figure below provides the Travel ERP context diagram:

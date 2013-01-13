@@ -1,0 +1,282 @@
+
+package org.na.batch.spring;
+import org.springframework.batch.core.StepContribution;
+import org.springframework.batch.core.scope.context.ChunkContext;
+import org.springframework.batch.core.step.tasklet.Tasklet;
+import org.springframework.batch.repeat.RepeatStatus;
+/**
+  * Tasklet definition for job. It should contain a code for job logic execution.
+  *
+  * @author Patryk Chrusciel
+  */
+public class SimpleJobTasklet implements Tasklet {
+     /**
+      * Message to show on console. Attribute is set in job definition.
+      */
+     private String message;
+    
+     /**
+      * Method to execute in step.
+      *
+      * @param arg0
+      *            Represents a contribution to a StepExecution, buffering
+      *            changes until they can be applied at a chunk boundary.
+      * @param arg1
+      *            Represents a contribution to a StepExecution, buffering
+      *            changes until they can be applied at a chunk boundary.
+      */
+     public RepeatStatus execute(StepContribution arg0, ChunkContext arg1) {
+         // Show message on console.
+         System.out.println("Message: " + getMessage());
+        
+         // Return status as finished.
+         return RepeatStatus.FINISHED;
+      }
+      public void setMessage(String message) {
+          this.message = message;
+      }
+      public String getMessage() {
+          return message;
+      }
+}
+
+
+
+
+
+
+
+
+
+
+
+package org.na.batch.spring;
+import java.util.HashMap;
+import java.util.Map;
+import org.springframework.batch.core.Job;
+import org.springframework.batch.core.JobExecution;
+import org.springframework.batch.core.JobParameter;
+import org.springframework.batch.core.JobParameters;
+import org.springframework.batch.core.JobParametersInvalidException;
+import org.springframework.batch.core.launch.JobLauncher;
+import org.springframework.batch.core.repository.JobExecutionAlreadyRunningException;
+import org.springframework.batch.core.repository.JobInstanceAlreadyCompleteException;
+import org.springframework.batch.core.repository.JobRestartException;
+
+/**
+  * Class for spring scheduler.
+  *
+  * @author Patryk Chrusciel
+  */
+ public class SimpleLauncher {
+    
+      /**
+       * Job to run.
+       */
+      private Job job;
+    
+      /**
+       * Job launcher.
+       */
+      private JobLauncher jobLauncher;
+    
+      /**
+       * Counter variable to demonstrate parameters set and read.
+       */
+      private static int counter = 0;
+    
+      /**
+       * This method will be call every time after spring scheduler launch.
+       */
+       public void launch() {
+          // Create parameters for job.
+          JobParameters jobParams = createJobParameters();
+          // Run job.
+          JobExecution result = getJobLauncher().run(getJob(), jobParams);
+         
+          // After job execution show details.
+          System.out.print("Job status is " + result.getStatus() + ". ");
+          System.out.print("Job has been started : " + result.getStartTime() + " and finished: "
+                   + result.getEndTime() + ".\n");
+     }
+     /**
+      * Create parameters for job.
+      *
+      * @return Parameters for job.
+      */
+      private JobParameters createJobParameters() {
+         Map<String, JobParameter> parametersMap = new HashMap<String, JobParameter>();
+         parametersMap.put("JobName", new JobParameter("JobName_" + ++counter));
+         JobParameters jobParameters = new JobParameters(parametersMap);
+         return jobParameters;
+     }
+     public void setJob(Job job) {
+         this.job = job;
+     }
+     public Job getJob() {
+         return job;
+     }
+     public void setJobLauncher(JobLauncher jobLauncher) {
+         this.jobLauncher = jobLauncher;
+      }
+     public JobLauncher getJobLauncher() {
+         return jobLauncher;
+      }
+}
+
+
+JobRepository.xml:
+====================
+
+
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.springframework.org/schema/beans
+http://www.springframework.org/schema/beans/spring-beans.xsd">
+   <bean id="jobRepository"
+class="org.springframework.batch.core.repository.support.SimpleJobRepository">
+        <constructor-arg>
+            <bean
+class="org.springframework.batch.core.repository.dao.MapJobInstanceDao" />
+        </constructor-arg>
+        <constructor-arg>
+            <bean
+class="org.springframework.batch.core.repository.dao.MapJobExecutionDao" />
+        </constructor-arg>
+        <constructor-arg>
+            <bean
+class="org.springframework.batch.core.repository.dao.MapStepExecutionDao" />
+        </constructor-arg>
+        <constructor-arg>
+            <bean
+class="org.springframework.batch.core.repository.dao.MapExecutionContextDao" />
+        </constructor-arg>
+    </bean>
+    <!-- Transaction manager -->
+    <bean id="jobRepository-transactionManager"
+class="org.springframework.batch.support.transaction.ResourcelessTransactionManager" />
+    <!-- Simple launcher for job -->
+    <bean id="jobLauncher"
+class="org.springframework.batch.core.launch.support.SimpleJobLauncher">
+        <property name="jobRepository" ref="jobRepository" />
+    </bean>
+</beans>
+
+
+
+
+
+JobDefinition.xml:
+=====================
+
+
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+xmlns:batch="http://www.springframework.org/schema/batch" xmlns:aop="http://www.springframework.org/schema/aop"
+xmlns:tx="http://www.springframework.org/schema/tx" xmlns:p="http://www.springframework.org/schema/p"
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-
+
+beans.xsd http://www.springframework.org/schema/batch
+http://www.springframework.org/schema/batch/spring-batch-2.1.xsd
+http://www.springframework.org/schema/aop
+http://www.springframework.org/schema/aop/spring-aop-2.0.xsd
+http://www.springframework.org/schema/tx
+http://www.springframework.org/schema/tx/spring-tx-2.0.xsd">
+     <import resource="jobRepository.xml" />
+     <!-- Job step 1 -->
+     <bean id="jobTaskletStep1" class="org.na.batch.spring.SimpleJobTasklet">
+         <property name="message" value="Hello..." />
+     </bean>
+     <!-- Job step 2 -->
+     <bean id="jobTaskletStep2" class="org.na.batch.spring.SimpleJobTasklet">
+         <property name="message" value="world!" />
+     </bean>
+     <!-- Define a job with two steps -->
+     <batch:job id="backgroundJob" job-repository="jobRepository">
+         <batch:step id="step0" next="step1">
+            <batch:tasklet ref="jobTaskletStep1"
+                transaction-manager="jobRepository-transactionManager" />
+        </batch:step>
+        <batch:step id="step1">
+            <batch:tasklet ref="jobTaskletStep2"
+                transaction-manager="jobRepository-transactionManager" />
+        </batch:step>
+     </batch:job>
+</beans>
+
+
+
+SpringScheduler.xml:
+===================
+
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:task="http://www.springframework.org/schema/task"
+   xsi:schemaLocation="http://www.springframework.org/schema/beans
+   http://www.springframework.org/schema/beans/spring-beans.xsd
+   http://www.springframework.org/schema/task
+   http://www.springframework.org/schema/task/spring-task-3.0.xsd">
+   <import resource="JobDefinition.xml" />
+   <import resource="JobRepository.xml" />
+  
+   <!-- Set launcher properties -->
+   <bean id="simpleLauncher" class="org.na.batch.spring.SimpleLauncher">
+       <!-- Job to execute -->
+       <property name="job" ref="backgroundJob" />
+       <!-- Job launcher defined in job repository -->
+       <property name="jobLauncher" ref="jobLauncher" />
+   </bean>
+  
+   <!-- Scheduler definition -->
+   <task:scheduler id="scheduler" pool-size="5" />
+   <!-- Task definition to be scheduled -->
+   <task:scheduled-tasks scheduler="scheduler">
+       <!-- Scheduler will call method 'launch' every 10 seconds -->
+       <task:scheduled ref="simpleLauncher" method="launch"
+           fixed-rate="10000" />
+   </task:scheduled-tasks>
+</beans>
+
+
+
+ApplicationContext.xml:
+========================
+
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+   xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-
+
+beans.xsd">
+  
+   <import resource="JobDefinition.xml" />
+   <import resource="SpringScheduler.xml" />
+   <import resource="JobRepository.xml" />
+</beans>
+
+
+
+/**
+* Main class
+*
+* @author Patryk Chrusciel
+*
+*/
+public class Main {
+     /**
+      * Main method
+      *
+      * @param args
+      */
+     public static void main(String[] args) {
+         ClassPathXmlApplicationContext context = new ClassPathXmlApplicationContext(
+                 "META-INF/spring/ApplicationContext.xml");
+         // Start application context.
+         // Spring scheduler will be automatically started.
+         context.start();
+     }
+}
+
+

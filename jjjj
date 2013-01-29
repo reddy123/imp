@@ -1,4 +1,3 @@
-
 emailjob
 ============
 <?xml version="1.0" encoding="UTF-8"?>
@@ -19,7 +18,7 @@ emailjob
 		<property name="port" value="587" />
 		<property name="username" value="ppssrr.970@gmail.com" />
 		<property name="password" value="sivareddy" />
-		<property name="javaMailProperties">
+		<property name="javaMailProperties"> 
 			<props>
 				<prop key="mail.smtp.auth">true</prop>
 			</props>

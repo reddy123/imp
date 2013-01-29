@@ -11,7 +11,7 @@ in spring xml file:
 	</bean>
 
 	<mvc:interceptors>
-
+ 
 		<bean id="localeChangeInterceptor"
 			class="org.springframework.web.servlet.i18n.LocaleChangeInterceptor">
 			<property name="paramName" value="language" />

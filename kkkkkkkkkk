@@ -10,7 +10,7 @@ insert into ACT_ID_USER values ('robert', 1, 'Robert', 'King', 'robert@localhost
 insert into ACT_ID_MEMBERSHIP values ('lucy', 'configurator');
 insert into ACT_ID_MEMBERSHIP values ('watson', 'configurator');
 insert into ACT_ID_MEMBERSHIP values ('robert', 'configurator');
-
+ 
 
 
 insert into ACT_ID_GROUP values ('reviewer',  4, 'reviewer',  'security-role');

@@ -1,0 +1,1715 @@
+
+parent pom:
+=============
+
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>com.cnk.workflow</groupId>
+  <artifactId>workflowparent</artifactId>
+  <version>0.0.1-SNAPSHOT</version>
+  <packaging>pom</packaging>
+  <name>WorkflowManagement</name>
+  <description>Dynamic Workflow Setup</description>
+  <modules>
+    <module>workflowdao</module>
+  	<module>workflowservice</module>
+  	<module>workflowUI</module>
+  </modules>
+  
+  
+    <properties>
+		<java.version>1.7</java.version>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<slf4j.version>1.6.4</slf4j.version>
+		<spring.version>3.1.0.RELEASE</spring.version>
+		<spring-security.version>3.1.0.RELEASE</spring-security.version>
+		<activiti-version>5.9</activiti-version>
+	</properties>
+  
+  
+  <repositories>
+  
+  	<repository>
+			<id>Activiti</id>
+			<url>http://maven.alfresco.com/nexus/content/repositories/activiti</url>
+		</repository> 
+  </repositories>
+  
+
+	<dependencies>
+
+	<!-- Database Driver Dependency -->
+	
+		 <dependency>
+	      	<groupId>com.oracle</groupId>
+    	  	<artifactId>ojdbc6</artifactId>
+      		<version>11.2.0</version>
+      	</dependency>
+	
+		<dependency>
+			<groupId>com.h2database</groupId>
+			<artifactId>h2</artifactId>
+			<version>1.2.132</version>
+		</dependency>
+		
+		<dependency>
+			<groupId>mysql</groupId>
+			<artifactId>mysql-connector-java</artifactId>
+			<version>5.1.6</version>			
+		</dependency>
+		
+		
+	<!-- End Database Driver Dependency -->
+	
+	
+	
+	<!--  Hibernate Dependency -->	
+		
+		<dependency>
+			<groupId>org.apache.openjpa</groupId>
+			<artifactId>openjpa</artifactId>
+			<version>2.0.0</version>
+		</dependency>
+		
+		<dependency>
+    	 	<groupId>org.codehaus.groovy</groupId>
+      		<artifactId>groovy</artifactId>
+      		<version>1.7.5</version>
+  		</dependency>
+	
+		<dependency>
+			<groupId>org.hibernate</groupId>
+			<artifactId>hibernate-entitymanager</artifactId>
+			<version>3.6.5.Final</version>
+				<exclusions>
+				<exclusion>
+					<groupId>org.slf4j</groupId>
+					<artifactId>slf4j-api</artifactId>
+				</exclusion>
+			</exclusions>
+
+		</dependency>
+		
+		<dependency>
+			<groupId>org.hibernate</groupId>
+			<artifactId>hibernate-validator</artifactId>
+			<version>4.2.0.Final</version>
+			
+			<exclusions>
+				<exclusion>
+					<groupId>org.slf4j</groupId>
+					<artifactId>slf4j-api</artifactId>
+					
+				</exclusion>
+			</exclusions>
+		</dependency>
+
+
+		<dependency>
+			<groupId>commons-logging</groupId>
+			<artifactId>commons-logging</artifactId>
+			<version>1.1</version>
+			<exclusions>
+			<exclusion>
+			<groupId>log4j</groupId>
+			<artifactId>log4j</artifactId>
+			</exclusion>
+			</exclusions>
+		</dependency>
+		
+		<dependency>
+			<groupId>org.hibernate.javax.persistence</groupId>
+			<artifactId>hibernate-jpa-2.0-api</artifactId>
+			<version>1.0.1.Final</version>
+		</dependency>
+		<dependency>
+			<groupId>org.hibernate</groupId>
+			<artifactId>hibernate-validator</artifactId>
+			<version>4.2.0.Final</version>
+			<exclusions>
+				<exclusion>
+					<groupId>javax.xml.bind</groupId>
+					<artifactId>jaxb-api</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>com.sun.xml.bind</groupId>
+					<artifactId>jaxb-impl</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>org.slf4j</groupId>
+					<artifactId>slf4j-api</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+		<dependency>
+			<groupId>javax.validation</groupId>
+			<artifactId>validation-api</artifactId>
+			<version>1.0.0.GA</version>
+		</dependency>
+		<dependency>
+			<groupId>cglib</groupId>
+			<artifactId>cglib-nodep</artifactId>
+			<version>2.2.2</version>
+		</dependency>
+		<dependency>
+			<groupId>javax.transaction</groupId>
+			<artifactId>jta</artifactId>
+			<version>1.1</version>
+		</dependency>
+		<dependency>
+		   <groupId>javax.persistence</groupId>
+			   <artifactId>persistence-api</artifactId>
+			   <version>1.0.2</version>
+			   <scope>provided</scope>
+		</dependency>
+		
+		<dependency>
+				<groupId>dom4j</groupId>
+				<artifactId>dom4j</artifactId>
+				<version>1.6.1</version>
+				<exclusions>
+				<exclusion>
+				<groupId>xml-apis</groupId>
+				<artifactId>xml-apis</artifactId>
+				</exclusion>
+				
+				</exclusions>
+			</dependency>
+		
+
+		<!-- End  Hibernate Dependency -->
+		
+		<!--Spring Dependency  -->
+		
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-orm</artifactId>
+			<version>${spring.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-beans</artifactId>
+			<version>${spring.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-core</artifactId>
+			<version>${spring.version}</version>
+			<exclusions>
+				<exclusion>
+					<groupId>commons-logging</groupId>
+					<artifactId>commons-logging</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-test</artifactId>
+			<version>${spring.version}</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-context</artifactId>
+			<version>${spring.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-aspects</artifactId>
+			<version>${spring.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-jdbc</artifactId>
+			<version>${spring.version}</version>
+		</dependency>
+		
+		
+	
+		
+		<!--End Spring Dependency  -->
+		
+		
+		<!-- Activiti Dependency  -->
+		<dependency>
+			<groupId>org.activiti</groupId>
+			<artifactId>activiti-engine</artifactId>
+			<version>${activiti-version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.activiti</groupId>
+			<artifactId>activiti-spring</artifactId>
+			<version>${activiti-version}</version>
+		</dependency>
+		
+		<!--End Activiti Dependency  -->
+		
+		<!--Other Dependency  -->
+		
+		<dependency>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+			<version>4.10</version>
+			<scope>test</scope>
+		</dependency>
+			<dependency>
+			<groupId>net.sf.flexjson</groupId>
+			<artifactId>flexjson</artifactId>
+			<version>2.1</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.commons</groupId>
+			<artifactId>commons-lang3</artifactId>
+			<version>3.1</version>
+		</dependency>
+		<dependency>
+			<groupId>commons-pool</groupId>
+			<artifactId>commons-pool</artifactId>
+			<version>1.5.6</version>
+		</dependency>
+		<dependency>
+			<groupId>commons-dbcp</groupId>
+			<artifactId>commons-dbcp</artifactId>
+			<version>1.3</version>
+			<exclusions>
+				<exclusion>
+					<groupId>commons-logging</groupId>
+					<artifactId>commons-logging</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>xml-apis</groupId>
+					<artifactId>xml-apis</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+		
+		<!--End Other Dependency  -->
+		
+		
+		<!-- Comment below dependency  if u are using weblogic  -->
+	
+			<dependency>
+			<groupId>log4j</groupId>
+			<artifactId>log4j</artifactId>
+			<version>1.2.16</version>
+		</dependency>
+		<!-- <dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-api</artifactId>
+			<version>${slf4j.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>jcl-over-slf4j</artifactId>
+			<version>${slf4j.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-log4j12</artifactId>
+			<version>${slf4j.version}</version>
+		</dependency> -->
+		
+		
+		
+	</dependencies>
+  
+</project>
+
+UI pom:
+========================
+
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <artifactId>workflowparent</artifactId>
+    <groupId>com.cnk.workflow</groupId>
+    <version>0.0.1-SNAPSHOT</version>
+   <relativePath>../pom.xml </relativePath>
+  </parent>
+  <artifactId>workflowUI</artifactId>
+  <packaging>war</packaging>
+  
+  <properties>
+
+		<java.version>1.7</java.version>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
+		<slf4j.version>1.6.4</slf4j.version>
+		<spring.version>3.1.0.RELEASE</spring.version>
+		<spring-security.version>3.1.0.RELEASE</spring-security.version>
+		<activiti-version>5.9</activiti-version>
+	</properties>
+	
+	<repositories>
+		
+		
+		<repository>
+			<id>maven-restlet</id>
+			<name>Public online Restlet repository</name>
+			<url>http://maven.restlet.org</url>
+		</repository>
+
+	</repositories>
+	
+	<dependencies>
+	
+	
+		
+		<dependency>
+			<groupId>${project.groupId}</groupId>
+			<artifactId>workflowservice</artifactId>
+			<version>${project.parent.version}</version>
+			
+			<!-- <exclusions>
+				<exclusion>
+					<groupId>${project.groupId}</groupId>
+					<artifactId>ERPDAO</artifactId>					
+				</exclusion>
+			</exclusions> -->
+			
+		</dependency>
+		
+		<!-- Exclusion of   -->
+		
+		
+		<!--Drools  -->
+		<dependency>
+	<groupId>org.drools</groupId>
+	<artifactId>drools-core</artifactId>
+	<version>5.4.0.Final</version>
+</dependency>
+		
+		<!-- This dependency for rest webservices  -->
+
+
+	<dependency>
+		<groupId>org.restlet.jse</groupId>
+		<artifactId>org.restlet</artifactId>
+		<version>2.0.8</version>
+	</dependency>
+	<dependency>
+		<groupId>org.restlet.jse</groupId>
+		<artifactId>org.restlet.ext.json</artifactId>
+		<version>2.0.8</version>
+	</dependency>
+	
+	<dependency>
+		<groupId>org.restlet.jse</groupId>
+		<artifactId>org.restlet.lib.org.json</artifactId>
+		<version>2.0</version>
+	</dependency>
+	
+		
+		
+		<!-- General dependencies for standard applications -->
+		
+		<dependency>
+			<groupId>org.codehaus.jackson</groupId>
+			<artifactId>jackson-core-asl</artifactId>
+			<version>1.9.7</version>
+		</dependency>
+		
+		<dependency>
+			<groupId>org.codehaus.jackson</groupId>
+			<artifactId>jackson-mapper-asl</artifactId>
+			<version>1.9.7</version>
+		</dependency>
+	
+	
+  <dependency>
+      <groupId>org.apache.tomcat</groupId>
+      <artifactId>tomcat-catalina-ha</artifactId>
+      <version>7.0.8</version>
+      <scope>provided</scope>
+    </dependency>
+    
+    
+    
+  
+    
+		<dependency>
+			<groupId>javax.servlet</groupId>
+			<artifactId>jstl</artifactId>
+			<version>1.2</version>
+		</dependency>
+	
+
+		<dependency>
+			<groupId>javax.servlet</groupId>
+			<artifactId>servlet-api</artifactId>
+			<version>2.5</version>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-orm</artifactId>
+			<version>${spring.version}</version>
+		</dependency>
+		
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-beans</artifactId>
+			<version>${spring.version}</version>
+		</dependency>
+		
+		
+		<dependency>
+			<groupId>javax.servlet</groupId>
+			<artifactId>servlet-api</artifactId>
+			<version>2.5</version>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>net.sf.flexjson</groupId>
+			<artifactId>flexjson</artifactId>
+			<version>2.1</version>
+		</dependency>
+		
+		
+		
+		<dependency>
+			<groupId>org.apache.commons</groupId>
+			<artifactId>commons-lang3</artifactId>
+			<version>3.1</version>
+		</dependency>
+		
+
+		<dependency>
+			<groupId>commons-beanutils</groupId>
+			<artifactId>commons-beanutils</artifactId>
+			<version>1.8.3</version>
+		</dependency>
+		<dependency>
+			<groupId>commons-digester</groupId>
+			<artifactId>commons-digester</artifactId>
+			<version>2.1</version>
+		</dependency>
+		<dependency>
+			<groupId>taglibs</groupId>
+			<artifactId>standard</artifactId>
+			<version>1.1.2</version>
+		</dependency>
+		
+		
+		
+		
+		
+		<!-- Spring dependencies -->
+		
+		
+		
+		
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-core</artifactId>
+			<version>${spring.version}</version>
+			<exclusions>
+				<exclusion>
+					<groupId>commons-logging</groupId>
+					<artifactId>commons-logging</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-test</artifactId>
+			<version>${spring.version}</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-context</artifactId>
+			<version>${spring.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-aspects</artifactId>
+			<version>${spring.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.hibernate</groupId>
+			<artifactId>hibernate-core</artifactId>
+			<version>3.6.9.Final</version>
+			
+			<exclusions>
+				<exclusion>
+					<groupId>org.slf4j</groupId>
+					<artifactId>slf4j-api</artifactId>
+					
+				</exclusion>
+			</exclusions>
+		</dependency>
+	
+		<dependency>
+			<groupId>javax.validation</groupId>
+			<artifactId>validation-api</artifactId>
+			<version>1.0.0.GA</version>
+		</dependency>
+		<dependency>
+			<groupId>cglib</groupId>
+			<artifactId>cglib-nodep</artifactId>
+			<version>2.2.2</version>
+		</dependency>
+		<dependency>
+			<groupId>javax.transaction</groupId>
+			<artifactId>jta</artifactId>
+			<version>1.1</version>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-jdbc</artifactId>
+			<version>${spring.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-orm</artifactId>
+			<version>${spring.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>commons-pool</groupId>
+			<artifactId>commons-pool</artifactId>
+			<version>1.5.6</version>
+		</dependency>
+		<dependency>
+			<groupId>commons-dbcp</groupId>
+			<artifactId>commons-dbcp</artifactId>
+			<version>1.3</version>
+			<exclusions>
+				<exclusion>
+					<groupId>commons-logging</groupId>
+					<artifactId>commons-logging</artifactId>
+				</exclusion>
+				<!-- <exclusion>
+					<groupId>xml-apis</groupId>
+					<artifactId>xml-apis</artifactId>
+				</exclusion> -->
+			</exclusions>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-webmvc</artifactId>
+			<version>${spring.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.webflow</groupId>
+			<artifactId>spring-js-resources</artifactId>
+			<version>2.2.1.RELEASE</version>
+		</dependency>
+		<dependency>
+			<groupId>commons-digester</groupId>
+			<artifactId>commons-digester</artifactId>
+			<version>2.1</version>
+			<exclusions>
+				<exclusion>
+					<groupId>commons-logging</groupId>
+					<artifactId>commons-logging</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+		<dependency>
+			<groupId>commons-fileupload</groupId>
+			<artifactId>commons-fileupload</artifactId>
+			<version>1.2.2</version>
+		</dependency>
+		<dependency>
+			<groupId>javax.servlet.jsp.jstl</groupId>
+			<artifactId>jstl-api</artifactId>
+			<version>1.2</version>
+		</dependency>
+		<dependency>
+			<groupId>org.glassfish.web</groupId>
+			<artifactId>jstl-impl</artifactId>
+			<version>1.2</version>
+		</dependency>
+		<dependency>
+			<groupId>javax.el</groupId>
+			<artifactId>el-api</artifactId>
+			<version>1.0</version>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>joda-time</groupId>
+			<artifactId>joda-time</artifactId>
+			<version>1.6</version>
+		</dependency>
+		<dependency>
+			<groupId>javax.servlet.jsp</groupId>
+			<artifactId>jsp-api</artifactId>
+			<version>2.1</version>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>commons-codec</groupId>
+			<artifactId>commons-codec</artifactId>
+			<version>1.5</version>
+		</dependency>
+		
+
+	<dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-core</artifactId>
+            <version>${spring-security.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>commons-logging</groupId>
+                    <artifactId>commons-logging</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-config</artifactId>
+            <version>${spring-security.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>commons-logging</groupId>
+                    <artifactId>commons-logging</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-web</artifactId>
+            <version>${spring-security.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-taglibs</artifactId>
+            <version>${spring-security.version}</version>
+        </dependency>
+        
+        
+
+<!--Jasper  -->
+
+<dependency>
+   <groupId>javax.persistence</groupId>
+   <artifactId>persistence-api</artifactId>
+   <version>1.0.2</version>
+   <scope>provided</scope>
+</dependency>
+
+ <dependency>
+    	<groupId>net.sf.jasperreports</groupId>
+    	<artifactId>jasperreports</artifactId>
+    	<version>3.7.6</version>
+    	<type>jar</type>
+    	<scope>compile</scope>
+    	<exclusions>
+    		<exclusion>
+    			<artifactId>commons-collections</artifactId>
+    			<groupId>commons-collections</groupId>
+    		</exclusion>
+    		<exclusion>
+    			<artifactId>commons-beanutils</artifactId>
+    			<groupId>commons-beanutils</groupId>
+    		</exclusion>
+    		<exclusion>
+    			<artifactId>commons-digester</artifactId>
+    			<groupId>commons-digester</groupId>
+    		</exclusion>
+    		<exclusion>
+    			<artifactId>commons-logging</artifactId>
+    			<groupId>commons-logging</groupId>
+    		</exclusion>
+    		<exclusion>
+					<groupId>xml-apis</groupId>
+					<artifactId>xml-apis</artifactId>
+				</exclusion>
+				
+    	</exclusions>
+    </dependency>
+
+	</dependencies>
+	<build>
+		<plugins>
+		
+		
+		
+		
+		
+		<!--h  -->
+		
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-war-plugin</artifactId>
+				<version>2.1.1</version>
+				<!-- <configuration> <webXml>target/web.xml</webXml> </configuration> -->
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<version>2.3.2</version>
+				<configuration>
+					<source>${java.version}</source>
+					<target>${java.version}</target>
+					<encoding>${project.build.sourceEncoding}</encoding>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>aspectj-maven-plugin</artifactId>
+				<version>1.2</version>
+			
+			</plugin>
+
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-resources-plugin</artifactId>
+				<version>2.5</version>
+				<configuration>
+					<encoding>${project.build.sourceEncoding}</encoding>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<version>2.9</version>
+				<configuration>
+					<printSummary>false</printSummary>
+					<redirectTestOutputToFile>true</redirectTestOutputToFile>
+					<excludes>
+						<exclude>**/*_Roo_*</exclude>
+					</excludes>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-assembly-plugin</artifactId>
+				<version>2.2.1</version>
+				<configuration>
+					<descriptorRefs>
+						<descriptorRef>jar-with-dependencies</descriptorRef>
+					</descriptorRefs>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-deploy-plugin</artifactId>
+				<version>2.7</version>
+			</plugin>
+			<!-- IDE -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-eclipse-plugin</artifactId>
+				<version>2.7</version>
+				<!-- Note 2.8 does not work with AspectJ aspect path -->
+				<configuration>
+					<downloadSources>true</downloadSources>
+					<downloadJavadocs>false</downloadJavadocs>
+					<wtpversion>2.0</wtpversion>
+					<additionalBuildcommands>
+						<buildCommand>
+							<name>org.eclipse.ajdt.core.ajbuilder</name>
+							<arguments>
+								<aspectPath>org.s pringframework.aspects</aspectPath>
+							</arguments>
+						</buildCommand>
+						<buildCommand>
+							<name>org.springframework.ide.eclipse.core.springbuilder</name>
+						</buildCommand>
+					</additionalBuildcommands>
+					<additionalProjectnatures>
+						<projectnature>org.eclipse.ajdt.ui.ajnature</projectnature>
+						<projectnature>com.springsource.sts.roo.core.nature</projectnature>
+						<projectnature>org.springframework.ide.eclipse.core.springnature</projectnature>
+					</additionalProjectnatures>
+				</configuration>
+			</plugin>
+			 <plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-idea-plugin</artifactId>
+				<version>2.2</version>
+				<configuration>
+					<downloadSources>true</downloadSources>
+					<dependenciesAsLibraries>true</dependenciesAsLibraries>
+				</configuration>
+			</plugin> 
+			 <plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>tomcat-maven-plugin</artifactId>
+				<version>1.1</version>
+			</plugin> 
+			 <plugin>
+				<groupId>org.mortbay.jetty</groupId>
+				<artifactId>jetty-maven-plugin</artifactId>
+				<version>8.0.1.v20110908</version>
+				<configuration>
+					<webAppConfig>
+						<contextPath>/${project.name}</contextPath>
+					</webAppConfig>
+				</configuration>
+			</plugin> 
+			
+			
+			
+		</plugins>
+	</build>
+  
+  
+  
+</project>
+
+persistence.xml:
+======================
+<?xml version="1.0" encoding="UTF-8"?>
+
+<persistence xmlns="http://java.sun.com/xml/ns/persistence"
+	 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+     xsi:schemaLocation="http://java.sun.com/xml/ns/persistence http://java.sun.com/xml/ns/persistence/persistence_1_0.xsd"
+     version="1.0">
+  <persistence-unit name="activiti-jpa-pu">
+    <provider>org.apache.openjpa.persistence.PersistenceProviderImpl</provider>
+    
+    <class>com.cnk.workflow.entities.ProductPojo</class>    
+    <class>com.cnk.workflow.entities.HistoryProduct</class>
+    <class>com.cnk.workflow.entities.ProcessLocking</class>
+    
+    <exclude-unlisted-classes>true</exclude-unlisted-classes>
+    
+     <!-- <properties>
+      <property name="openjpa.Log" value="DefaultLevel=WARN, Tool=INFO"/>
+      <property name="openjpa.LockTimeout " value="30000"/>
+      <property name="openjpa.jdbc.SynchronizeMappings" value="buildSchema(SchemaAction='add,deleteTableContents')"/>
+    </properties> -->
+    
+  </persistence-unit>
+</persistence>
+
+spring-activiti.xml:
+=============================
+
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:context="http://www.springframework.org/schema/context" xmlns:tx="http://www.springframework.org/schema/tx"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans   http://www.springframework.org/schema/beans/spring-beans.xsd
+                           http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-2.5.xsd
+                           http://www.springframework.org/schema/tx      http://www.springframework.org/schema/tx/spring-tx-3.0.xsd">
+
+
+	<bean id="dataSource"
+		class="org.springframework.jdbc.datasource.SimpleDriverDataSource">
+
+		<!-- <property name="driverClass" value="com.mysql.jdbc.Driver" /> <property 
+			name="url" value="jdbc:mysql://localhost:3306/activiti" /> <property name="url" 
+			value="jdbc:mysql://mumcnk-0748:3306/activiti" /> <property name="username" 
+			value="root" /> <property name="password" value="" /> -->
+
+		<property name="driverClass" value="oracle.jdbc.driver.OracleDriver" />
+		<property name="url" value="jdbc:oracle:thin:@10.21.12.129:1521:XE" />
+		<property name="username" value="dev_env" />
+		<property name="password" value="dev_env" />
+
+	</bean>
+
+
+
+	<bean id="transactionManager"
+		class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+		<property name="dataSource" ref="dataSource" />
+	</bean>
+
+	<bean id="entityManagerFactory"
+		class="org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean">
+		<property name="dataSource" ref="dataSource" />
+		<!-- <property name="persistenceUnitName" value="activiti-jpa-pu"> </property> -->
+
+		<property name="persistenceXmlLocation">
+			<value>classpath*:META-INF/persistence.xml</value>
+		</property>
+		<property name="jpaVendorAdapter">
+			<bean class="org.springframework.orm.jpa.vendor.OpenJpaVendorAdapter">
+				<property name="databasePlatform"
+					value="org.apache.openjpa.jdbc.sql.OracleDictionary" />
+			</bean>
+		</property>
+	</bean>
+
+	<bean id="processEngineConfiguration" class="org.activiti.spring.SpringProcessEngineConfiguration">
+		<property name="dataSource" ref="dataSource" />
+		<!-- <property name="deploymentResources" value="classpath*:ProductSetupFlownew.bpmn20.xml" /> -->
+		<property name="transactionManager" ref="transactionManager" />
+		<property name="databaseSchemaUpdate" value="true" />
+		<property name="mailServerHost" value="localhost" />
+		<property name="mailServerPort" value="5025" />
+		<property name="jpaEntityManagerFactory" ref="entityManagerFactory" />
+		<property name="jpaHandleTransaction" value="true" />
+		<property name="jpaCloseEntityManager" value="true" />
+		<property name="jobExecutorActivate" value="true" />
+
+	</bean>
+
+	<bean id="processEngine" class="org.activiti.spring.ProcessEngineFactoryBean">
+		<property name="processEngineConfiguration" ref="processEngineConfiguration" />
+	</bean>
+
+	<bean id="repositoryService" factory-bean="processEngine"
+		factory-method="getRepositoryService" />
+	<bean id="runtimeService" factory-bean="processEngine"
+		factory-method="getRuntimeService" />
+	<bean id="taskService" factory-bean="processEngine"
+		factory-method="getTaskService" />
+	<bean id="historyService" factory-bean="processEngine"
+		factory-method="getHistoryService" />
+	<bean id="managementService" factory-bean="processEngine"
+		factory-method="getManagementService" />
+	<bean id="identityService" factory-bean="processEngine"
+		factory-method="getIdentityService" />
+</beans>
+
+
+mvc-servlet.xml:
+=========================
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:p="http://www.springframework.org/schema/p"
+	xmlns:tx="http://www.springframework.org/schema/tx" xmlns:util="http://www.springframework.org/schema/util"
+	xmlns:mvc="http://www.springframework.org/schema/mvc"
+	xsi:schemaLocation="
+        http://www.springframework.org/schema/beans     
+        http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+        http://www.springframework.org/schema/context 
+        http://www.springframework.org/schema/context/spring-context-3.0.xsd
+        http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+      	http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx.xsd
+      	 http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc.xsd
+      	 http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-2.5.xsd">
+
+
+	<context:annotation-config />
+	<context:component-scan base-package="com.cnk.workflow" />
+	<mvc:annotation-driven />
+
+	<mvc:resources mapping="/resources/**" location="/resources/" />
+
+	<bean
+		class="org.springframework.web.servlet.view.InternalResourceViewResolver">
+		<property name="prefix">
+			<value>/WEB-INF/pages/</value>
+		</property>
+		<property name="suffix">
+			<value>.jsp</value>
+		</property>
+	</bean>
+
+<!-- <bean id="propertyConfigurer"
+		class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer"
+		p:location="/WEB-INF/jdbc.properties" /> -->
+
+
+	
+
+	<bean id="sessionFactory"
+		class="org.springframework.orm.hibernate3.LocalSessionFactoryBean">
+		<property name="dataSource" ref="dataSource" />
+		<property name="configLocation">
+			<value>classpath:hibernate.cfg.xml</value>
+		</property>
+		<property name="configurationClass">
+			<value>org.hibernate.cfg.AnnotationConfiguration</value>
+		</property>
+		<property name="hibernateProperties">
+			<props>
+				<prop key="hibernate.dialect">org.hibernate.dialect.Oracle10gDialect</prop>
+				<prop key="hibernate.show_sql">true</prop>
+			</props>
+		</property>
+	</bean>
+
+
+
+	<bean id="transactionManager"
+		class="org.springframework.orm.hibernate3.HibernateTransactionManager">
+		<property name="sessionFactory" ref="sessionFactory" />
+	</bean>
+
+	<tx:annotation-driven transaction-manager="transactionManager" />
+
+	<bean class="org.springframework.web.servlet.view.XmlViewResolver"
+		p:location="/WEB-INF/jasper-views.xml" p:order="0" />
+
+</beans>
+
+
+spring-security.xml:
+========================
+<beans:beans xmlns="http://www.springframework.org/schema/security"
+	xmlns:beans="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans
+	http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+	http://www.springframework.org/schema/security
+	http://www.springframework.org/schema/security/spring-security-3.1.xsd">
+
+
+	<!-- <http auto-config="true">
+		<intercept-url pattern="/welcome*" access="ROLE_ADMIN,ROLE_USER,ROLE_MANAGER" /> -->
+		
+		 <http auto-config="true" access-decision-manager-ref="accessDecisionManager" use-expressions="true">
+		<intercept-url pattern="/welcome*" access="permitAll"  />
+		<!-- <intercept-url pattern="/welcome*" access="sales" /> -->
+		
+		
+		<form-login login-page="/login" default-target-url="/welcome"
+			authentication-failure-url="/loginfailed"  />
+		<logout logout-success-url="/logout" />
+	</http>
+
+ <beans:bean id="accessDecisionManager" class="org.springframework.security.access.vote.AffirmativeBased">
+    <beans:property name="decisionVoters">
+        <beans:list>
+            <beans:bean class="org.springframework.security.web.access.expression.WebExpressionVoter"/>
+            <beans:bean class="org.springframework.security.access.vote.RoleVoter">
+                <beans:property name="rolePrefix" value=""/>
+            </beans:bean>
+            <beans:bean class="org.springframework.security.access.vote.AuthenticatedVoter"/>
+        </beans:list>
+    </beans:property>
+</beans:bean> 
+
+	<authentication-manager>
+	
+	<authentication-provider> 
+		<!--     <password-encoder hash="sha-256" />  -->
+		    <jdbc-user-service data-source-ref="dataSource" 
+		        users-by-username-query="select id_ as username, pwd_ as password, 1 as enabled from act_id_user where id_=?" 
+		        authorities-by-username-query="SELECT u.id_ as username, r.group_id_ as authority FROM act_id_user u, act_id_membership r WHERE u.id_ = r.user_id_ AND u.id_=?"/> 
+		</authentication-provider>         
+	
+		<!-- <authentication-provider>
+			<jdbc-user-service data-source-ref="dataSource"
+	users-by-username-query="select username,password, enabled from users where username=?"
+	authorities-by-username-query="select u.username, ur.authority from users u, user_roles ur where u.user_id = ur.user_id and u.username =?  " />
+		</authentication-provider> -->
+		
+	</authentication-manager> 
+
+	<!-- <authentication-manager> <authentication-provider> <user-service> <user 
+		name="mkyong" password="123456" authorities="ROLE_USER" /> </user-service> 
+		</authentication-provider> </authentication-manager> -->
+		
+		
+</beans:beans>
+
+weblogic.xml:
+===================
+<?xml version="1.0" encoding="UTF-8"?>
+<weblogic-web-app xmlns="http://xmlns.oracle.com/weblogic/weblogic-web-app" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd http://xmlns.oracle.com/weblogic/weblogic-web-app http://xmlns.oracle.com/weblogic/weblogic-web-app/1.0/weblogic-web-app.xsd">
+
+
+<container-descriptor>
+	<prefer-web-inf-classes>true</prefer-web-inf-classes>
+	
+</container-descriptor>
+
+</weblogic-web-app>
+
+web.xml:
+=============
+
+<web-app version="2.4" xmlns="http://java.sun.com/xml/ns/j2ee"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://java.sun.com/xml/ns/j2ee http://java.sun.com/xml/ns/j2ee/web-app_2_4.xsd">
+	<display-name>ERPproduct</display-name>
+	<context-param>
+		<param-name>contextConfigLocation</param-name>
+		<param-value>/WEB-INF/mvc-dispatcher-servlet.xml,
+			 /WEB-INF/spring-database.xml,
+			 /WEB-INF/spring-security.xml,
+			 /WEB-INF/spring-activiti.xml</param-value>
+	</context-param>
+	<filter>
+		<filter-name>springSecurityFilterChain</filter-name>
+		<filter-class>org.springframework.web.filter.DelegatingFilterProxy</filter-class>
+	</filter>
+	<filter-mapping>
+		<filter-name>springSecurityFilterChain</filter-name>
+		<url-pattern>/*</url-pattern>
+	</filter-mapping>
+	<listener>
+		<listener-class>org.springframework.web.context.ContextLoaderListener</listener-class>
+	</listener>
+	<servlet>
+		<servlet-name>mvc-dispatcher</servlet-name>
+		<servlet-class>org.springframework.web.servlet.DispatcherServlet</servlet-class>
+		<load-on-startup>1</load-on-startup>
+	</servlet>
+	<servlet-mapping>
+		<servlet-name>mvc-dispatcher</servlet-name>
+		<url-pattern>/</url-pattern>
+	</servlet-mapping>
+</web-app>
+
+jasper-view.xml:
+=======================
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+	xmlns:p="http://www.springframework.org/schema/p" 
+	xsi:schemaLocation="
+		http://www.springframework.org/schema/beans 
+		http://www.springframework.org/schema/beans/spring-beans-3.0.xsd">
+
+	<!-- 
+		The JasperReportsMultiFormatView allows for the report format to be specified at runtime. 
+		The actual rendering of the report is delegated to one of the other JasperReports view classes
+		
+		Mapping 			Key	View Class
+			csv				JasperReportsCsvView
+			html			JasperReportsHtmlView
+			pdf				JasperReportsPdfView
+			xls				JasperReportsXlsView
+
+		See http://static.springsource.org/spring/docs/3.0.x/spring-framework-reference/html/view.html#view-jasper-reports-configuration-multiformat-view
+	-->
+	<!-- 
+		id: the name to be used as a reference in the controller
+		url: the path where the Jasper JRXML file is located
+		reportDateKey: the name of the datasource. This is passed by the controller
+	-->		
+<!-- 	<bean id="multiReport"
+	   class="org.springframework.web.servlet.view.jasperreports.JasperReportsMultiFormatView"
+		p:url="classpath:tree-template.jrxml"
+		p:reportDataKey="datasource1" /> -->	
+		
+			<bean id="multiReport"
+	   class="org.springframework.web.servlet.view.jasperreports.JasperReportsMultiFormatView"
+		p:url="classpath:PDFReports.jrxml"
+		p:reportDataKey="datasource1" />	
+		
+		<!--  <bean id="multiReport"
+	   class="org.springframework.web.servlet.view.jasperreports.JasperReportsMultiFormatView"
+		p:url="classpath:PDFReport.jrxml"
+		p:reportDataKey="datasource1" />	 -->
+		
+		
+</beans>
+
+
+pdfview.xml:
+==================
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Created using an evaluation version of JasperAssistant (http://www.jasperassistant.com) -->
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="Unnamed" pageWidth="595" pageHeight="842" columnWidth="555" leftMargin="20" rightMargin="20" topMargin="30" bottomMargin="30">
+	<property name="com.jasperassistant.designer.DataSource" value="OracleDatabase"/>
+	<property name="com.jasperassistant.designer.Grid" value="false"/>
+	<property name="com.jasperassistant.designer.SnapToGrid" value="false"/>
+	<property name="com.jasperassistant.designer.GridWidth" value="12"/>
+	<property name="com.jasperassistant.designer.GridHeight" value="12"/>
+	<property name="com.jasperassistant.designer.HGuides" value="39"/>
+	<!-- <queryString>
+		<![CDATA[select  PROC_INST_ID_, ID_,NAME_,ASSIGNEE_,(START_TIME_- END_TIME_) TaskDoneDate ,DURATION_ from ACT_HI_TASKINST   where PROC_INST_ID_ = 1784]]>
+	</queryString> -->
+	<field name="ID" class="java.lang.String"/>
+	<field name="NAME" class="java.lang.String"/>
+	<field name="ASSIGNEE" class="java.lang.String"/>
+	<field name="DURATION" class="java.lang.String"/>
+	<field name="DESCRIPTION" class="java.lang.String"/>
+	<pageHeader>
+		<band height="50">
+			 <textField hyperlinkType="None">
+				<reportElement x="201" y="17" width="91" height="20"/>
+				<textElement/>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{DESCRIPTION}]]></textFieldExpression>
+			</textField>
+			<staticText>
+				<reportElement x="295" y="18" width="51" height="20"/>
+				<textElement/>
+				<text><![CDATA[Details]]></text>
+			</staticText>
+		</band>
+	</pageHeader>
+	<columnHeader>
+		<band height="40">
+			<staticText>
+				<reportElement x="74" y="8" width="80" height="20"/>
+				<textElement/>
+				<text><![CDATA[Task id]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="184" y="7" width="180" height="20"/>
+				<textElement/>
+				<text><![CDATA[Name]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="305" y="9" width="83" height="20"/>
+				<textElement/>
+				<text><![CDATA[Completed By]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="432" y="6" width="170" height="20"/>
+				<textElement/>
+				<text><![CDATA[Completed Time]]></text>
+			</staticText>
+			<staticText>
+				<reportElement x="-1" y="7" width="41" height="20"/>
+				<textElement/>
+				<text><![CDATA[S.No]]></text>
+			</staticText>
+		</band>
+	</columnHeader>
+	<detail>
+		<band height="31">
+			<textField hyperlinkType="None">
+				<reportElement x="75" y="10" width="80" height="20"/>
+				<textElement/>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{ID}]]></textFieldExpression>
+			</textField>
+			<textField hyperlinkType="None">
+				<reportElement x="181" y="7" width="180" height="20"/>
+				<textElement/>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{NAME}]]></textFieldExpression>
+			</textField>
+			<textField hyperlinkType="None">
+				<reportElement x="307" y="7" width="79" height="20"/>
+				<textElement/>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{ASSIGNEE}]]></textFieldExpression>
+			</textField>
+			<textField hyperlinkType="None">
+				<reportElement x="426" y="6" width="170" height="20"/>
+				<textElement/>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{DURATION}]]></textFieldExpression>
+			</textField>
+			<textField hyperlinkType="None">
+				<reportElement x="0" y="8" width="33" height="20"/>
+				<textElement/>
+				<textFieldExpression class="java.lang.Integer"><![CDATA[$V{REPORT_COUNT}]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+	<columnFooter>
+		<band height="31"/>
+	</columnFooter>
+	<pageFooter>
+		<band height="20">
+			<staticText>
+				<reportElement x="254" y="0" width="30" height="20"/>
+				<textElement/>
+				<text><![CDATA[Page:]]></text>
+			</staticText>
+			<textField hyperlinkType="None">
+				<reportElement x="300" y="0" width="23" height="20"/>
+				<textElement/>
+				<textFieldExpression class="java.lang.Integer"><![CDATA[$V{PAGE_NUMBER}]]></textFieldExpression>
+			</textField>
+			<textField pattern="d/M/yy" hyperlinkType="None">
+				<reportElement x="0" y="4" width="53" height="16"/>
+				<textElement/>
+				<textFieldExpression class="java.util.Date"><![CDATA[new Date()]]></textFieldExpression>
+			</textField>
+			<textField pattern="h:mm:ss a" hyperlinkType="None">
+				<reportElement x="473" y="2" width="68" height="15"/>
+				<textElement/>
+				<textFieldExpression class="java.util.Date"><![CDATA[new Date()]]></textFieldExpression>
+			</textField>
+		</band>
+	</pageFooter>
+</jasperReport>
+
+
+
+
+jdbc.properties:
+=======================
+jdbc.driverClassName=oracle.jdbc.driver.OracleDriver
+jdbc.dialect=org.hibernate.dialect.Oracle10gDialect
+jdbc.databaseurl=jdbc:oracle:thin:@10.21.12.129:1521:XE
+jdbc.username=dev_env
+jdbc.password=dev_env
+#jdbc.driverClassName=com.mysql.jdbc.Driver
+#jdbc.dialect=org.hibernate.dialect.MySQLDialect
+#jdbc.databaseurl=jdbc:mysql://localhost:3306/activiti
+#jdbc.username=root
+#jdbc.password=
+
+
+
+activiti:
+==================
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:activiti="http://activiti.org/bpmn" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:omgdc="http://www.omg.org/spec/DD/20100524/DC" xmlns:omgdi="http://www.omg.org/spec/DD/20100524/DI" typeLanguage="http://www.w3.org/2001/XMLSchema" expressionLanguage="http://www.w3.org/1999/XPath" targetNamespace="http://www.activiti.org/test">
+  <process id="TravelERPWorkflow1" name="workflow activiti">
+    <startEvent id="startevent1" name="Start"></startEvent>
+    <userTask id="usertask1" name="Create"></userTask>
+    <userTask id="usertask2" name="Review" activiti:candidateGroups="${dReviewer}"></userTask>
+    <userTask id="usertask3" name="Approve" activiti:candidateGroups="${dManager}"></userTask>
+    <endEvent id="endevent1" name="End"></endEvent>
+    <exclusiveGateway id="exclusivegateway1" name="Exclusive Gateway"></exclusiveGateway>
+    <exclusiveGateway id="exclusivegateway2" name="Exclusive Gateway"></exclusiveGateway>
+    <exclusiveGateway id="exclusivegateway3" name="Exclusive Gateway"></exclusiveGateway>
+    <sequenceFlow id="flow1" name="" sourceRef="startevent1" targetRef="usertask1"></sequenceFlow>
+    <sequenceFlow id="flow5" name="" sourceRef="usertask2" targetRef="exclusivegateway1"></sequenceFlow>
+    <sequenceFlow id="flow6" name="accept" sourceRef="exclusivegateway1" targetRef="usertask3">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${requestApprove=='approve'}]]></conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="flow7" name="reject" sourceRef="exclusivegateway1" targetRef="usertask1">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${requestApprove=='notapprove'}]]></conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="flow8" name="" sourceRef="usertask3" targetRef="exclusivegateway2"></sequenceFlow>
+    <sequenceFlow id="flow9" name="reject" sourceRef="exclusivegateway2" targetRef="usertask1">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${requestApprove=='notapprove'}]]></conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="flow10" name="accept" sourceRef="exclusivegateway2" targetRef="endevent1">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${requestApprove=='approve'}]]></conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="flow11" name="" sourceRef="usertask1" targetRef="exclusivegateway3"></sequenceFlow>
+    <sequenceFlow id="flow12" name="" sourceRef="exclusivegateway3" targetRef="usertask3">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${productType=='cruise'}]]></conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="flow13" name="" sourceRef="exclusivegateway3" targetRef="usertask2">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${productType!='cruise'}]]></conditionExpression>
+    </sequenceFlow>
+  </process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_TravelERPWorkflow1">
+    <bpmndi:BPMNPlane bpmnElement="TravelERPWorkflow1" id="BPMNPlane_TravelERPWorkflow1">
+      <bpmndi:BPMNShape bpmnElement="startevent1" id="BPMNShape_startevent1">
+        <omgdc:Bounds height="35" width="35" x="-10" y="140"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="usertask1" id="BPMNShape_usertask1">
+        <omgdc:Bounds height="55" width="105" x="70" y="130"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="usertask2" id="BPMNShape_usertask2">
+        <omgdc:Bounds height="55" width="105" x="290" y="130"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="usertask3" id="BPMNShape_usertask3">
+        <omgdc:Bounds height="55" width="105" x="580" y="130"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="endevent1" id="BPMNShape_endevent1">
+        <omgdc:Bounds height="35" width="35" x="840" y="140"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="exclusivegateway1" id="BPMNShape_exclusivegateway1">
+        <omgdc:Bounds height="40" width="40" x="456" y="137"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="exclusivegateway2" id="BPMNShape_exclusivegateway2">
+        <omgdc:Bounds height="40" width="40" x="740" y="137"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="exclusivegateway3" id="BPMNShape_exclusivegateway3">
+        <omgdc:Bounds height="40" width="40" x="220" y="137"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge bpmnElement="flow1" id="BPMNEdge_flow1">
+        <omgdi:waypoint x="25" y="157"></omgdi:waypoint>
+        <omgdi:waypoint x="70" y="157"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow5" id="BPMNEdge_flow5">
+        <omgdi:waypoint x="395" y="157"></omgdi:waypoint>
+        <omgdi:waypoint x="456" y="157"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow6" id="BPMNEdge_flow6">
+        <omgdi:waypoint x="496" y="157"></omgdi:waypoint>
+        <omgdi:waypoint x="580" y="157"></omgdi:waypoint>
+        <bpmndi:BPMNLabel>
+          <omgdc:Bounds height="14" width="100" x="-18" y="0"></omgdc:Bounds>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow7" id="BPMNEdge_flow7">
+        <omgdi:waypoint x="476" y="137"></omgdi:waypoint>
+        <omgdi:waypoint x="476" y="48"></omgdi:waypoint>
+        <omgdi:waypoint x="376" y="48"></omgdi:waypoint>
+        <omgdi:waypoint x="122" y="48"></omgdi:waypoint>
+        <omgdi:waypoint x="122" y="130"></omgdi:waypoint>
+        <bpmndi:BPMNLabel>
+          <omgdc:Bounds height="14" width="100" x="10" y="0"></omgdc:Bounds>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow8" id="BPMNEdge_flow8">
+        <omgdi:waypoint x="685" y="157"></omgdi:waypoint>
+        <omgdi:waypoint x="740" y="157"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow9" id="BPMNEdge_flow9">
+        <omgdi:waypoint x="760" y="177"></omgdi:waypoint>
+        <omgdi:waypoint x="760" y="249"></omgdi:waypoint>
+        <omgdi:waypoint x="530" y="249"></omgdi:waypoint>
+        <omgdi:waypoint x="327" y="249"></omgdi:waypoint>
+        <omgdi:waypoint x="122" y="249"></omgdi:waypoint>
+        <omgdi:waypoint x="122" y="185"></omgdi:waypoint>
+        <bpmndi:BPMNLabel>
+          <omgdc:Bounds height="14" width="100" x="10" y="0"></omgdc:Bounds>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow10" id="BPMNEdge_flow10">
+        <omgdi:waypoint x="780" y="157"></omgdi:waypoint>
+        <omgdi:waypoint x="840" y="157"></omgdi:waypoint>
+        <bpmndi:BPMNLabel>
+          <omgdc:Bounds height="14" width="100" x="-20" y="3"></omgdc:Bounds>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow11" id="BPMNEdge_flow11">
+        <omgdi:waypoint x="175" y="157"></omgdi:waypoint>
+        <omgdi:waypoint x="220" y="157"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow12" id="BPMNEdge_flow12">
+        <omgdi:waypoint x="240" y="177"></omgdi:waypoint>
+        <omgdi:waypoint x="239" y="222"></omgdi:waypoint>
+        <omgdi:waypoint x="418" y="222"></omgdi:waypoint>
+        <omgdi:waypoint x="638" y="222"></omgdi:waypoint>
+        <omgdi:waypoint x="632" y="185"></omgdi:waypoint>
+        <bpmndi:BPMNLabel>
+          <omgdc:Bounds height="14" width="100" x="10" y="0"></omgdc:Bounds>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow13" id="BPMNEdge_flow13">
+        <omgdi:waypoint x="260" y="157"></omgdi:waypoint>
+        <omgdi:waypoint x="290" y="157"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</definitions>
+
+activiti old:
+===============
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:activiti="http://activiti.org/bpmn" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:omgdc="http://www.omg.org/spec/DD/20100524/DC" xmlns:omgdi="http://www.omg.org/spec/DD/20100524/DI" typeLanguage="http://www.w3.org/2001/XMLSchema" expressionLanguage="http://www.w3.org/1999/XPath" targetNamespace="http://www.activiti.org/test">
+  <process id="TravelERPWorkflow1" name="workflow activiti">
+    <startEvent id="startevent1" name="Start"></startEvent>
+    <userTask id="usertask1" name="Create"></userTask>
+    <userTask id="usertask2" name="Review" activiti:candidateGroups="${dReviewer}"></userTask>
+    <userTask id="usertask3" name="Approve" activiti:candidateGroups="${dManager}"></userTask>
+    <endEvent id="endevent1" name="End"></endEvent>
+    <exclusiveGateway id="exclusivegateway1" name="Exclusive Gateway"></exclusiveGateway>
+    <exclusiveGateway id="exclusivegateway2" name="Exclusive Gateway"></exclusiveGateway>
+    <exclusiveGateway id="exclusivegateway3" name="Exclusive Gateway"></exclusiveGateway>
+    <sequenceFlow id="flow1" name="" sourceRef="startevent1" targetRef="usertask1"></sequenceFlow>
+    <sequenceFlow id="flow5" name="" sourceRef="usertask2" targetRef="exclusivegateway1"></sequenceFlow>
+    <sequenceFlow id="flow6" name="accept" sourceRef="exclusivegateway1" targetRef="usertask3">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${requestApprove=='approve'}]]></conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="flow7" name="reject" sourceRef="exclusivegateway1" targetRef="usertask1">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${requestApprove=='notapprove'}]]></conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="flow8" name="" sourceRef="usertask3" targetRef="exclusivegateway2"></sequenceFlow>
+    <sequenceFlow id="flow9" name="reject" sourceRef="exclusivegateway2" targetRef="usertask1">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${requestApprove=='notapprove'}]]></conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="flow10" name="accept" sourceRef="exclusivegateway2" targetRef="endevent1">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${requestApprove=='approve'}]]></conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="flow11" name="" sourceRef="usertask1" targetRef="exclusivegateway3"></sequenceFlow>
+    <sequenceFlow id="flow12" name="" sourceRef="exclusivegateway3" targetRef="usertask3">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${productType=='cruise'}]]></conditionExpression>
+    </sequenceFlow>
+    <sequenceFlow id="flow13" name="" sourceRef="exclusivegateway3" targetRef="usertask2">
+      <conditionExpression xsi:type="tFormalExpression"><![CDATA[${productType!='cruise'}]]></conditionExpression>
+    </sequenceFlow>
+  </process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_TravelERPWorkflow1">
+    <bpmndi:BPMNPlane bpmnElement="TravelERPWorkflow1" id="BPMNPlane_TravelERPWorkflow1">
+      <bpmndi:BPMNShape bpmnElement="startevent1" id="BPMNShape_startevent1">
+        <omgdc:Bounds height="35" width="35" x="-10" y="140"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="usertask1" id="BPMNShape_usertask1">
+        <omgdc:Bounds height="55" width="105" x="70" y="130"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="usertask2" id="BPMNShape_usertask2">
+        <omgdc:Bounds height="55" width="105" x="290" y="130"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="usertask3" id="BPMNShape_usertask3">
+        <omgdc:Bounds height="55" width="105" x="580" y="130"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="endevent1" id="BPMNShape_endevent1">
+        <omgdc:Bounds height="35" width="35" x="840" y="140"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="exclusivegateway1" id="BPMNShape_exclusivegateway1">
+        <omgdc:Bounds height="40" width="40" x="456" y="137"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="exclusivegateway2" id="BPMNShape_exclusivegateway2">
+        <omgdc:Bounds height="40" width="40" x="740" y="137"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="exclusivegateway3" id="BPMNShape_exclusivegateway3">
+        <omgdc:Bounds height="40" width="40" x="220" y="137"></omgdc:Bounds>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge bpmnElement="flow1" id="BPMNEdge_flow1">
+        <omgdi:waypoint x="25" y="157"></omgdi:waypoint>
+        <omgdi:waypoint x="70" y="157"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow5" id="BPMNEdge_flow5">
+        <omgdi:waypoint x="395" y="157"></omgdi:waypoint>
+        <omgdi:waypoint x="456" y="157"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow6" id="BPMNEdge_flow6">
+        <omgdi:waypoint x="496" y="157"></omgdi:waypoint>
+        <omgdi:waypoint x="580" y="157"></omgdi:waypoint>
+        <bpmndi:BPMNLabel>
+          <omgdc:Bounds height="14" width="100" x="-18" y="0"></omgdc:Bounds>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow7" id="BPMNEdge_flow7">
+        <omgdi:waypoint x="476" y="137"></omgdi:waypoint>
+        <omgdi:waypoint x="476" y="48"></omgdi:waypoint>
+        <omgdi:waypoint x="376" y="48"></omgdi:waypoint>
+        <omgdi:waypoint x="122" y="48"></omgdi:waypoint>
+        <omgdi:waypoint x="122" y="130"></omgdi:waypoint>
+        <bpmndi:BPMNLabel>
+          <omgdc:Bounds height="14" width="100" x="10" y="0"></omgdc:Bounds>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow8" id="BPMNEdge_flow8">
+        <omgdi:waypoint x="685" y="157"></omgdi:waypoint>
+        <omgdi:waypoint x="740" y="157"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow9" id="BPMNEdge_flow9">
+        <omgdi:waypoint x="760" y="177"></omgdi:waypoint>
+        <omgdi:waypoint x="760" y="249"></omgdi:waypoint>
+        <omgdi:waypoint x="530" y="249"></omgdi:waypoint>
+        <omgdi:waypoint x="327" y="249"></omgdi:waypoint>
+        <omgdi:waypoint x="122" y="249"></omgdi:waypoint>
+        <omgdi:waypoint x="122" y="185"></omgdi:waypoint>
+        <bpmndi:BPMNLabel>
+          <omgdc:Bounds height="14" width="100" x="10" y="0"></omgdc:Bounds>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow10" id="BPMNEdge_flow10">
+        <omgdi:waypoint x="780" y="157"></omgdi:waypoint>
+        <omgdi:waypoint x="840" y="157"></omgdi:waypoint>
+        <bpmndi:BPMNLabel>
+          <omgdc:Bounds height="14" width="100" x="-20" y="3"></omgdc:Bounds>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow11" id="BPMNEdge_flow11">
+        <omgdi:waypoint x="175" y="157"></omgdi:waypoint>
+        <omgdi:waypoint x="220" y="157"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow12" id="BPMNEdge_flow12">
+        <omgdi:waypoint x="240" y="177"></omgdi:waypoint>
+        <omgdi:waypoint x="239" y="222"></omgdi:waypoint>
+        <omgdi:waypoint x="418" y="222"></omgdi:waypoint>
+        <omgdi:waypoint x="638" y="222"></omgdi:waypoint>
+        <omgdi:waypoint x="632" y="185"></omgdi:waypoint>
+        <bpmndi:BPMNLabel>
+          <omgdc:Bounds height="14" width="100" x="10" y="0"></omgdc:Bounds>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge bpmnElement="flow13" id="BPMNEdge_flow13">
+        <omgdi:waypoint x="260" y="157"></omgdi:waypoint>
+        <omgdi:waypoint x="290" y="157"></omgdi:waypoint>
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</definitions>
+
+
+activiti-phone:
+===================
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:activiti="http://activiti.org/bpmn"
+	xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:omgdc="http://www.omg.org/spec/DD/20100524/DC"
+	xmlns:omgdi="http://www.omg.org/spec/DD/20100524/DI" typeLanguage="http://www.w3.org/2001/XMLSchema"
+	expressionLanguage="http://www.w3.org/1999/XPath" targetNamespace="http://www.activiti.org/test">
+	<process id="process1" name="process1">
+		<startEvent id="startevent1" name="Start"></startEvent>
+
+		<subProcess id="selectPhoneProcess" name="Sub Process">
+			<userTask id="selectSonyEricssonModel" name="Select Sony Ericsson Model"
+				activiti:candidateGroups="Employee">
+				<documentation>Please select the Sony Ericsson Model you would like
+					from the list below.
+				</documentation>
+				<extensionElements>
+					<activiti:formProperty id="sonyEricssonModel"
+						name="Sony Ericsson Model:" type="enum" required="true">
+						<activiti:value id="sonyEriccsonModel1" name="Sony Ericsson X10"></activiti:value>
+						<activiti:value id="sonyEriccsonModel2" name="Sony Ericsson X10 Mini Pro"></activiti:value>
+						<activiti:value id="sonyEriccsonModel3" name="Sony Ericsson X8"></activiti:value>
+						<activiti:value id="sonyEriccsonModel4" name="Sony Ericsson Arc"></activiti:value>
+						<activiti:value id="sonyEriccsonModel5" name="Sony Ericsson Neo"></activiti:value>
+					</activiti:formProperty>
+				</extensionElements>
+			</userTask>
+			<sequenceFlow id="flow2" name="" sourceRef="selectSonyEricssonModel"
+				targetRef="phonePrice"></sequenceFlow>
+			<scriptTask id="phonePrice" name="Phone Price"
+				scriptFormat="javascript">
+				<script><![CDATA[var myVar = 250;]]></script>
+			</scriptTask>
+			<endEvent id="endSelectPhoneProcess" name="End Select Phone Process"></endEvent>
+			<sequenceFlow id="flow8" name="" sourceRef="phonePrice"
+				targetRef="endSelectPhoneProcess"></sequenceFlow>
+		</subProcess>
+
+		<exclusiveGateway id="approveRequestDecision" name="Approve Request Decision"></exclusiveGateway>
+		<userTask id="viewRequest" name="View Request"
+			activiti:candidateGroups="Manager">
+			<documentation>${myVar}</documentation>
+		</userTask>
+		<sequenceFlow id="flow3" name="Request Approved"
+			sourceRef="approveRequestDecision" targetRef="viewRequest">
+			<conditionExpression xsi:type="tFormalExpression"><![CDATA[${myVar <= 350}]]></conditionExpression>
+		</sequenceFlow>
+		<sequenceFlow id="flow6" name="" sourceRef="selectPhoneProcess"
+			targetRef="approveRequestDecision"></sequenceFlow>
+		<sequenceFlow id="flow7" name="Request Rejected"
+			sourceRef="approveRequestDecision" targetRef="selectPhoneProcess">
+			<conditionExpression xsi:type="tFormalExpression"><![CDATA[${myVar > 350 }]]></conditionExpression>
+		</sequenceFlow>
+		<sequenceFlow id="flow9" name="" sourceRef="startevent1"
+			targetRef="selectPhoneProcess"></sequenceFlow>
+	</process>
+	<bpmndi:BPMNDiagram id="BPMNDiagram_process1">
+		<bpmndi:BPMNPlane bpmnElement="process1" id="BPMNPlane_process1">
+			<bpmndi:BPMNShape bpmnElement="startevent1"
+				id="BPMNShape_startevent1">
+				<omgdc:Bounds height="35" width="35" x="40" y="149"></omgdc:Bounds>
+			</bpmndi:BPMNShape>
+			<bpmndi:BPMNShape bpmnElement="approveRequestDecision"
+				id="BPMNShape_approveRequestDecision">
+				<omgdc:Bounds height="40" width="40" x="630" y="147"></omgdc:Bounds>
+			</bpmndi:BPMNShape>
+			<bpmndi:BPMNShape bpmnElement="viewRequest"
+				id="BPMNShape_viewRequest">
+				<omgdc:Bounds height="55" width="105" x="760" y="140"></omgdc:Bounds>
+			</bpmndi:BPMNShape>
+			<bpmndi:BPMNShape bpmnElement="selectPhoneProcess"
+				id="BPMNShape_selectPhoneProcess" isExpanded="true">
+				<omgdc:Bounds height="153" width="401" x="170" y="90"></omgdc:Bounds>
+			</bpmndi:BPMNShape>
+			<bpmndi:BPMNShape bpmnElement="selectSonyEricssonModel"
+				id="BPMNShape_selectSonyEricssonModel">
+				<omgdc:Bounds height="55" width="105" x="200" y="119"></omgdc:Bounds>
+			</bpmndi:BPMNShape>
+			<bpmndi:BPMNShape bpmnElement="phonePrice" id="BPMNShape_phonePrice">
+				<omgdc:Bounds height="55" width="105" x="358" y="119"></omgdc:Bounds>
+			</bpmndi:BPMNShape>
+			<bpmndi:BPMNShape bpmnElement="endSelectPhoneProcess"
+				id="BPMNShape_endSelectPhoneProcess">
+				<omgdc:Bounds height="35" width="35" x="518" y="129"></omgdc:Bounds>
+			</bpmndi:BPMNShape>
+			<bpmndi:BPMNEdge bpmnElement="flow2" id="BPMNEdge_flow2">
+				<omgdi:waypoint x="305" y="146"></omgdi:waypoint>
+				<omgdi:waypoint x="358" y="146"></omgdi:waypoint>
+			</bpmndi:BPMNEdge>
+			<bpmndi:BPMNEdge bpmnElement="flow8" id="BPMNEdge_flow8">
+				<omgdi:waypoint x="463" y="146"></omgdi:waypoint>
+				<omgdi:waypoint x="518" y="146"></omgdi:waypoint>
+			</bpmndi:BPMNEdge>
+			<bpmndi:BPMNEdge bpmnElement="flow3" id="BPMNEdge_flow3">
+				<omgdi:waypoint x="670" y="167"></omgdi:waypoint>
+				<omgdi:waypoint x="760" y="167"></omgdi:waypoint>
+				<bpmndi:BPMNLabel>
+					<omgdc:Bounds height="14" width="100" x="-45" y="3"></omgdc:Bounds>
+				</bpmndi:BPMNLabel>
+			</bpmndi:BPMNEdge>
+			<bpmndi:BPMNEdge bpmnElement="flow6" id="BPMNEdge_flow6">
+				<omgdi:waypoint x="571" y="166"></omgdi:waypoint>
+				<omgdi:waypoint x="587" y="166"></omgdi:waypoint>
+				<omgdi:waypoint x="561" y="166"></omgdi:waypoint>
+				<omgdi:waypoint x="630" y="167"></omgdi:waypoint>
+			</bpmndi:BPMNEdge>
+			<bpmndi:BPMNEdge bpmnElement="flow7" id="BPMNEdge_flow7">
+				<omgdi:waypoint x="650" y="187"></omgdi:waypoint>
+				<omgdi:waypoint x="650" y="295"></omgdi:waypoint>
+				<omgdi:waypoint x="650" y="312"></omgdi:waypoint>
+				<omgdi:waypoint x="540" y="312"></omgdi:waypoint>
+				<omgdi:waypoint x="370" y="312"></omgdi:waypoint>
+				<omgdi:waypoint x="370" y="243"></omgdi:waypoint>
+				<bpmndi:BPMNLabel>
+					<omgdc:Bounds height="14" width="100" x="10" y="0"></omgdc:Bounds>
+				</bpmndi:BPMNLabel>
+			</bpmndi:BPMNEdge>
+			<bpmndi:BPMNEdge bpmnElement="flow9" id="BPMNEdge_flow9">
+				<omgdi:waypoint x="75" y="166"></omgdi:waypoint>
+				<omgdi:waypoint x="170" y="166"></omgdi:waypoint>
+			</bpmndi:BPMNEdge>
+		</bpmndi:BPMNPlane>
+	</bpmndi:BPMNDiagram>
+</definitions>

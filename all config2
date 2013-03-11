@@ -1,0 +1,1525 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>com.cnk.travelerpibe</groupId>
+		<artifactId>travelerpibe-parent</artifactId>
+		<version>1.0-SNAPSHOT</version>
+		<!-- relativePath causes out-of-date problems on hudson slaves -->
+		<relativePath>../parent/pom.xml</relativePath>
+	</parent>
+
+	<!-- <groupId>com.cnk.travelerpibe</groupId> -->
+	<artifactId>productsetup</artifactId>
+	<packaging>pom</packaging>
+
+	<name>Travel ERP Product Setup multiproject</name>
+	<description>
+    CNK Travel ERP Product Setup Project
+  </description>
+
+	<properties>
+		<java.version>1.7</java.version>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<slf4j.version>1.6.4</slf4j.version>
+		<spring.version>3.1.0.RELEASE</spring.version>
+		<spring-security.version>3.1.0.RELEASE</spring-security.version>
+		<activiti-version>5.9</activiti-version>
+	</properties>
+
+	<repositories>
+		<repository>
+			<id>Activiti</id>
+			<url>http://maven.alfresco.com/nexus/content/repositories/activiti</url>
+		</repository>
+	</repositories>
+
+
+
+	<dependencies>
+
+		<!-- Database Driver Dependency -->
+
+		<dependency>
+			<groupId>com.oracle</groupId>
+			<artifactId>ojdbc6</artifactId>
+			<version>11.2.0</version>
+		</dependency>
+
+		<!-- <dependency>
+			<groupId>com.h2database</groupId>
+			<artifactId>h2</artifactId>
+			<version>1.2.132</version>
+		</dependency>
+
+		<dependency>
+			<groupId>mysql</groupId>
+			<artifactId>mysql-connector-java</artifactId>
+			<version>5.1.6</version>
+		</dependency> -->
+
+
+		<!-- End Database Driver Dependency -->
+
+
+
+		<!-- Hibernate Dependency -->
+
+		<dependency>
+			<groupId>org.apache.openjpa</groupId>
+			<artifactId>openjpa</artifactId>
+			<version>2.0.0</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.codehaus.groovy</groupId>
+			<artifactId>groovy</artifactId>
+			<version>1.7.5</version>
+		</dependency>
+			<dependency>
+				<groupId>org.hibernate</groupId>
+				<artifactId>hibernate-core</artifactId>
+				<version>4.1.6.Final</version>
+			</dependency>
+			
+		<dependency>
+			<groupId>org.hibernate</groupId>
+			<artifactId>hibernate-entitymanager</artifactId>
+			<version>4.1.6.Final</version>
+			<exclusions>
+				<exclusion>
+					<groupId>org.slf4j</groupId>
+					<artifactId>slf4j-api</artifactId>
+				</exclusion>
+			</exclusions>
+
+		</dependency>
+
+		<dependency>
+			<groupId>org.hibernate</groupId>
+			<artifactId>hibernate-validator</artifactId>
+			<version>4.1.6.Final</version>
+
+			<exclusions>
+				<exclusion>
+					<groupId>org.slf4j</groupId>
+					<artifactId>slf4j-api</artifactId>
+
+				</exclusion>
+			</exclusions>
+		</dependency>
+
+
+		<dependency>
+			<groupId>commons-logging</groupId>
+			<artifactId>commons-logging</artifactId>
+			<version>1.1</version>
+			<exclusions>
+				<exclusion>
+					<groupId>log4j</groupId>
+					<artifactId>log4j</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+
+		<dependency>
+			<groupId>org.hibernate.javax.persistence</groupId>
+			<artifactId>hibernate-jpa-2.0-api</artifactId>
+			<version>1.0.1.Final</version>
+		</dependency>
+		
+		<dependency>
+			<groupId>org.hibernate</groupId>
+			<artifactId>hibernate-validator</artifactId>
+			<version>4.2.0.Final</version>
+			<exclusions>
+				<exclusion>
+					<groupId>javax.xml.bind</groupId>
+					<artifactId>jaxb-api</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>com.sun.xml.bind</groupId>
+					<artifactId>jaxb-impl</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>org.slf4j</groupId>
+					<artifactId>slf4j-api</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+		<dependency>
+			<groupId>javax.validation</groupId>
+			<artifactId>validation-api</artifactId>
+			<version>1.0.0.GA</version>
+		</dependency>
+		<dependency>
+			<groupId>cglib</groupId>
+			<artifactId>cglib-nodep</artifactId>
+			<version>2.2.2</version>
+		</dependency>
+		<dependency>
+			<groupId>javax.transaction</groupId>
+			<artifactId>jta</artifactId>
+			<version>1.1</version>
+		</dependency>
+		<dependency>
+			<groupId>javax.persistence</groupId>
+			<artifactId>persistence-api</artifactId>
+			<version>1.0.2</version>
+			<scope>provided</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>dom4j</groupId>
+			<artifactId>dom4j</artifactId>
+			<version>1.6.1</version>
+			<exclusions>
+				<exclusion>
+					<groupId>xml-apis</groupId>
+					<artifactId>xml-apis</artifactId>
+				</exclusion>
+
+			</exclusions>
+		</dependency>
+
+		<!-- End Hibernate Dependency -->
+
+		<!--Spring Dependency -->
+
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-orm</artifactId>
+			<version>${spring.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-beans</artifactId>
+			<version>${spring.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-core</artifactId>
+			<version>${spring.version}</version>
+			<exclusions>
+				<exclusion>
+					<groupId>commons-logging</groupId>
+					<artifactId>commons-logging</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-test</artifactId>
+			<version>${spring.version}</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-context</artifactId>
+			<version>${spring.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-aspects</artifactId>
+			<version>${spring.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-jdbc</artifactId>
+			<version>${spring.version}</version>
+		</dependency>
+
+
+
+
+		<!--End Spring Dependency -->
+
+
+		<!-- Activiti Dependency -->
+		<dependency>
+			<groupId>org.activiti</groupId>
+			<artifactId>activiti-engine</artifactId>
+			<version>${activiti-version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.activiti</groupId>
+			<artifactId>activiti-spring</artifactId>
+			<version>${activiti-version}</version>
+		</dependency>
+
+		<!--End Activiti Dependency -->
+
+		<!--Other Dependency -->
+
+		<dependency>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+			<version>4.10</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>net.sf.flexjson</groupId>
+			<artifactId>flexjson</artifactId>
+			<version>2.1</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.commons</groupId>
+			<artifactId>commons-lang3</artifactId>
+			<version>3.1</version>
+		</dependency>
+		<dependency>
+			<groupId>commons-pool</groupId>
+			<artifactId>commons-pool</artifactId>
+			<version>1.5.6</version>
+		</dependency>
+		<dependency>
+			<groupId>commons-dbcp</groupId>
+			<artifactId>commons-dbcp</artifactId>
+			<version>1.3</version>
+			<exclusions>
+				<exclusion>
+					<groupId>commons-logging</groupId>
+					<artifactId>commons-logging</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>xml-apis</groupId>
+					<artifactId>xml-apis</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+
+
+		<!--End Other Dependency -->
+		
+<!-- File upload Dependency  Start-->
+
+	<dependency>
+		<groupId>commons-fileupload</groupId>
+		<artifactId>commons-fileupload</artifactId>
+		<version>1.2.2</version>
+	</dependency>
+	<dependency>
+		<groupId>commons-io</groupId>
+		<artifactId>commons-io</artifactId>
+		<version>1.4</version>
+	</dependency>
+	
+<!-- File upload Dependency  End-->
+		<!-- Comment below dependency if u are using weblogic ==>> Starts -->
+
+		<!-- <dependency>
+			<groupId>log4j</groupId>
+			<artifactId>log4j</artifactId>
+			<version>1.2.16</version>
+		</dependency>
+		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-api</artifactId>
+			<version>${slf4j.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>jcl-over-slf4j</artifactId>
+			<version>${slf4j.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-log4j12</artifactId>
+			<version>${slf4j.version}</version>
+		</dependency> -->
+
+		<!-- Comment below dependency if u are using weblogic ==>> Ends -->
+
+
+	</dependencies>
+
+
+	<modules>
+		<module>travelERP-Web</module>
+		<module>travelERP-Service</module>
+		<module>travelERP-Core</module>
+	</modules>
+
+</project>
+
+=============================
+
+<?xml version="1.0"?>
+<project
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd"
+	xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>com.cnk.travelerpibe</groupId>
+		<artifactId>productsetup</artifactId>
+		<version>1.0-SNAPSHOT</version>
+	</parent>
+	<!-- <groupId>com.cnk.travelerpibe</groupId> -->
+	<artifactId>travelERP-Web</artifactId>
+	<!-- <version>1.0-SNAPSHOT</version> -->
+
+	<packaging>war</packaging>
+	<name>travelERP-Web</name>
+
+	<url>http://maven.apache.org</url>
+	
+  <properties>
+
+		<java.version>1.7</java.version>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
+		<slf4j.version>1.6.4</slf4j.version>
+		<spring.version>3.1.0.RELEASE</spring.version>
+		<spring-security.version>3.1.0.RELEASE</spring-security.version>
+		<activiti-version>5.9</activiti-version>
+	</properties>
+	
+	<repositories>
+		
+		<!-- 
+		<repository>
+			<id>maven-restlet</id>
+			<name>Public online Restlet repository</name>
+			<url>http://maven.restlet.org</url>
+		</repository> -->
+
+	</repositories>
+	
+	
+	
+	<dependencies>
+	
+
+
+	<dependency>
+			<groupId>org.codehaus.jackson</groupId>
+			<artifactId>jackson-jaxrs</artifactId>
+			<version>1.9.11</version>
+		</dependency>
+	<dependency>
+			<groupId>org.apache.tiles</groupId>
+			<artifactId>tiles-core</artifactId>
+			<version>2.2.2</version>
+			<exclusions>
+				<exclusion>
+					<artifactId>slf4j-api</artifactId>
+					<groupId>org.slf4j</groupId>
+				</exclusion>
+				<exclusion>
+					<artifactId>jcl-over-slf4j</artifactId>
+					<groupId>org.slf4j</groupId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.tiles</groupId>
+			<artifactId>tiles-jsp</artifactId>
+			<version>2.2.2</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.tiles</groupId>
+			<artifactId>tiles-api</artifactId>
+			<version>2.2.2</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.tiles</groupId>
+			<artifactId>tiles-servlet</artifactId>
+			<version>2.2.2</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.tiles</groupId>
+			<artifactId>tiles-template</artifactId>
+			<version>2.2.2</version>
+		</dependency>
+		<dependency>
+			<groupId>org.codehaus.jackson</groupId>
+			<artifactId>jackson-jaxrs</artifactId>
+			<version>1.9.11</version>
+		</dependency>
+	
+	
+	<dependency>
+			<groupId>${project.groupId}</groupId>
+			<artifactId>travelERP-Service</artifactId>
+			<version>${project.parent.version}</version>
+		</dependency>
+
+
+<dependency>
+			<groupId>org.springframework.webflow</groupId>
+			<artifactId>spring-webflow</artifactId>
+			<version>2.3.1.RELEASE</version>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.webflow</groupId>
+			<artifactId>spring-binding</artifactId>
+			<version>2.3.1.RELEASE</version>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.webflow</groupId>
+			<artifactId>spring-js</artifactId>
+			<version>2.3.1.RELEASE</version>
+		</dependency>
+		<dependency>
+			<groupId>displaytag</groupId>
+			<artifactId>displaytag</artifactId>
+			<version>1.2</version>
+			<exclusions>
+				<exclusion>
+					<artifactId>slf4j-api</artifactId>
+					<groupId>org.slf4j</groupId>
+				</exclusion>
+				<exclusion>
+					<artifactId>slf4j-log4j12</artifactId>
+					<groupId>org.slf4j</groupId>
+				</exclusion>
+				<exclusion>
+					<artifactId>jcl104-over-slf4j</artifactId>
+					<groupId>org.slf4j</groupId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+		<dependency>
+			<groupId>displaytag</groupId>
+			<artifactId>displaytag-portlet</artifactId>
+			<version>1.2</version>
+		</dependency>
+		<dependency>
+			<groupId>displaytag</groupId>
+			<artifactId>displaytag-export-poi</artifactId>
+			<version>1.2</version>
+			<exclusions>
+				<exclusion>
+					<artifactId>log4j</artifactId>
+					<groupId>log4j</groupId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+		
+
+
+
+		
+		<!-- Exclusion of   -->
+		
+		
+		<!--Drools  -->
+		<dependency>
+			<groupId>org.drools</groupId>
+			<artifactId>drools-core</artifactId>
+			<version>5.4.0.Final</version>
+		</dependency>
+		
+		<!-- This dependency for rest webservices  -->
+
+
+	<!-- <dependency>
+		<groupId>org.restlet.jse</groupId>
+		<artifactId>org.restlet</artifactId>
+		<version>2.0.8</version>
+	</dependency>
+	<dependency>
+		<groupId>org.restlet.jse</groupId>
+		<artifactId>org.restlet.ext.json</artifactId>
+		<version>2.0.8</version>
+	</dependency>
+	
+	<dependency>
+		<groupId>org.restlet.jse</groupId>
+		<artifactId>org.restlet.lib.org.json</artifactId>
+		<version>2.0</version>
+	</dependency>
+	 -->
+		
+		
+		<!-- General dependencies for standard applications -->
+		
+		<dependency>
+			<groupId>org.codehaus.jackson</groupId>
+			<artifactId>jackson-core-asl</artifactId>
+			<version>1.9.7</version>
+		</dependency>
+		
+		<dependency>
+			<groupId>org.codehaus.jackson</groupId>
+			<artifactId>jackson-mapper-asl</artifactId>
+			<version>1.9.7</version>
+		</dependency>
+	
+	
+  <dependency>
+      <groupId>org.apache.tomcat</groupId>
+      <artifactId>tomcat-catalina-ha</artifactId>
+      <version>7.0.8</version>
+      <scope>provided</scope>
+    </dependency>
+    
+    
+    
+    
+  
+    
+		<dependency>
+			<groupId>javax.servlet</groupId>
+			<artifactId>jstl</artifactId>
+			<version>1.2</version>
+		</dependency>
+	
+
+		<dependency>
+			<groupId>javax.servlet</groupId>
+			<artifactId>servlet-api</artifactId>
+			<version>2.5</version>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-orm</artifactId>
+			<version>${spring.version}</version>
+		</dependency>
+		
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-beans</artifactId>
+			<version>${spring.version}</version>
+		</dependency>
+		
+		
+		<dependency>
+			<groupId>javax.servlet</groupId>
+			<artifactId>servlet-api</artifactId>
+			<version>2.5</version>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>net.sf.flexjson</groupId>
+			<artifactId>flexjson</artifactId>
+			<version>2.1</version>
+		</dependency>
+		
+		
+		
+		<dependency>
+			<groupId>org.apache.commons</groupId>
+			<artifactId>commons-lang3</artifactId>
+			<version>3.1</version>
+		</dependency>
+		
+
+		<dependency>
+			<groupId>commons-beanutils</groupId>
+			<artifactId>commons-beanutils</artifactId>
+			<version>1.8.3</version>
+		</dependency>
+		<dependency>
+			<groupId>commons-digester</groupId>
+			<artifactId>commons-digester</artifactId>
+			<version>2.1</version>
+		</dependency>
+		<dependency>
+			<groupId>taglibs</groupId>
+			<artifactId>standard</artifactId>
+			<version>1.1.2</version>
+		</dependency>
+		
+		
+		
+		
+		
+		<!-- Spring dependencies -->
+		
+		
+		
+		
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-core</artifactId>
+			<version>${spring.version}</version>
+			<exclusions>
+				<exclusion>
+					<groupId>commons-logging</groupId>
+					<artifactId>commons-logging</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-test</artifactId>
+			<version>${spring.version}</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-context</artifactId>
+			<version>${spring.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-aspects</artifactId>
+			<version>${spring.version}</version>
+		</dependency>
+
+	
+		<dependency>
+			<groupId>javax.validation</groupId>
+			<artifactId>validation-api</artifactId>
+			<version>1.0.0.GA</version>
+		</dependency>
+		<dependency>
+			<groupId>cglib</groupId>
+			<artifactId>cglib-nodep</artifactId>
+			<version>2.2.2</version>
+		</dependency>
+		<dependency>
+			<groupId>javax.transaction</groupId>
+			<artifactId>jta</artifactId>
+			<version>1.1</version>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-jdbc</artifactId>
+			<version>${spring.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-orm</artifactId>
+			<version>${spring.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>commons-pool</groupId>
+			<artifactId>commons-pool</artifactId>
+			<version>1.5.6</version>
+		</dependency>
+		<dependency>
+			<groupId>commons-dbcp</groupId>
+			<artifactId>commons-dbcp</artifactId>
+			<version>1.3</version>
+			<exclusions>
+				<exclusion>
+					<groupId>commons-logging</groupId>
+					<artifactId>commons-logging</artifactId>
+				</exclusion>
+				<!-- <exclusion>
+					<groupId>xml-apis</groupId>
+					<artifactId>xml-apis</artifactId>
+				</exclusion> -->
+			</exclusions>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-webmvc</artifactId>
+			<version>${spring.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.webflow</groupId>
+			<artifactId>spring-js-resources</artifactId>
+			<version>2.2.1.RELEASE</version>
+		</dependency>
+		<dependency>
+			<groupId>commons-digester</groupId>
+			<artifactId>commons-digester</artifactId>
+			<version>2.1</version>
+			<exclusions>
+				<exclusion>
+					<groupId>commons-logging</groupId>
+					<artifactId>commons-logging</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+		<dependency>
+			<groupId>commons-fileupload</groupId>
+			<artifactId>commons-fileupload</artifactId>
+			<version>1.2.2</version>
+		</dependency>
+		<dependency>
+			<groupId>javax.servlet.jsp.jstl</groupId>
+			<artifactId>jstl-api</artifactId>
+			<version>1.2</version>
+		</dependency>
+		<dependency>
+			<groupId>org.glassfish.web</groupId>
+			<artifactId>jstl-impl</artifactId>
+			<version>1.2</version>
+		</dependency>
+		<dependency>
+			<groupId>javax.el</groupId>
+			<artifactId>el-api</artifactId>
+			<version>1.0</version>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>joda-time</groupId>
+			<artifactId>joda-time</artifactId>
+			<version>1.6</version>
+		</dependency>
+		<dependency>
+			<groupId>javax.servlet.jsp</groupId>
+			<artifactId>jsp-api</artifactId>
+			<version>2.1</version>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>commons-codec</groupId>
+			<artifactId>commons-codec</artifactId>
+			<version>1.5</version>
+		</dependency>
+		
+
+	<dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-core</artifactId>
+            <version>${spring-security.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>commons-logging</groupId>
+                    <artifactId>commons-logging</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-config</artifactId>
+            <version>${spring-security.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>commons-logging</groupId>
+                    <artifactId>commons-logging</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-web</artifactId>
+            <version>${spring-security.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-taglibs</artifactId>
+            <version>${spring-security.version}</version>
+        </dependency>
+        
+        
+
+<!--Jasper  -->
+
+<dependency>
+   <groupId>javax.persistence</groupId>
+   <artifactId>persistence-api</artifactId>
+   <version>1.0.2</version>
+   <scope>provided</scope>
+</dependency>
+
+ <dependency>
+    	<groupId>net.sf.jasperreports</groupId>
+    	<artifactId>jasperreports</artifactId>
+    	<version>3.7.6</version>
+    	<type>jar</type>
+    	<scope>compile</scope>
+    	<exclusions>
+    		<exclusion>
+    			<artifactId>commons-collections</artifactId>
+    			<groupId>commons-collections</groupId>
+    		</exclusion>
+    		<exclusion>
+    			<artifactId>commons-beanutils</artifactId>
+    			<groupId>commons-beanutils</groupId>
+    		</exclusion>
+    		<exclusion>
+    			<artifactId>commons-digester</artifactId>
+    			<groupId>commons-digester</groupId>
+    		</exclusion>
+    		<exclusion>
+    			<artifactId>commons-logging</artifactId>
+    			<groupId>commons-logging</groupId>
+    		</exclusion>
+    		<exclusion>
+					<groupId>xml-apis</groupId>
+					<artifactId>xml-apis</artifactId>
+				</exclusion>
+				
+    	</exclusions>
+    </dependency>
+
+	</dependencies>
+	<build>
+	<finalName>travelERP-Web</finalName>
+		<plugins>
+		
+		
+		
+		
+		
+		<!--h  -->
+		
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-war-plugin</artifactId>
+				<version>2.1.1</version>
+				<!-- <configuration> <webXml>target/web.xml</webXml> </configuration> -->
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<version>2.3.2</version>
+				<configuration>
+					<source>${java.version}</source>
+					<target>${java.version}</target>
+					<encoding>${project.build.sourceEncoding}</encoding>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>aspectj-maven-plugin</artifactId>
+				<version>1.2</version>
+			
+			</plugin>
+
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-resources-plugin</artifactId>
+				<version>2.5</version>
+				<configuration>
+					<encoding>${project.build.sourceEncoding}</encoding>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<version>2.9</version>
+				<configuration>
+					<printSummary>false</printSummary>
+					<redirectTestOutputToFile>true</redirectTestOutputToFile>
+					<excludes>
+						<exclude>**/*_Roo_*</exclude>
+					</excludes>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-assembly-plugin</artifactId>
+				<version>2.2.1</version>
+				<configuration>
+					<descriptorRefs>
+						<descriptorRef>jar-with-dependencies</descriptorRef>
+					</descriptorRefs>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-deploy-plugin</artifactId>
+				<version>2.7</version>
+			</plugin>
+			<!-- IDE -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-eclipse-plugin</artifactId>
+				<version>2.7</version>
+				<!-- Note 2.8 does not work with AspectJ aspect path -->
+				<configuration>
+					<downloadSources>true</downloadSources>
+					<downloadJavadocs>false</downloadJavadocs>
+					<wtpversion>2.0</wtpversion>
+					<additionalBuildcommands>
+						<buildCommand>
+							<name>org.eclipse.ajdt.core.ajbuilder</name>
+							<arguments>
+								<aspectPath>org.s pringframework.aspects</aspectPath>
+							</arguments>
+						</buildCommand>
+						<buildCommand>
+							<name>org.springframework.ide.eclipse.core.springbuilder</name>
+						</buildCommand>
+					</additionalBuildcommands>
+					<additionalProjectnatures>
+						<projectnature>org.eclipse.ajdt.ui.ajnature</projectnature>
+						<projectnature>com.springsource.sts.roo.core.nature</projectnature>
+						<projectnature>org.springframework.ide.eclipse.core.springnature</projectnature>
+					</additionalProjectnatures>
+				</configuration>
+			</plugin>
+			 <plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-idea-plugin</artifactId>
+				<version>2.2</version>
+				<configuration>
+					<downloadSources>true</downloadSources>
+					<dependenciesAsLibraries>true</dependenciesAsLibraries>
+				</configuration>
+			</plugin> 
+			 <plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>tomcat-maven-plugin</artifactId>
+				<version>1.1</version>
+			</plugin> 
+			 <plugin>
+				<groupId>org.mortbay.jetty</groupId>
+				<artifactId>jetty-maven-plugin</artifactId>
+				<version>8.0.1.v20110908</version>
+				<configuration>
+					<webAppConfig>
+						<contextPath>/${project.name}</contextPath>
+					</webAppConfig>
+				</configuration>
+			</plugin> 
+			
+			
+			
+		</plugins>
+	</build>
+  
+  
+  
+</project>
+
+
+webflow-content.xml:
+==========================
+<?xml version="1.0" encoding="UTF-8"?>
+ 
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:p="http://www.springframework.org/schema/p"
+	xmlns:webflow="http://www.springframework.org/schema/webflow-config"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans
+                           http://www.springframework.org/schema/beans/spring-beans.xsd
+                           http://www.springframework.org/schema/webflow-config
+                           http://www.springframework.org/schema/webflow-config/spring-webflow-config-2.3.xsd">
+	
+	<!-- Enables FlowHandler URL mapping -->
+	<bean class="org.springframework.webflow.mvc.servlet.FlowHandlerAdapter">
+		<property name="flowExecutor" ref="flowExecutor" />
+	</bean>
+	<!-- Maps request paths to flows in the flowRegistry; -->
+	<!-- e.g. a path of /hotels/booking looks for a flow with id "hotels/booking" -->
+	
+	<bean id="addAirProductFlow" class="org.springframework.webflow.mvc.servlet.FlowHandlerMapping">
+		<property name="flowRegistry" ref="flowRegistry" />
+	</bean>
+	
+	<bean id="viewAirProductFlow" class="org.springframework.webflow.mvc.servlet.FlowHandlerMapping">
+		<property name="flowRegistry" ref="flowRegistry" />
+	</bean>
+	
+	<webflow:flow-registry id="flowRegistry" flow-builder-services="flowBuilderServices">
+		<webflow:flow-location path="/pages/webflow/air/addAirProductFlow.xml" id="addAirProductFlow" />
+		<webflow:flow-location path="/pages/webflow/air/viewAirProductFlow.xml" id="viewAirProductFlow" />
+		<webflow:flow-location path="/pages/webflow/air/updateAirProductFlow.xml" id="updateAirProductFlow" />
+	</webflow:flow-registry>
+
+	<webflow:flow-builder-services id="flowBuilderServices"
+		view-factory-creator="mvcViewFactoryCreator" development="true" />
+
+	<bean id="mvcViewFactoryCreator" class="org.springframework.webflow.mvc.builder.MvcViewFactoryCreator">
+		<property name="viewResolvers" ref="viewResolver" />
+	</bean>
+
+	<webflow:flow-executor id="flowExecutor" />
+</beans>
+
+tiles:
+=============
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE tiles-definitions PUBLIC
+       "-//Apache Software Foundation//DTD Tiles Configuration 2.0//EN"
+       "http://tiles.apache.org/dtds/tiles-config_2_0.dtd">
+       
+<tiles-definitions>
+	<definition name="base.definition" template="/pages/common/layout.jsp">
+		<put-attribute name="header" value="/pages/common/mainheader.jsp" />
+		<put-attribute name="body" value="" />
+		<put-attribute name="footer" value="/pages/common/footer.jsp" />
+	</definition>
+	<definition name="login" extends="base.definition">
+		<!-- <put-attribute name="header" value="/pages/common/loginHeader.jsp" /> -->
+		<put-attribute name="body" value="/pages/workflow/login.jsp" />
+	</definition>	
+	<definition name="configrator_home" extends="base.definition">
+		<!-- <put-attribute name="header" value="/pages/common/createrHeader.jsp" /> -->
+		<put-attribute name="body" value="/pages/common/home.jsp" />
+	</definition>
+	
+	<definition name="ViewTaskForCreate" extends="base.definition">
+		<!-- <put-attribute name="header" value="/pages/common/createrHeader.jsp" /> -->
+		<put-attribute name="body" value="/pages/workflow/ViewTaskForCreate.jsp" />
+		</definition>
+	
+	<definition name="reviewer_home" extends="base.definition">
+		<!-- <put-attribute name="header" value="/pages/common/reviewerHeader.jsp" /> -->
+		<put-attribute name="body" value="/pages/common/home.jsp" />
+	</definition>
+	
+	<definition name="ReviewListPage" extends="base.definition">
+		<!-- <put-attribute name="header" value="/pages/common/reviewerHeader.jsp" /> -->
+		<put-attribute name="body" value="/pages/workflow/ReviewListPage.jsp" />
+	</definition>
+	
+	
+	<definition name="manager_home" extends="base.definition">
+		<!-- <put-attribute name="header" value="/pages/common/approverHeader.jsp" /> -->
+		<put-attribute name="body" value="/pages/common/home.jsp" />
+	</definition>	
+	
+	<definition name="ViewPendingAppTaskPage" extends="base.definition">
+		<!-- <put-attribute name="header" value="/pages/common/approverHeader.jsp" /> -->
+		<put-attribute name="body" value="/pages/workflow/ViewPendingAppTaskPage.jsp" />
+	</definition>
+	
+	
+	<definition name="ViewPendingTaskStatusReport" extends="base.definition">
+		<!-- <put-attribute name="header" value="/pages/common/approverHeader.jsp" /> -->
+		<put-attribute name="body" value="/pages/workflow/ViewPendingTaskStatusReport.jsp" />
+	</definition>
+	
+	
+	<definition name="home" extends="base.definition">
+		<put-attribute name="title" value="Manage Air Product" />
+		<put-attribute name="body" value="/pages/common/home.jsp" />
+	</definition>
+	<definition name="search" extends="base.definition">
+		<put-attribute name="title" value="Search Air Product" />
+		<put-attribute name="body" value="/pages/air/search.jsp" />
+	</definition>	
+<!-- 	<definition name="workflowSearch" extends="base.definition">
+		<put-attribute name="title" value="Search Air Product" />
+		<put-attribute name="header" value="/pages/common/createrHeader.jsp" />
+		<put-attribute name="body" value="/pages/air/search.jsp" />
+	</definition> -->
+	<definition name="addAirProduct" extends="base.definition">
+		<put-attribute name="title" value="Add Air Product" />
+		<put-attribute name="body" value="/pages/air/addAirProduct.jsp" />
+	</definition>	
+	<definition name="airlineDetails" extends="base.definition">
+		<put-attribute name="title" value="Add Air Line Details" />
+		<put-attribute name="body" value="/pages/air/airlineDetails.jsp" />
+	</definition>
+	<definition name="airAncillary" extends="base.definition">
+		<put-attribute name="title" value="Add Air Ancillary" />
+		<put-attribute name="body" value="/pages/air/airAncillary.jsp" />
+	</definition>	
+	<definition name="deactivateProduct" extends="base.definition">
+		<put-attribute name="title" value="Deactivate Product" />
+		<put-attribute name="body" value="/pages/air/deactivateProduct.jsp" />
+	</definition>
+	<!--  BOC: view tiles -->
+	<definition name="displayAirProduct" extends="base.definition">
+		<put-attribute name="title" value="Add Air Product" />
+		<put-attribute name="body" value="/pages/air/addAirProduct.jsp" />
+	</definition>	
+	<definition name="displayAirlineDetails" extends="base.definition">
+		<put-attribute name="title" value="Add Air Line Details" />
+		<put-attribute name="body" value="/pages/air/airlineDetails.jsp" />
+	</definition>
+	<definition name="displayAirAncillary" extends="base.definition">
+		<put-attribute name="title" value="Add Air Ancillary" />
+		<put-attribute name="body" value="/pages/air/airAncillary.jsp" />
+	</definition>	
+	<definition name="displayDeactivateProduct" extends="base.definition">
+		<put-attribute name="title" value="Deactivate Product" />
+		<put-attribute name="body" value="/pages/air/deactivateProduct.jsp" />
+	</definition>
+	<!--  EOC: view tiles -->
+	<!--  BOC: edit tiles -->
+	<definition name="updateAirProduct" extends="base.definition">
+		<put-attribute name="title" value="Edit Air Product" />
+		<put-attribute name="body" value="/pages/air/addAirProduct.jsp" />
+	</definition>	
+	<definition name="updateAirlineDetails" extends="base.definition">
+		<put-attribute name="title" value="Edit Air Line Details" />
+		<put-attribute name="body" value="/pages/air/airlineDetails.jsp" />
+	</definition>
+	<definition name="updateAirAncillary" extends="base.definition">
+		<put-attribute name="title" value="Edit Air Ancillary" />
+		<put-attribute name="body" value="/pages/air/airAncillary.jsp" />
+	</definition>	
+	<definition name="updateDeactivateProduct" extends="base.definition">
+		<put-attribute name="title" value="Edit to Deactivate Product" />
+		<put-attribute name="body" value="/pages/air/deactivateProduct.jsp" />
+	</definition>
+	<!--  EOC: edit tiles -->
+</tiles-definitions>
+
+
+mvc-servlet.xml:
+==============
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:p="http://www.springframework.org/schema/p"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:mvc="http://www.springframework.org/schema/mvc"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans 
+       http://www.springframework.org/schema/beans/spring-beans-2.5.xsd
+    http://www.springframework.org/schema/context 
+       http://www.springframework.org/schema/context/spring-context-2.5.xsd
+        http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc.xsd">
+
+	<context:annotation-config />
+	<context:component-scan base-package="com.cnk.travelerpibe" />
+	<mvc:annotation-driven />
+	
+	<!-- <mvc:resources mapping="/resources/**" location="/resources/"/> -->
+	<mvc:resources mapping="/css/**" location="/css/" />
+	<mvc:resources mapping="/images/**" location="/images/" />
+	<mvc:resources mapping="/script/**" location="/script/" />
+
+	<import resource="webflow-content.xml" />
+	<import resource="classpath:productApplicationContext.xml" />
+
+	<bean id="viewResolver"
+		class="org.springframework.web.servlet.view.UrlBasedViewResolver">
+		<property name="viewClass">
+			<value>
+				org.springframework.web.servlet.view.tiles2.TilesView
+			</value>
+		</property>
+	</bean>
+	<bean id="tilesConfigurer"
+		class="org.springframework.web.servlet.view.tiles2.TilesConfigurer">
+		<property name="definitions">
+			<list>
+				<value>/WEB-INF/tiles.xml</value>
+			</list>
+		</property>
+	</bean>
+	<!-- Application Message Bundle -->
+	<bean id="messageSource"
+		class="org.springframework.context.support.ReloadableResourceBundleMessageSource">
+		<property name="basename" value="classpath:messages" />
+		<property name="defaultEncoding" value="UTF-8" />
+	</bean>
+</beans>
+
+addAirProductFlow.xml:
+=========================
+
+<?xml version="1.0" encoding="UTF-8"?>
+<flow xmlns="http://www.springframework.org/schema/webflow"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/webflow
+        http://www.springframework.org/schema/webflow/spring-webflow-2.0.xsd">
+
+    <on-start>
+		<evaluate expression="addAirProduct.initializeForm(flowRequestContext)" result="flowScope.airLineProductVO" />
+	</on-start>
+
+    <view-state id="addAirProductView" view="addAirProduct" model="airLineProductVO">
+         <transition on="next" to="airlineDetailsView" />
+         <!-- Inner Actions -->
+ 		<transition on="flightNumberAdded">
+			<evaluate expression="addAirProduct.addFlightNumbers(flowScope.airLineProductVO)" />
+		</transition>
+		<transition on="deleteFlightNumber">
+			<evaluate expression="addAirProduct.deleteFlightNumbers(flowScope.airLineProductVO, flowRequestContext)" />
+		</transition>
+    </view-state>
+  
+    <view-state id="airlineDetailsView" view="airlineDetails" model="airLineProductVO">
+        <transition on="previous" to="addAirProductView" />
+        <!-- <transition on="next" to="airAncillaryView" /> -->
+         <transition on="next" to="deactivateProductView" />
+         <!-- Inner Actions -->
+
+ 		<transition on="displayNameAdded">
+			<evaluate expression="addAirProduct.addDisplayName(flowScope.airLineProductVO)" />
+		</transition>
+ 		<transition on="deleteDisplayName">
+			<evaluate expression="addAirProduct.deleteDisplayName(flowScope.airLineProductVO, flowRequestContext)" />
+		</transition>		
+		
+        <transition on="airLineLogoDetailsAdded">
+			<evaluate expression="addAirProduct.airLineLogoDetails(flowScope.airLineProductVO)" />
+		</transition>		
+		<transition on="deleteAirLineLogoDetails">
+			<evaluate expression="addAirProduct.deleteAirLineLogoDetails(flowScope.airLineProductVO, flowRequestContext)" />
+		</transition>
+		
+        <transition on="urlDetailsAdded">
+			<evaluate expression="addAirProduct.urlDetails(flowScope.airLineProductVO)" />
+		</transition>		
+		<transition on="deleteUrlDetails">
+			<evaluate expression="addAirProduct.deleteUrlDetails(flowScope.airLineProductVO, flowRequestContext)" />
+		</transition>
+    </view-state>
+    
+<!--     <view-state id="airAncillaryView" view="airAncillary" model="airLineProductVO">
+        <transition on="previous" to="airlineDetailsView" />
+        <transition on="next" to="deactivateProductView" />
+        <transition on="airAncillaryAdded">
+			<evaluate expression="addAirProduct.airAncillary(flowScope.airLineProductVO)" />
+		</transition>		
+		<transition on="deleteAirAncillary">
+			<evaluate expression="addAirProduct.deleteAirAncillary(flowScope.airLineProductVO, flowRequestContext)" />
+		</transition>
+    </view-state> -->
+        
+    <view-state id="deactivateProductView" view="deactivateProduct" model="airLineProductVO">
+       <!--  <transition on="previous" to="airAncillaryView" /> -->
+       <transition on="previous" to="airlineDetailsView" />
+       
+        <!-- <transition on="submit" to="homeView" /> -->        
+        <transition on="productDetailsAdded">
+			<evaluate expression="addAirProduct.productDetails(flowScope.airLineProductVO)" />
+		</transition>
+		<transition on="deleteProductDetails">
+			<evaluate expression="addAirProduct.deleteProductDetails(flowScope.airLineProductVO, flowRequestContext)" />
+		</transition>
+		
+		<transition on="save" to="homeView">
+			<evaluate expression="addAirProduct.saveProductDetails(flowScope.airLineProductVO)" />
+		</transition>
+		
+		<transition on="submit" to="homeView">
+			<evaluate expression="addAirProduct.submitProductDetails(flowScope.airLineProductVO)" />
+		</transition>		
+    </view-state>
+    
+    <end-state id="homeView" view="home" />
+</flow>
+updateview.xml:
+===============
+<?xml version="1.0" encoding="UTF-8"?>
+
+<flow xmlns="http://www.springframework.org/schema/webflow"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/webflow
+        http://www.springframework.org/schema/webflow/spring-webflow-2.0.xsd">
+ <!--
+    <on-start>
+		<evaluate expression="displayAirProduct.fetchProductDetails()" result="flowScope.airLineProductVO" />
+	</on-start>
+
+     <var name="airLineProductVO" class="com.cnk.travelerpibe.product.air.vo.AirLineProductVO"/>
+
+	<input name="updAirLineProductVO" value="updateAirLineProductVO" type="com.cnk.travelerpibe.product.air.vo.AirLineProductVO" >
+	</input>
+     <input-mapper/>
+        <mapping source="updateAirLineProductVO" target="flowScope.updAirLineProductVO" />
+	</input-mapper>  --> 
+    
+   <!--  <input name="airLineProductVO" value="updateAirLineProductVO" type="com.cnk.travelerpibe.product.air.vo.AirLineProductVO" /> -->
+   
+      <input name="airLineProductVO" /> <!--  value="airLineProductVO" type="com.cnk.travelerpibe.product.air.vo.AirLineProductVO" />  -->
+    
+    <view-state id="updateAirProductView" view="updateAirProduct" model="airLineProductVO" >
+    	<!-- <on-entry>
+        		<evaluate expression="updateAirProduct.updateProductDetailsMode()" result="flowScope.airLineProductVO" />
+    	</on-entry> -->
+         <transition on="next" to="updateAirlineDetailsView" />
+         <!-- Inner Actions -->
+ 		<transition on="flightNumberAdded">
+			<evaluate expression="updateAirProduct.updateFlightNumbers(flowScope.airLineProductVO)" />
+		</transition>
+		<transition on="deleteFlightNumber">
+			<evaluate expression="updateAirProduct.deleteFlightNumbers(flowScope.airLineProductVO, flowRequestContext)" />
+		</transition>
+    </view-state>
+  
+    <view-state id="updateAirlineDetailsView" view="updateAirlineDetails" model="airLineProductVO" >
+        <transition on="previous" to="updateAirProductView" />
+        <!-- <transition on="next" to="updateAirAncillaryView" /> -->
+        <transition on="next" to="udpateDeactivateProductView" />
+         <!-- Inner Actions -->
+
+ 		<transition on="displayNameAdded">
+			<evaluate expression="updateAirProduct.updateDisplayName(flowScope.airLineProductVO)" />
+		</transition>
+ 		<transition on="deleteDisplayName">
+			<evaluate expression="updateAirProduct.deleteDisplayName(flowScope.airLineProductVO, flowRequestContext)" />
+		</transition>		
+		
+        <transition on="airLineLogoDetailsAdded">
+			<evaluate expression="updateAirProduct.airLineLogoDetails(flowScope.airLineProductVO)" />
+		</transition>		
+		<transition on="deleteAirLineLogoDetails">
+			<evaluate expression="updateAirProduct.deleteAirLineLogoDetails(flowScope.airLineProductVO, flowRequestContext)" />
+		</transition>
+		
+        <transition on="urlDetailsAdded">
+			<evaluate expression="updateAirProduct.urlDetails(flowScope.airLineProductVO)" />
+		</transition>		
+		<transition on="deleteUrlDetails">
+			<evaluate expression="updateAirProduct.deleteUrlDetails(flowScope.airLineProductVO, flowRequestContext)" />
+		</transition>
+    </view-state>
+    
+   <!--  <view-state id="updateAirAncillaryView" view="updateAirAncillary" model="airLineProductVO" >
+        <transition on="previous" to="updateAirlineDetailsView" />
+        <transition on="next" to="udpateDeactivateProductView" />
+        <transition on="airAncillaryAdded">
+			<evaluate expression="updateAirProduct.airAncillary(flowScope.airLineProductVO)" />
+		</transition>		
+		<transition on="deleteAirAncillary">
+			<evaluate expression="updateAirProduct.deleteAirAncillary(flowScope.airLineProductVO, flowRequestContext)" />
+		</transition>
+    </view-state> -->
+        
+    <view-state id="udpateDeactivateProductView" view="updateDeactivateProduct" model="airLineProductVO" >
+        <!-- <transition on="previous" to="updateAirAncillaryView" /> -->
+        <transition on="previous" to="updateAirlineDetailsView" />
+        <transition on="productDetailsAdded">
+			<evaluate expression="updateAirProduct.productDetails(flowScope.airLineProductVO)" />
+		</transition>
+		<transition on="deleteProductDetails">
+			<evaluate expression="updateAirProduct.deleteProductDetails(flowScope.airLineProductVO, flowRequestContext)" />
+		</transition>
+		<!-- <transition on="submit" to="editToHome"> -->
+		<transition on="save" to="viewtoHome" >
+			<evaluate expression="updateAirProduct.saveProductDetails(flowScope.airLineProductVO)" />
+		</transition>
+		<transition on="submit" to="viewtoHome" >
+			<evaluate expression="updateAirProduct.submitProductDetails(flowScope.airLineProductVO)" />
+		</transition>
+		<transition on="approve" to="homeView">
+			<evaluate expression="displayAirProduct.approveProductDetails(flowScope.airLineProductVO)" />
+		</transition>
+    </view-state>
+    <view-state id="viewtoHome" view="home" >
+    	<on-entry >
+    		<evaluate expression="updateAirProduct.nullifyVO(flowScope.airLineProductVO)"></evaluate>
+    	</on-entry>
+    </view-state>
+    <!-- <end-state id="viewtoHome" view="home" /> -->
+</flow>
+
+view.xml:
+==============
+
+<?xml version="1.0" encoding="UTF-8"?>
+
+<flow xmlns="http://www.springframework.org/schema/webflow"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="http://www.springframework.org/schema/webflow
+                          http://www.springframework.org/schema/webflow/spring-webflow-2.0.xsd">
+
+	<var name="airLineProductVO1" class="com.cnk.travelerpibe.product.air.vo.AirLineProductVO"/>
+
+   <on-start>
+		<evaluate expression="displayAirProduct.fetchProductDetails(flowRequestContext)" result="flowScope.airLineProductVO" /> 
+			<!--  <input name="someNumber2" value="flowScope.id" type="java.lang.Integer"  />  -->
+	 </on-start>
+ 	
+    <view-state id="displayAirProductView" view="displayAirProduct" model="airLineProductVO">
+         <transition on="next" to="dispalyAirlineDetailsView" />
+         <transition on="edit" to="updateAirProductFlow" >
+         	<evaluate expression="updateAirProduct.updateProductDetailsMode(flowScope.airLineProductVO)" result="flowScope.airLineProductVO" />
+         </transition>
+    </view-state>
+  
+    <view-state id="dispalyAirlineDetailsView" view="displayAirlineDetails" model="airLineProductVO">
+        <transition on="previous" to="displayAirProductView" />
+        <!-- <transition on="next" to="displayAirAncillaryView" /> -->	
+        <transition on="next" to="displayDeactivateProductView" />
+    </view-state>
+    
+<!--     <view-state id="displayAirAncillaryView" view="displayAirAncillary" model="airLineProductVO">
+        <transition on="previous" to="dispalyAirlineDetailsView" />
+        <transition on="next" to="displayDeactivateProductView" />
+        <transition on="airAncillaryAdded">
+			<evaluate expression="displayAirProduct.airAncillary(flowScope.airLineProductVO)" />
+		</transition> 
+    </view-state>  -->
+        
+    <view-state id="displayDeactivateProductView" view="displayDeactivateProduct" model="airLineProductVO">
+        <!-- <transition on="previous" to="displayAirAncillaryView" /> -->
+        <transition on="previous" to="dispalyAirlineDetailsView" />
+        <!-- <transition on="submit" to="homeView" />        
+        <transition on="productDetailsAdded">
+			<evaluate expression="displayAirProduct.productDetails(flowScope.airLineProductVO)" />
+		</transition>  
+		<transition on="submit" to="homeView">
+			<evaluate expression="displayAirProduct.saveProductDetails(flowScope.airLineProductVO)" />
+		</transition>		-->
+		
+		<transition on="approve" to="homeView">
+			<evaluate expression="displayAirProduct.approveProductDetails(flowScope.airLineProductVO)" />
+		</transition>
+		<transition on="reject" to="homeView">
+			<evaluate expression="displayAirProduct.rejectProductDetails(flowScope.airLineProductVO)" />
+		</transition>	
+		
+    </view-state>
+    <subflow-state id="updateAirProductFlow" subflow="updateAirProductFlow">
+    	 <!-- <attribute  name="updateAirLineProductVO" value="flowScope.airLineProductVO"></attribute> -->
+    	  <input name="airLineProductVO" value="flowScope.airLineProductVO" />
+    	  <!-- <transition on="submit" to="viewtoHome"> 
+			<evaluate expression="updateAirProduct.saveProductDetails(flowScope.airLineProductVO)" /> 
+		  </transition> -->
+    	<!-- <attribute-mapper>
+            <input-mapper/>
+                <mapping source="flowScope.airLineProductVO" target="updateAirLineProductVO"/>
+            </input-mapper>
+        </attribute-mapper>  -->
+    </subflow-state>
+    <!--  <end-state view="home" /> -->
+    
+    
+        <end-state id="homeView" view="home" />
+    
+    
+</flow>
+
+
+core.xml:
+===========
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:p="http://www.springframework.org/schema/p"
+	xmlns:aop="http://www.springframework.org/schema/aop" xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:tx="http://www.springframework.org/schema/tx" xmlns:util="http://www.springframework.org/schema/util"
+	xsi:schemaLocation="
+http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.0.xsd
+http://www.springframework.org/schema/task http://www.springframework.org/schema/task/spring-task-3.0.xsd
+http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-3.0.xsd
+http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx-3.0.xsd
+http://www.springframework.org/schema/util http://www.springframework.org/schema/util/spring-util-2.0.xsd">
+
+	<context:annotation-config />
+	<tx:annotation-driven />
+	<context:component-scan base-package="com.cnk.travelerpibe" />
+	<context:property-placeholder location="classpath:database.properties" />
+
+	<bean id="dataSource"
+		class="org.springframework.jdbc.datasource.DriverManagerDataSource">
+		<property name="driverClassName" value="${jdbc.driverClassName}" />
+		<property name="url" value="${jdbc.url}" />
+		<property name="username" value="${jdbc.username}" />
+		<property name="password" value="${jdbc.password}" />
+	</bean>
+
+	<bean id="sessionFactory"
+		class="org.springframework.orm.hibernate4.LocalSessionFactoryBean">
+		<property name="dataSource">
+			<ref bean="dataSource" />
+		</property>
+
+		<property name="hibernateProperties">
+			<props>
+				<prop key="hibernate.dialect">org.hibernate.dialect.Oracle10gDialect</prop>
+				<prop key="hibernate.show_sql">true</prop>
+				<prop key="hibernate.hbm2ddl.auto">update</prop>
+			</props>
+		</property>
+		<property name="mappingResources">
+			<list>
+
+			</list>
+		</property>
+
+		<property name="packagesToScan">
+			<list>
+				<value>com.cnk.travelerpibe.product.air.entities</value>
+				<value>com.cnk.travelerpibe.product</value>
+				<value>com.cnk.travelerpibe.entities</value>
+				<value>com.cnk.travelerpibe.workflow.entities</value>
+			</list>
+		</property>
+	</bean>
+	<bean id="transactionManager"
+		class="org.springframework.orm.hibernate4.HibernateTransactionManager"
+		p:sessionFactory-ref="sessionFactory" />
+	<tx:annotation-driven transaction-manager="transactionManager" />
+
+</beans>

@@ -1,0 +1,95 @@
+LDAP:
+=================================
+
+http://www.userbooster.de/en/download/openldap-for-windows.aspx 
+
+Run==>next==>Next==>Select Destination==>Custmaise step
+
+The below table contains the features and prerequisites and their descriptions.
+
+Feature/Prerequisite       Optional	                        Descripton
+
+VC Redistribution Package	No	Microsoft Visual C++ 2005 Redistributable Installer Package
+
+OpenLDAP Client Tools	        No	        Command line utilities (ldapsearch, ldapcompare, ldapexop, etc.) for working with LDAP entries
+
+OpenLDAP Server	               Yes	              OpenLDAP server components with different backend modules like LDIF, BDB, SQL DATABASE, etc.
+
+BDB Backend Tools	No	      Berkley Database tools
+
+OpenLDAP Service	Yes	     Configures and starts the OpenLDAP daemon
+
+DejaVu Sans Mono Font for Windows Console	Yes	 Installs a DejaVu Sans Mono font and adds it to the list of fonts available to the console. The font provides a wide range of Unicode characters. 
+
+
+==>Additional Settings 
+ServerName/Ip-Address
+UB_DEV
+Port: 389 SSL-Port:636
+
+
+
+Module	Description
+BDB	Berkeley Database Backend
+MDB	Memory Mapped Database
+LDAP	Proxy-Server in front of the real LDAP Server
+LDIF	This module saves the results in LDIF files
+SQL Server	Microsoft SQL Server 2005/2008
+The page BDB Backend Settings configures the password for the root-user. Optionally you can enable the statistics.
+
+
+
+3.2	Configuring LDAP browser in eclipse
+ Apache Directory Studio Browser configuration.
+
+The Apache Directory Studio Browser could also be installed as a plug-in into a regular Eclipse installation. 
+Using the Eclipse Install Manager  is the easiest way to install the Apache Directory Studio Browser
+plug-in. From workbench menu choose Help # Install new software.
+
+In the above opened wizard click on Add button it automatically another wizard that shown below.
+
+       In the dialog input the following and press OK:
+
+•	Name: Apache Directory Studio
+•	Location: http:///directory.apache.org/studio/update/1.x
+
+
+
+
+
+Select the feature you want to install - of course the Apache Directory Studio Browser 
+
+
+3.3  Open LDAP perspective 
+To use the Apache Directory Studio Browser plug-in open the LDAP perspective. Therefore go to
+Window # Open Perspective # Other... and select the LDAP perspective. 
+
+3.4  Create Connection
+
+The bottom left corner shows all of the LDAP connections. As can be seen, the view is empty, meaning
+a connection still needs to be specified.
+
+To create a new connection click the New Connection button.
+
+
+
+Here is a list of common directory servers and the ports they use by default:
+
+
+Directory Server   	Default Port
+Apache Directory Server                                                              	10389
+Open DS	1389
+Open LDAP, Fedora, Sun, Active Directory                                    	 389
+                                                                       
+                                                                                      
+In the wizard's second page select the authentication method. If you choose the simple bind method also
+enter your bind DN or user and bind password. To check the authentication parameter you entered you
+may click to Check Authentication. Click Finish when done.
+
+
+
+
+
+
+
+

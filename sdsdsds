@@ -1,0 +1,120 @@
+http://repo2.maven.org/maven2/
+http://download.java.net/maven/2/
+http://repo.maven.apache.org/maven2/
+http://repository.jboss.org/nexus/content/groups/public-jboss
+http://repository.jboss.org/
+http://nexus.codehaus.org/snapshots/
+
+
+
+
+note:
+dwonload nexus war from "http://www.sonatype.org/nexus/go" site and deploy into server.
+
+username: admin
+password: admin123
+
+maven/config/settings.xml
+==================================
+<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0" 
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+          xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0 http://maven.apache.org/xsd/settings-1.0.0.xsd">
+
+ 
+  <mirrors>
+   <mirror>
+      <id>nexus</id>
+      <mirrorOf>*</mirrorOf>
+      <name>Human Readable Name for this Mirror.</name>
+      <url>http://10.21.12.48:8080/nexus/content/groups/public/</url>
+  <!-- <url>http://172.17.132.71:8089/nexus-2.0.3/content/groups/public/repository</url> -->
+    </mirror>
+  </mirrors>
+  <profiles>
+    <profile>
+      <id>nexus</id>
+      <!--Enable snapshots for the built in central repo to direct -->
+      <!--all requests to nexus via the mirror -->
+      <repositories>
+        <repository>
+          <id>central</id>
+          <url>http://central</url>
+          <releases><enabled>true</enabled></releases>
+          <snapshots><enabled>true</enabled></snapshots>
+        </repository>
+      </repositories>
+     <pluginRepositories>
+        <pluginRepository>
+          <id>central</id>
+          <url>http://central</url>
+          <releases><enabled>true</enabled></releases>
+          <snapshots><enabled>true</enabled></snapshots>
+        </pluginRepository>
+      </pluginRepositories>
+    </profile>
+    <!-- if you want to be able to switch to the defaultprofile profile put this in the active profile -->
+    <profile>
+        <id>defaultprofile</id>
+        <repositories>
+            <repository>
+                <id>maven.default</id>
+                <name>default maven repository</name>
+                <url>http://repo1.maven.org/maven2</url>
+                <snapshots>
+                    <enabled>true</enabled>
+                </snapshots>
+            </repository>
+            <repository>
+                <id>maven.snapshot</id>
+                <name>Maven snapshot repository</name>
+                <url>http://people.apache.org/repo/m2-snapshot-repository</url>
+                <snapshots>
+                    <enabled>true</enabled>
+                </snapshots>
+            </repository>
+        </repositories> 
+    </profile>
+	
+	 <profile>
+        <id>jboss-public-repository</id>
+        <repositories>
+            <repository>
+                <id>jboss-public-repository-group</id>
+                <name>JBoss Public Maven Repository Group</name>
+                <url>https://repository.jboss.org/nexus/content/groups/public/</url>
+                <layout>default</layout>
+                <releases>
+                    <enabled>true</enabled>
+                    <updatePolicy>never</updatePolicy>
+                </releases>
+                <snapshots>
+                    <enabled>true</enabled>
+                    <updatePolicy>never</updatePolicy>
+                </snapshots>
+            </repository>
+        </repositories>
+        <pluginRepositories>
+            <pluginRepository>
+                <id>jboss-public-repository-group</id>
+                <name>JBoss Public Maven Repository Group</name>
+                <url>https://repository.jboss.org/nexus/content/groups/public/</url>
+                <layout>default</layout>
+                <releases>
+                    <enabled>true</enabled>
+                    <updatePolicy>never</updatePolicy>
+                </releases>
+                <snapshots>
+                    <enabled>true</enabled>
+                    <updatePolicy>never</updatePolicy>
+                </snapshots>
+            </pluginRepository>
+        </pluginRepositories>
+    </profile>
+	
+  </profiles>
+  <activeProfiles>
+    <!--make the profile active all the time -->
+    <activeProfile>nexus</activeProfile>
+	<!-- <activeProfile>jboss-public-repository</activeProfile> -->
+  </activeProfiles>
+</settings>

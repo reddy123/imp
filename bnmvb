@@ -1,0 +1,637 @@
+package com.cnk.travelerpibe.common.persistence;
+
+public interface PeristenceTest {
+
+}
+=====================================================
+package com.cnk.travelerpibe.common.persistence.model;
+
+import java.io.StringWriter;
+import java.io.Writer;
+
+import org.codehaus.jackson.map.ObjectMapper;
+import org.junit.Assert;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
+/**
+ * JUnit class for Attribute Mapping Model
+ * @author vishwanath.dubey
+ *
+ */
+public class AttributeMappingModelTest {
+  static ObjectMapper objectMapper;
+	
+	@BeforeClass
+	public static void init(){
+		objectMapper = new ObjectMapper();
+	}
+	
+	@Test
+	public void toJSON() throws Exception{
+		AttributeDBMappingModel atrModel = new AttributeDBMappingModel();
+		atrModel.setName("code");
+		atrModel.setDataType("String");
+		atrModel.setKey(false);
+		atrModel.setRequired(true);
+		atrModel.setOrderNo((short) 1);
+		atrModel.setTargetName("id");
+		
+		Writer strWriter = new StringWriter();
+		
+		objectMapper.writeValue(strWriter, atrModel);
+		String jsonData = strWriter.toString();
+		Assert.assertNotNull(jsonData);
+		Assert.assertTrue(jsonData.contains("\"name\":\"code\""));
+		Assert.assertTrue(jsonData.contains("\"defaultValue\":\"\""));
+	}
+	
+	@Test
+	public void fromJSON() throws Exception{
+
+		String jsonData = "{\"name\":\"code\",\"targetName\":\"id\",\"dataType\":\"String\",\"updateable\":false,\"orderNo\":1,\"defaultValue\":\"\",\"key\":false,\"required\":true,\"keyColSeq\":0}";
+		AttributeDBMappingModel model = objectMapper.readValue(jsonData, AttributeDBMappingModel.class);
+		Assert.assertNotNull(model);
+		
+	}
+
+
+	
+}
+===========================================================
+package com.cnk.travelerpibe.common.persistence.model;
+
+
+import java.io.StringWriter;
+import java.io.Writer;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.codehaus.jackson.map.ObjectMapper;
+import org.codehaus.jackson.type.TypeReference;
+import org.junit.Assert;
+import org.junit.BeforeClass;
+import org.junit.Test;
+import org.junit.experimental.categories.Category;
+
+import com.cnk.travelerpibe.common.persistence.PeristenceTest;
+
+/**
+ * JUnit class for Entity Mapping Model
+ * @author vishwanath.dubey
+ *
+ */
+@Category(PeristenceTest.class)
+public class EntityMappingModelTest {
+	static ObjectMapper objectMapper;
+	
+	@BeforeClass
+	public static void init(){
+		objectMapper = new ObjectMapper();
+	}
+	
+	@Test
+	public void toJSON() throws Exception{
+		
+		EntityDBMappingModel model = new EntityDBMappingModel();
+		model.setName("City");
+		model.setTargetObect("City");
+		model.setPath("TRAVELERP");
+		model.setTargetType("DATABASE");
+		
+		AttributeDBMappingModel atrModel = new AttributeDBMappingModel();
+		atrModel.setName("code");
+		atrModel.setDataType("String");
+		atrModel.setKey(false);
+		atrModel.setRequired(true);
+		atrModel.setOrderNo((short) 1);
+		atrModel.setTargetName("id");
+		model.getAttributes().add(atrModel);
+		
+		Writer strWriter = new StringWriter();
+		
+		objectMapper.writeValue(strWriter, model);
+		String jsonData = strWriter.toString();
+		Assert.assertNotNull(jsonData);
+		Assert.assertTrue(jsonData.contains("\"name\":\"City\""));
+		Assert.assertTrue(jsonData.contains("\"path\":\"TRAVELERP\""));
+
+	}
+
+	@Test
+	public void fromJSON() throws Exception{
+		String jasonData = "{\"name\":\"City\",\"targetObect\":\"City\",\"targetType\":\"DATABASE\",\"path\":\"TRAVELERP\"}";
+		
+		EntityDBMappingModel model = objectMapper.readValue(jasonData, EntityDBMappingModel.class);
+		Assert.assertNotNull(model);
+
+	}
+	
+	@Test
+	public void toJSONNext() throws Exception{
+
+		EntityDBMappingModel em = new EntityDBMappingModel( "City","CITY","TRAVELERP","DB" );
+		AttributeDBMappingModel amCode = new AttributeDBMappingModel("code","CODE","VARCHAR",true,true);
+		AttributeDBMappingModel amDescription = new AttributeDBMappingModel("description","DESCRIPTION","VARCHAR",true);
+		AttributeDBMappingModel amOrder = new AttributeDBMappingModel("orderNo","ORDER_NO","NUMERIC");
+		em.addAttribute(amCode);
+		em.addAttribute(amDescription);
+		em.addAttribute(amOrder);
+		Writer strWriter = new StringWriter();
+
+		objectMapper.writeValue(strWriter, em);
+		String jsonData = strWriter.toString();
+		Assert.assertNotNull(jsonData);
+		Assert.assertTrue(jsonData.contains("\"name\":\"City\""));
+		Assert.assertTrue(jsonData.contains("\"path\":\"TRAVELERP\""));
+	}
+	
+	
+	@Test
+	public void fromJSONNext() throws Exception{
+	
+		String jasonData = "{\"name\":\"City\",\"targetObect\":\"CITY\",\"targetType\":\"DB\",\"path\":\"TRAVELERP\",\"attributes\":[{\"name\":\"code\",\"targetName\":\"CODE\",\"dataType\":\"VARCHAR\",\"orderNo\":0,\"defaultValue\":\"\",\"key\":true,\"required\":true,\"keyColSeq\":0,\"updateable\":false},{\"name\":\"description\",\"targetName\":\"DESCRIPTION\",\"dataType\":\"VARCHAR\",\"orderNo\":0,\"defaultValue\":\"\",\"key\":false,\"required\":true,\"keyColSeq\":0,\"updateable\":true},{\"name\":\"orderNo\",\"targetName\":\"ORDER_NO\",\"dataType\":\"NUMERIC\",\"orderNo\":0,\"defaultValue\":\"\",\"key\":false,\"required\":false,\"keyColSeq\":0,\"updateable\":true}]}";
+		EntityDBMappingModel model = objectMapper.readValue(jasonData, EntityDBMappingModel.class);
+		Assert.assertNotNull(model);
+		Assert.assertEquals(3, model.getAttributes().size());
+
+	}
+	
+	@Test
+	public void mapJson() throws Exception{
+		Map<String,String> r1 = new LinkedHashMap<>();
+		r1.put("code", "MUMB");
+		r1.put("description", "Mumbai");
+		
+		Map<String,String> r2 = new LinkedHashMap<>();
+		r2.put("code", "DEL");
+		r2.put("description", "Delhi");
+		
+		Map<String,String> r3 = new LinkedHashMap<>();
+		r3.put("code", "BENG");
+		r3.put("description", "Bengaluru");
+		
+		List<Map<String,String>> l1 = new ArrayList<>();
+		
+		l1.add(r1);
+		l1.add(r2);
+		l1.add(r3);
+		
+		Writer strWriter = new StringWriter();
+
+		objectMapper.writeValue(strWriter, l1);
+		String jsonData = strWriter.toString();
+		Assert.assertNotNull(jsonData);
+		
+		
+	}
+	
+	@Test
+	public void mapFromJson() throws Exception{
+	
+		String jsonaCityData = "[{\"CODE\":\"MUMB\",\"DESCRIPTION\":\"Mumbai\",\"ORDER_NO\":0},{\"CODE\":\"DEL\",\"DESCRIPTION\":\"Delhi\",\"ORDER_NO\":0},{\"CODE\":\"BENG\",\"DESCRIPTION\":\"Bengaluru\",\"ORDER_NO\":0}]";
+		List<LinkedHashMap<String,String>> list = objectMapper.readValue(jsonaCityData,
+					new TypeReference<ArrayList<LinkedHashMap<String,String>>>() {});
+		Assert.assertNotNull(list.size() > 0);
+		Assert.assertEquals("MUMB", list.get(0).get("CODE"));
+	}
+
+}
+===================================================================
+package com.cnk.travelerpibe.common.persistence.sql;
+
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.util.Properties;
+
+import junit.framework.Assert;
+
+import org.junit.Test;
+
+import com.cnk.travelerpibe.common.persistence.io.ClassPathResource;
+import com.cnk.travelerpibe.common.persistence.io.Resource;
+
+public class JDBCConnectionnew {
+	public static Connection connection;
+//	public static boolean isLocalDB;
+	
+	static {
+		try {
+			Resource resource = new ClassPathResource("dbConf.properties", AbstractSQLGenerator.class.getClassLoader());
+			Properties properties = new Properties();
+			properties.load(resource.getInputStream());
+
+			Class.forName( properties.getProperty("driver") );
+	        String url = properties.getProperty("url");
+	        String usr = properties.getProperty("user");
+	        String pwd = properties.getProperty("password");
+	        connection = DriverManager.getConnection(url, "siva_master", "siva_master");
+	      //  isLocalDB = Boolean.valueOf( properties.getProperty("isLocalDB") );
+		} catch (Exception e) {
+			throw new RuntimeException("Error occured during initializing the connection",e);
+		}
+		
+	}
+	
+	@Test
+	public void connection(){
+		Assert.assertNotNull( connection );
+		
+	}
+}
+===========================================================
+package com.cnk.travelerpibe.common.persistence.sql;
+
+import java.sql.Connection;
+
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+
+import junit.framework.Assert;
+
+import org.codehaus.jackson.map.ObjectMapper;
+import org.codehaus.jackson.type.TypeReference;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
+import com.cnk.travelerpibe.common.persistence.jdbc.JDBCConnectionProvider;
+import com.cnk.travelerpibe.common.persistence.model.EntityDBMappingModel;
+
+public class PersistHelperTest {
+
+	String jasonCityModel = "{\"name\":\"City\",\"targetObect\":\"CITY\",\"targetType\":\"DB\",\"path\":\"\",\"attributes\":[{\"name\":\"code\",\"targetName\":\"CODE\",\"dataType\":\"VARCHAR\",\"orderNo\":0,\"defaultValue\":\"\",\"key\":true,\"required\":true,\"keyColSeq\":0,\"updateable\":false},{\"name\":\"description\",\"targetName\":\"DESCRIPTION\",\"dataType\":\"VARCHAR\",\"orderNo\":0,\"defaultValue\":\"\",\"key\":false,\"required\":true,\"keyColSeq\":0,\"updateable\":true},{\"name\":\"orderNo\",\"targetName\":\"ORDER_NO\",\"dataType\":\"NUMERIC\",\"orderNo\":0,\"defaultValue\":\"\",\"key\":false,\"required\":false,\"keyColSeq\":0,\"updateable\":true}]}";
+	String jsonaCityData = "[{\"CODE\":\"MUMB\",\"DESCRIPTION\":\"Mumbai\",\"ORDER_NO\":0},{\"CODE\":\"DEL\",\"DESCRIPTION\":\"Delhi\",\"ORDER_NO\":0},{\"CODE\":\"BENG\",\"DESCRIPTION\":\"Bengaluru\",\"ORDER_NO\":0}]";
+	
+	//String jasonCityModel = "{\"name\":\"ibe_master_country\",\"targetObect\":\"ibe_master_country\",\"targetType\":\"DB\",\"path\":\"\",\"attributes\":[{\"name\":\"ibe_country_id\",\"targetName\":\"ibe_country_id\",\"dataType\":\"INT\",\"orderNo\":0,\"defaultValue\":\"\",\"key\":false,\"required\":true,\"keyColSeq\":0,\"updateable\":false},{\"name\":\"ibe_country_IATA_code\",\"targetName\":\"ibe_country_IATA_code\",\"dataType\":\"VARCHAR\",\"orderNo\":0,\"defaultValue\":\"\",\"key\":false,\"required\":true,\"keyColSeq\":0,\"updateable\":true},{\"name\":\"ibe_country_name\",\"targetName\":\"ibe_country_name\",\"dataType\":\"VARCHAR\",\"orderNo\":0,\"defaultValue\":\"\",\"key\":false,\"required\":false,\"keyColSeq\":0,\"updateable\":true}]}";
+	//String jsonaCityData = "[{\"CODE\":\"MUMB\",\"DESCRIPTION\":\"Mumbai\",\"ORDER_NO\":0},{\"CODE\":\"DEL\",\"DESCRIPTION\":\"Delhi\",\"ORDER_NO\":0},{\"CODE\":\"BENG\",\"DESCRIPTION\":\"Bengaluru\",\"ORDER_NO\":0}]";
+	
+	static ObjectMapper objectMapper;
+
+	@Test
+	public void persist() throws Exception{
+		EntityDBMappingModel em = objectMapper.readValue(jasonCityModel, EntityDBMappingModel.class);
+	//	Assert.assertNotNull(em);
+		//Assert.assertEquals("City", em.getName());
+
+		List<Map<String,String>> list = objectMapper.readValue(jsonaCityData,
+												new TypeReference<ArrayList<LinkedHashMap<String,String>>>() {});
+		//System.out.println("list"+list);
+
+		PersistHelper persistHelper = PersistHelper.getInstance();
+		
+		Map<PersistHelper.SQLStatements,Statement> statements= new HashMap<>(); 
+		//by me
+		Statement statement = new Statement();
+		// end
+		
+		InsertSQLGenerator insSqlGen = InsertSQLGenerator.getInstance();
+		 statement = insSqlGen.generate(em);
+		Assert.assertTrue(!statement.statement.isEmpty());
+		statements.put(PersistHelper.SQLStatements.Insert, statement);
+
+		/*UpdateSQLGenerator updSqlGen = UpdateSQLGenerator.getInstance();
+		statement = updSqlGen.generate(em);
+		Assert.assertTrue(!statement.statement.isEmpty());
+		statements.put(PersistHelper.SQLStatements.Update, statement);
+
+		DeleteSQLGenerator delSqlGen = DeleteSQLGenerator.getInstance();
+		statement = delSqlGen.generate(em);
+		Assert.assertTrue(!statement.statement.isEmpty());
+		statements.put(PersistHelper.SQLStatements.Delete, statement);
+*/
+		
+		SelectSQLGenerator selSqlGen = SelectSQLGenerator.getInstance();
+		 statement = selSqlGen.generate(em);
+		System.out.println("recordddd--statement---"+statement);
+		Assert.assertTrue(!statement.statement.isEmpty());
+		//statements.put(PersistHelper.SQLStatements.Select, statement);
+		
+
+		
+		/*SelectNonUpdSQLGenerator selNoUpdSqlGen = SelectNonUpdSQLGenerator.getInstance();
+		statement = selNoUpdSqlGen.generate(em);
+		Assert.assertTrue(!statement.statement.isEmpty());
+		statements.put(PersistHelper.SQLStatements.SelectNonUpd, statement);*/
+		
+		
+		persistHelper.persist(statements, list);
+		
+		/*for(Map<String,String> record: list){
+			List<Map<String,String>> retRecord = persistHelper.executeQuery(statements.get( PersistHelper.SQLStatements.Select), record);
+			System.out.println("record------"+retRecord);
+			Assert.assertEquals(1, retRecord.size());
+			Assert.assertEquals(record.get("CODE"), retRecord.get(0).get("CODE"));
+		}*/
+		
+		Map<String,String> inputs =new HashMap<>();
+	//	inputs.put("ibe_country_id", "1");
+		
+	//	statement = selSqlGen.generate(em, null);
+//		List<Map<String,String>> retRecord = persistHelper.executeQuery(statement, inputs);
+		List<Map<String,String>> retRecord = persistHelper.executeQuery(statement,null);
+		System.out.println("recordddd------"+retRecord);
+		for(Map<String,String> kk: retRecord)
+		{
+			System.out.println(kk.get("ibe_country_name") +" "+kk.get("ibe_country_IATA_code"));
+		}
+		
+		Assert.assertEquals(3, retRecord.size());
+		
+	}
+	
+	
+	@BeforeClass
+	public static void init() {
+
+		JDBCConnectionProvider.getInstance().allocateConnection( JDBCConnection.connection);
+	//	if (JDBCConnection.isLocalDB){
+			/*try{
+			createDropCity();
+			}
+			catch(SQLException se){
+				JDBCConnectionProvider.getInstance().savePointComplete(false);
+	//		}
+		}*/
+		objectMapper = new ObjectMapper();
+	}
+	@AfterClass
+	public static void releaseConnection(){
+		JDBCConnectionProvider.getInstance().savePointComplete(false);
+	}
+
+	
+	/*private static void createDropCity() throws SQLException{
+		String cityDropStmtText =  "DROP TABLE IF EXISTS CITY";
+		String 	cityCreateString = "create table CITY (CODE VARCHAR(10), DESCRIPTION VARCHAR(30), ORDER_NO numeric(10), PRIMARY KEY ( CODE ))";
+		java.sql.Statement stmt=null ;
+		Connection con = JDBCConnectionProvider.getInstance().getConnection();
+		try {
+			
+			stmt = con.createStatement();
+			stmt.executeUpdate(cityDropStmtText);
+		}
+		catch(Exception e){ //it is just to catch and avoid any throw for droping a table.
+		}
+		
+		try {
+			stmt = con.createStatement();
+			stmt.executeUpdate(cityCreateString);
+
+		}
+		finally {
+			if (stmt != null ){
+				stmt.close();
+			}
+			
+		}
+
+
+	}*/
+}
+=========================================================
+/**
+ * 
+ */
+package com.cnk.travelerpibe.common.persistence.sql;
+
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.Properties;
+
+import com.cnk.travelerpibe.common.persistence.io.ClassPathResource;
+import com.cnk.travelerpibe.common.persistence.io.Resource;
+
+/**
+ * @author sivaiah.polamreddy
+ *
+ */
+public class sample {
+
+	public static Connection connection;
+//	public static boolean isLocalDB;
+	
+	static {
+		try {
+			Resource resource = new ClassPathResource("dbConf.properties", AbstractSQLGenerator.class.getClassLoader());
+			Properties properties = new Properties();
+			properties.load(resource.getInputStream());
+
+			Class.forName( properties.getProperty("driver") );
+	        String url = properties.getProperty("url");
+	        String usr = properties.getProperty("user");
+	        String pwd = properties.getProperty("password");
+	        connection = DriverManager.getConnection(url, "siva_master", "siva_master");
+	      //  isLocalDB = Boolean.valueOf( properties.getProperty("isLocalDB") );
+		} catch (Exception e) {
+			throw new RuntimeException("Error occured during initializing the connection",e);
+		}
+		
+	}
+	/**
+	 * @param args
+	 * @throws SQLException 
+	 */
+	public static void main(String[] args) throws SQLException {
+		String SQLCommand = "INSERT INTO cabin_class " +  
+                "(CABIN_CLASS_ID,CABIN_CLASS_NAME) " +  
+                "VALUES (CABIN_CLASS_ID_SEQ.NEXTVAL,?)";  
+	Statement ps2 = connection.createStatement();
+	//int cust_id = ps2.executeUpdate("SELECT CABIN_CLASS_ID_SEQ.NEXTVAL FROM DUAL");
+	//ps2.close();
+	Object vv="CABIN_CLASS_ID_SEQ.NEXTVAL";
+	PreparedStatement ps1 = connection.prepareStatement(SQLCommand);
+	int cust_id = ps2.executeUpdate("SELECT CABIN_CLASS_ID_SEQ.NEXTVAL FROM DUAL");
+	ps1.setInt(1, cust_id);  
+	ps1.setString(1, "H");
+	ps1.executeUpdate(); 
+	//ps1.close();
+	}
+
+}
+============================================================
+package com.cnk.travelerpibe.common.persistence.sql;
+
+import org.junit.Assert;
+import org.junit.Test;
+
+import com.cnk.travelerpibe.common.persistence.model.AttributeDBMappingModel;
+import com.cnk.travelerpibe.common.persistence.model.EntityDBMappingModel;
+
+public class SQLGeneratorTest {
+
+	
+	
+	
+	@Test
+	public void sQLGenerator() throws Exception{
+		EntityDBMappingModel em = new EntityDBMappingModel( "City","CITY","TRAVELERP","DB" );
+		AttributeDBMappingModel amCode = new AttributeDBMappingModel("code","CODE","VARCHAR",true,true);
+		AttributeDBMappingModel amDescription = new AttributeDBMappingModel("description","DESCRIPTION","VARCHAR",true);
+		AttributeDBMappingModel amOrder = new AttributeDBMappingModel("orderNo","ORDER_NO","NUMERIC");
+		em.addAttribute(amCode);
+		em.addAttribute(amDescription);
+		em.addAttribute(amOrder);
+		
+		InsertSQLGenerator insSqlGen = InsertSQLGenerator.getInstance();
+		Statement statement = insSqlGen.generate(em);
+		Assert.assertTrue(!statement.statement.isEmpty());
+
+		UpdateSQLGenerator updSqlGen = UpdateSQLGenerator.getInstance();
+		statement = updSqlGen.generate(em);
+		Assert.assertTrue(!statement.statement.isEmpty());
+
+		DeleteSQLGenerator delSqlGen = DeleteSQLGenerator.getInstance();
+		statement = delSqlGen.generate(em);
+		Assert.assertTrue(!statement.statement.isEmpty());
+
+		
+		SelectSQLGenerator selSqlGen = SelectSQLGenerator.getInstance();
+		statement = selSqlGen.generate(em);
+		Assert.assertTrue(!statement.statement.isEmpty());
+
+		
+		SelectNonUpdSQLGenerator selNoUpdSqlGen = SelectNonUpdSQLGenerator.getInstance();
+		statement = selNoUpdSqlGen.generate(em);
+		Assert.assertTrue(!statement.statement.isEmpty());
+
+	}
+	
+	@Test
+	public void selectSQLGenerator() throws Exception{
+		EntityDBMappingModel em = new EntityDBMappingModel( "City","CITY","TRAVELERP","DB" );
+		AttributeDBMappingModel amCode = new AttributeDBMappingModel("code","CODE","VARCHAR",true,true);
+		AttributeDBMappingModel amDescription = new AttributeDBMappingModel("description","DESCRIPTION","VARCHAR",true);
+		AttributeDBMappingModel amOrder = new AttributeDBMappingModel("orderNo","ORDER_NO","NUMERIC");
+		em.addAttribute(amCode);
+		em.addAttribute(amDescription);
+		em.addAttribute(amOrder);
+
+		SelectSQLGenerator selSqlGen = SelectSQLGenerator.getInstance();
+		Statement statement = selSqlGen.generate(em,null);
+		Assert.assertTrue(!statement.statement.isEmpty());
+
+		OrderByCols orderByCols = new OrderByCols();
+		orderByCols.cols.add("description1");
+	    statement = selSqlGen.generate(em,orderByCols);
+		Assert.assertTrue(!statement.statement.isEmpty());
+
+		
+		orderByCols.cols.clear();
+		orderByCols.cols.add("description");
+		statement = selSqlGen.generate(em,orderByCols);
+		Assert.assertTrue(!statement.statement.isEmpty());
+
+		
+	}
+	
+
+}
+=======================================================
+#driver=com.mckoi.JDBCDriver
+#url=jdbc:mckoi:local://D:/visv-Framework/mckoi1.0.6/db.conf?create_or_boot=true
+#user=admin_user
+#password=aupass00
+#
+#isLocalDB=true
+
+
+driver=oracle.jdbc.driver.OracleDriver
+jdbc.dialect=org.hibernate.dialect.Oracle10gDialect
+url=jdbc:oracle:thin:@10.21.12.129:1521:XE
+user=siva_master	
+password=siva_master
+=============================================================
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>com.cnk.travelerpibe</groupId>
+    <artifactId>productsetup</artifactId>
+    <version>1.0-SNAPSHOT</version>
+  </parent>
+  <artifactId>cnk-ibe-masters-persisthelper</artifactId>
+  
+  
+
+  <build>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-compiler-plugin</artifactId>
+          <configuration>
+		    <verbose>true</verbose>
+			<compilerVersion>1.7</compilerVersion>
+            <source>1.7</source>
+            <target>1.7</target>
+          </configuration>
+        </plugin>
+	
+		<plugin>
+		<groupId>org.apache.maven.plugins</groupId>
+		<artifactId>maven-surefire-plugin</artifactId>	
+		<version>2.14</version>
+		<dependencies>
+			<dependency>
+				<groupId>org.apache.maven.surefire</groupId>
+				<artifactId>surefire-junit47</artifactId>
+				<version>2.14</version>
+		</dependency>
+		</dependencies>
+		<!--
+		 <configuration>
+			<groups>com.cnk.travelerpibe.common.persistence.PeristenceTest</groups>
+		  </configuration>
+		<executions>
+			<execution>
+				<goals>
+				<goal>integration-test</goal>
+				</goals>
+				<configuration>
+				<includes>
+					<include>**/*.class</include>
+				</includes>
+			</configuration>
+			</execution>
+		</executions>
+		-->
+		</plugin>
+	  </plugins>
+    </pluginManagement>
+  </build>
+
+  <!-- <modules>
+    <module>cnk-common-empersist</module>
+  </modules> -->
+  
+    <dependencies>
+  	<dependency>
+		<groupId>org.codehaus.jackson</groupId>
+		<artifactId>jackson-mapper-asl</artifactId>
+		<version>1.9.12</version>
+	</dependency>
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <version>4.8.1</version>
+      <scope>test</scope>
+    </dependency>
+   <dependency>
+      <groupId>mckoi</groupId>
+      <artifactId>mckoi</artifactId>
+      <version>1.0.2</version>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+</project>
+==============================================================

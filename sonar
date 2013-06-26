@@ -1,0 +1,126 @@
+Sonar Setup:
+===============
+development environment
+
+Ruuning And Configuring Sonar:
+===================================
+1. Downloading Latest Sonar Ex:Sonar-3.5.1.zip
+un zip the software and put in local drive.
+ex:D:\sonar-3.5.1
+
+2. change server settings in sonar.properties file
+ex:D:\sonar-3.5.1\conf\sonar.properties.
+
+sonar.web.port:                           9090 (any port)
+
+ex:mysql
+
+sonar.jdbc.username:                       root
+sonar.jdbc.password:                       
+sonar.jdbc.url:                            jdbc:mysql://localhost:3306/sonar?useUnicode=true&characterEncoding=utf8&rewriteBatchedStatements=true
+sonar.jdbc.driverClassName:                com.mysql.jdbc.Driver 
+
+
+3.Here we need Database credentils
+ex: mysql
+username=root
+password=
+database=sonar
+
+4.Running ths sonar in cmd promt.
+
+Goto "bin" floder in sonar home directory and run "StartSonar.cmd"
+Ex:D:\sonar-3.5.1\sonar-3.5.1\bin\windows-x86-32\StartSonar.cmd
+
+5.It automaticlly create database tables in select DB and start the service and running in http://localhost:9090 address.
+
+
+Configuring In Maven:
+=======================
+1.Goto maven setting.xml file
+Ex: D:\apache-maven-3.0.4\conf\settings.xml
+
+create profile and activate:
+
+<profiles>
+  <profile>
+            <id>sonar</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+            <properties>
+                <!-- Example for MySQL-->
+                <sonar.jdbc.url>
+                  jdbc:mysql://localhost:3306/sonar?useUnicode=true&amp;characterEncoding=utf8
+                </sonar.jdbc.url>
+                <sonar.jdbc.username>root</sonar.jdbc.username>
+                <sonar.jdbc.password></sonar.jdbc.password>
+ 
+                <!-- Optional URL to server. Default value is http://localhost:9000 -->
+                <sonar.host.url>
+                  http://localhost:9090
+                </sonar.host.url>
+            </properties>
+	</profile>
+</profiles>
+<activeProfiles>
+    <activeProfile>sonar</activeProfile>
+</activeProfiles>
+
+
+
+Configuring Sonar In Eclipse:
+=============================
+1.Goto Eclipse Market Place or install software(http://dist.sonar-ide.codehaus.org/eclipse/) select sonar latest plugin and install.
+
+2. Goto Window-->Preferences-->Sonar-->server
+add server location and credentials(before we need to configure and run the sonar see above).Check test connection. and click ok.
+
+3. select main project  maven-->Update Project or update maven configurations
+automatically sonar capabilities available to project.or(project association with sonar)
+
+if remove sonar capability right click project-->sonar-->remove sonar nature.
+
+4.Window-->Preferences-->Maven-->UserSettings   change maven repository
+
+Ex: Browse D:\apache-maven-3.0.4\conf\settings.xml  so it automatically select repository. ex:D://m2repo
+
+5.In pom.xml file add plugin
+<build>
+		<pluginManagement>
+			<plugins>
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-compiler-plugin</artifactId>
+					<!-- Remove me as soon as all of droolsjbpm requires at least Java 6 -->
+					<configuration>
+						<source>1.7</source>
+						<target>1.7</target>
+					</configuration>
+				</plugin>
+			
+				<plugin>
+					<groupId>org.codehaus.mojo</groupId>
+					<artifactId>sonar-maven-plugin</artifactId>
+					<version>2.0</version>
+				</plugin>
+				
+			</plugins>
+		</pluginManagement>
+	</build>
+
+6.update and bulid or compile project properly
+
+7.run maven command on project
+
+Ex: sonar:sonar
+
+if we need skip test cases.
+
+it automatically check error and  deploy project into sonar server.
+
+Now we are able to analyze projects in sonar server
+http://localhost:9090
+
+
+

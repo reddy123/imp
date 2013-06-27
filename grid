@@ -1,0 +1,443 @@
+<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c"%>
+<%@ taglib uri="http://www.springframework.org/tags/form" prefix="form"%>
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+<link rel="stylesheet" type="text/css" media="screen"
+  href="css/jquery/ui-lightness/jquery-ui-1.8.6.custom.css" />
+<link rel="stylesheet" type="text/css" media="screen"
+	href="css/jqgrid/ui.jqgrid.css" />
+
+<script type="text/javascript" src="script/jquery/jquery-1.4.4.min.js"></script>
+<script type="text/javascript">
+	var jq = jQuery.noConflict();
+	
+</script>
+<script type="text/javascript"
+	src="script/jquery/jquery-ui-1.8.6.custom.min.js"></script>
+<script type="text/javascript" src="script/jqgrid/grid.locale-en.js"></script>
+<script type="text/javascript" src="script/jqgrid/jquery.jqGrid.min.js"></script>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+</head>
+
+<body >
+<input type="hidden" id="test" />
+	<script type="text/javascript">
+	
+		jq(function() {
+			var myGrid = jQuery("#grid");
+				$
+					.ajax({
+						type : "GET",
+						url : '${tableName}',
+						data : "",
+						dataType : "json",
+						success : function(result) {
+
+							colD = result.gridModel;
+							colN = result.colNames;
+							colM = result.colModel;
+							colT = result.tableName;
+							rows = result.rows;
+							
+							total = result.total;
+							if (jQuery.isEmptyObject(colM)) {
+								$('#jqgrid')
+										.append(
+												'<h1 align=center><br><br><font size=3 color=red>Please add <font color = Maroon><u>'
+														+ colN
+														+ '</u></font> by selecting Master Reference! </font></br></h1>')
+										.hide().fadeIn(2000);
+							}
+							colM = eval('(' + colM + ')');
+							colN = eval('(' + colN + ')');
+							rows = eval('(' + rows + ')');
+														
+							
+							jq("#grid")
+									.jqGrid(
+											{
+												 
+												//	url:'${tableName}',
+												datatype : 'local',
+												mtype : 'GET',
+												colNames : colN,
+												colModel : colM,
+												postData : {},
+												rowNum : 5,
+												rowList : [ 5, 10, 15 ],
+												height : "auto",
+												autowidth : true,
+												rownumbers : true,
+												pager : '#pager',
+												sortname : 'id',
+												viewrecords : true,
+												sortorder : "asc",
+												caption : colT,
+												emptyrecords : "No Records found please add record",
+												loadonce : false,
+												
+												loadComplete : function() {
+												},
+												jsonReader : {
+													root : "rows",
+													page : "page",
+													total : "total",
+													records : "records",
+													repeatitems : false,
+													cell : "cell",
+						 							id : "id"
+						 							
+												},
+
+											});
+								            
+							for ( var i = 0; i < rows.length; i++)
+								jq("#grid").addRowData(i, rows[i]);
+								jq("#grid").setGridParam().trigger("reloadGrid");
+							
+							
+							 
+							 jq("#grid").jqGrid(
+									'navGrid',
+									'#pager',
+									{
+										edit : false,
+										add : false,
+										del : false,
+										search : true
+									},
+									{},
+									{},
+									{},
+									{
+										sopt : [ 'eq', 'ne', 'lt', 'gt', 'cn',
+												'bw', 'ew' ],
+										closeOnEscape : true,
+										multipleSearch : true,
+										multipleGroup : true,
+										closeAfterSearch : true  
+									}); 
+							
+														
+								jq("#grid").navButtonAdd('#pager', {
+									caption : "Add",
+									buttonicon : "ui-icon-plus",
+									onClickButton : addRow,
+									position : "last", 
+									title : "",
+									cursor : "pointer",
+								
+								});
+							  
+								jq("#grid").navButtonAdd('#pager', {
+									caption : "Edit",
+									buttonicon : "ui-icon-pencil",
+									onClickButton : editRow,
+									position : "last",
+									title : "", 
+									cursor : "pointer",
+									id: "edit_" 
+								});
+								
+								/* jq("#grid").navButtonAdd('#pager', {
+									caption : "Search",
+									buttonicon : "ui-icon-pencil",
+									onClickButton : editRow,
+									position : "last",
+									title : "", 
+									cursor : "pointer",
+									id: "search_" 
+									}); */
+								
+								jq("#grid").navButtonAdd('#pager', {
+									caption : "Del",
+									buttonicon : "ui-icon-trash",
+									onClickButton : delRow,
+									position : "last",
+									title : "", 
+									cursor : "pointer",
+									id: "del_" 
+									});
+			  					  
+								 if(rows.length==0){
+				  					$("#edit_").addClass('ui-state-disabled');
+				  					$("#search_" + myGrid[0].id).addClass('ui-state-disabled');
+									$("#refresh_" + myGrid[0].id).addClass('ui-state-disabled');
+									
+								} 
+						}
+					});
+				});
+	</script>
+
+
+	<script type="text/javascript">
+	
+		function addRow() {	
+			 var jsondata;
+			 
+
+		       
+			// Get the currently selected row
+			jq("#grid")
+					.jqGrid(
+							'editGridRow',
+							'new',
+							{ //url: "add?tableName="+'${tableName}',    	
+								//url : "Add_" + '${tableName}?name='+jsondata,
+										
+								url : "Add_" + '${tableName}', 		
+								editData : {},
+								recreateForm : false,
+								beforeShowForm : function(form) {
+									
+								},
+								closeAfterAdd : true,
+								reloadAfterSubmit : true,
+								
+								onclickSubmit: function (options, rowid) {
+									var frm = $('#FrmGrid_grid');
+								   	jsondata = JSON.stringify(frm.serializeArray());
+							       	jq("#test").val(jsondata);
+								    options.url += "?name=" + jq("#test").val();   
+								    return {}; // you can return additional data which will be sent to the server
+								},
+								
+								
+								afterSubmit : function(response, postdata) { 
+									var result = eval('('
+											+ response.responseText + ')');
+									
+									var errors = "";
+									if (result.success == false) {
+										for ( var i = 0; i < result.message.length; i++) {
+											errors += result.message[i]
+													+ "<br/>";
+
+										}
+										
+									} else {
+										jq("#dialog")
+												.text(
+														'Entry has been added successfully');
+										jq("#dialog").dialog({
+											
+											title : 'Success',
+											modal : true,
+											buttons : {
+												"Ok" : function() {
+													jq(this).dialog("close");
+													location.reload();
+												}
+											}
+										});
+										
+									}
+									
+									
+									// only used for adding new records
+									var new_id = null;
+									return [ result.success, errors, new_id ];
+									
+								}
+								
+								
+							
+															
+										
+							});
+            
+			 
+		}
+
+		function editRow() {
+			// Get the currently selected row
+ 			
+			var row = jq("#grid").jqGrid('getGridParam', 'selrow');
+
+			if (row != null)
+				jq("#grid")
+						.jqGrid(
+								'editGridRow',
+								row,
+								{
+									url : "Edit_" + '${tableName}',
+									editData : {},
+									recreateForm : true,
+									beforeShowForm : function(form) {
+									},
+									closeAfterEdit : true,
+									reloadAfterSubmit : true,
+									onclickSubmit: function (options, rowid) {
+										var frm = $('#FrmGrid_grid');
+									   	jsondata = JSON.stringify(frm.serializeArray());
+								       	jq("#test").val(jsondata);
+									    options.url += "?name=" + jq("#test").val();   
+									    return {}; // you can return additional data which will be sent to the server
+									},  
+									afterSubmit : function(response, postdata) {
+										var result = eval('('
+												+ response.responseText + ')');
+										var errors = "";
+
+										if (result.success == false) {
+											for ( var i = 0; i < result.message.length; i++) {
+												errors += result.message[i]
+														+ "<br/>";
+											}
+										} else {
+											jq("#dialog")
+													.text(
+															'Entry has been edited successfully');
+											jq("#dialog")
+													.dialog(
+															{
+																title : 'Success',
+																modal : true,
+																buttons : {
+																	"Ok" : function() {
+																		jq(this)
+																				.dialog(
+																						"close");
+																		location.reload();
+																	}
+																}
+															});
+										}
+
+										return [ result.success, errors, null ];
+									}
+								});
+			else
+				jq("#dialogSelectRow").dialog();
+		}
+
+		function delRow() {
+				// Get the currently selected row
+			var row = jq("#grid").jqGrid('getGridParam', 'selrow');
+
+			if (row != null)
+				jq("#grid")
+						.jqGrid(
+								'editGridRow',
+								row,
+								{
+									url : "Del_" + '${tableName}',
+									editData : {},
+									recreateForm : true,
+									beforeShowForm : function(form) {
+									},
+									closeAfterEdit : true,
+									reloadAfterSubmit : true,
+									onclickSubmit: function (options, rowid) {
+										var frm = $('#FrmGrid_grid');
+									   	jsondata = JSON.stringify(frm.serializeArray());
+								       	jq("#test").val(jsondata);
+									    options.url += "?name=" + jq("#test").val();   
+									    return {}; // you can return additional data which will be sent to the server
+									},  
+									afterSubmit : function(response, postdata) {
+										var result = eval('('
+												+ response.responseText + ')');
+										var errors = "";
+
+										if (result.success == false) {
+											for ( var i = 0; i < result.message.length; i++) {
+												errors += result.message[i]
+														+ "<br/>";
+											}
+										} else {
+											jq("#dialog")
+													.text(
+															'Entry has been deleted successfully');
+											jq("#dialog")
+													.dialog(
+															{
+																title : 'Success',
+																modal : true,
+																buttons : {
+																	"Ok" : function() {
+																		jq(this)
+																				.dialog(
+																						"close");
+																		location.reload();
+																	}
+																}
+															});
+										}
+
+										return [ result.success, errors, null ];
+									}
+								});
+			else
+				jq("#dialogSelectRow").dialog();
+			
+		}
+		
+		function formSubmit() {
+
+			if ((tables.value == "") && (tables.value != null)) {
+				var error = 'Please select Reference Master to Proceed!';
+				$('#jqgrid').html(
+						'<h1 align=center><br><br><br><font size=3 color=red>'
+								+ error + '</br></br></h1>').hide()
+						.fadeIn(1000);
+				return false;
+
+			} else if (tables.value != 'ibe_master_country'
+					&& tables.value != 'ibe_master_state'
+					&& tables.value != 'ibe_master_city'
+					&& tables.value != 'ibe_master_categories_group') {
+				$('#jqgrid')
+						.html(
+								'<h1 align=center><br><br><br><font size=2 color=red>To see Demo choose either one of the Following!<br>1) Master Country<br>2) Master State <br>3) Master City</font></h1>')
+						.hide().fadeIn(1000);
+				return false;
+
+			} else {
+				document.form['contact'].submit();
+
+			}
+		}
+	</script>
+
+	<form:form id="contact" action="gridDetails" method="GET"
+		commandName="contactBean" onsubmit="return formSubmit();">
+
+		<fieldset style="margin-top: 35px;">
+			<table>
+				<tr>
+					<td>Select Reference Master :</td>
+					<td><form:select path="tables">
+							<form:option value="" label="--- Select ---" />
+							<form:options items="${tableDetailsMap}" />
+						</form:select></td>
+				</tr>
+				<tr>
+					<td><input type="submit" id="table" value='Search' /></td>
+				</tr>
+
+			</table>
+
+		</fieldset>
+	</form:form>
+	<div id="jqgrid">
+		<table id="grid"></table>
+		<div id="pager" style="height: 10%; width: 100%"></div>
+	</div>
+
+	<div id="dialog" title="Feature not supported" style="display: none">
+		<p>That feature is not supported.</p>
+	</div>
+
+	<div id="dialogSelectRow" title="Warning" style="display: none">
+		<p>Please select row</p>
+	</div>
+
+</body>
+
+</html>

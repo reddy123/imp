@@ -1,0 +1,144 @@
+Configuring Logback:
+==============================
+
+
+public final class LogBack {
+  private LogBack(){
+		
+	}
+	private static final Logger LOGGER = LoggerFactory.getLogger(LogBack.class);
+	 
+	 
+    /**
+     * @param args
+     */
+    public static void main(String[] args) {
+    	LOGGER.trace("Hello World!");
+         
+        String name = "reddy";
+        LOGGER.debug("Hi, {}", name);
+        LOGGER.debug(name, new Sample());
+        LOGGER.info("Welcome to the HelloWorld example of Logback.");
+        LOGGER.warn("Dummy warning message.");
+        LOGGER.error("Dummy error message.");
+    }
+
+}
+
+
+1.logback.xml
+===========================
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+	<appender name="fileAppender" class="ch.qos.logback.core.FileAppender">
+		<file>D:/mylogFile.log</file>
+		<append>true</append>
+		<encoder>
+			<pattern>%d [%thread] %-5level %logger{35} - %msg%n</pattern>
+		</encoder>
+	</appender>
+	<root level="TRACE">
+		<appender-ref ref="fileAppender" />
+	</root>
+
+	<appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+		<encoder>
+			<pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n
+			</pattern>
+		</encoder>
+	</appender>
+	<root level="TRACE">
+		<appender-ref ref="STDOUT" />
+	</root>
+
+	<appender name="FILE" class="ch.qos.logback.core.FileAppender">
+		<encoder class="ch.qos.logback.core.encoder.LayoutWrappingEncoder">
+			<layout class="ch.qos.logback.classic.html.HTMLLayout">
+				<pattern>%relative%thread%mdc%level%logger%msg</pattern>
+			</layout>
+		</encoder>
+		<file>testLog.html</file>
+	</appender>
+
+	<root level="DEBUG">
+		<appender-ref ref="FILE" />
+	</root>
+
+
+
+
+	<!--for Beagle view -->
+	<consolePlugin />
+</configuration>
+
+
+pom.xml:
+=========================
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>com.demo</groupId>
+  <artifactId>DemoSonar</artifactId>
+  <version>0.0.1-SNAPSHOT</version>
+  <name>DemoSonar App</name>
+  <description>Sample App</description>
+  
+  <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <slf4j.version>1.7.5</slf4j.version>
+        <logback.version>1.0.13</logback.version>
+    </properties>
+ 
+    <dependencies>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>${slf4j.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <version>${logback.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-core</artifactId>
+            <version>${logback.version}</version>
+        </dependency>
+         
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.8.1</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+  
+  
+  <build>
+		<pluginManagement>
+			<plugins>
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-compiler-plugin</artifactId>
+					<!-- Remove me as soon as all of droolsjbpm requires at least Java 6 -->
+					<configuration>
+						<source>1.7</source>
+						<target>1.7</target>
+					</configuration>
+				</plugin>
+			
+				<plugin>
+					<groupId>org.codehaus.mojo</groupId>
+					<artifactId>sonar-maven-plugin</artifactId>
+					<version>2.0</version>
+				</plugin>
+				
+			</plugins>
+		</pluginManagement>
+	</build>
+</project>
+
+
+==================================
+
+1.download logback jar put in tomcat lib.

@@ -1,0 +1,1038 @@
+/**
+ * 
+ */
+package com.cnk.travelerpibe.master.web;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpSession;
+
+import org.apache.commons.lang.WordUtils;
+import org.codehaus.jackson.JsonParseException;
+import org.codehaus.jackson.map.JsonMappingException;
+import org.codehaus.jackson.map.ObjectMapper;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.ModelMap;
+import org.springframework.validation.BindingResult;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.servlet.ModelAndView;
+
+import com.cnk.travelerpibe.master.bean.ContactBean;
+import com.cnk.travelerpibe.master.services.IMasterService;
+import com.cnk.travelerpibe.master.services.json.CustomGenericResponse;
+import com.cnk.travelerpibe.master.services.json.CustomUserResponse;
+import com.cnk.travelerpibe.master.web.util.ChangeColNames;
+import com.cnk.travelerpibe.master.web.util.CommonControllerUtil;
+import com.cnk.travelerpibe.master.web.util.Dependent;
+
+/**
+ * @author sivaiah.polamreddy
+ * 
+ * @Description This is Common Controller class for all reference masters in
+ *              search , add, edit and delete operations.
+ */
+@Controller
+public class MasterController {
+
+  @Autowired
+	private IMasterService masterService;
+
+	@Autowired
+	private CommonControllerUtil commonControllerUtil;
+
+	private static final Logger LOGGER = LoggerFactory
+			.getLogger(MasterController.class);
+
+	@RequestMapping(value = "/{tableName}", method = RequestMethod.GET)
+	public @ResponseBody
+	CustomUserResponse getAllResponse(@PathVariable String tableName,
+			HttpServletRequest request) {
+		HttpSession session = request.getSession(true);
+
+		String recordData = null;
+		try {
+			recordData = masterService.fetchAllMastersJdbc(tableName);
+		} catch (Exception e) {
+			LOGGER.error("error", e);
+		}
+		/**
+		 * getting dependent master data
+		 */
+		String dependentData = commonControllerUtil
+				.getDependentMasterData(tableName);
+
+		session.setAttribute("recordList", recordData);
+
+		CustomUserResponse response = new CustomUserResponse();
+		response.setRows(recordData);
+		response.setRecords(String.valueOf(2));
+		response.setColNames(commonControllerUtil.getColNames(tableName));
+		response.setColModel(commonControllerUtil.getColModelNames(tableName,
+				dependentData));
+		response.setPage("1");
+		response.setTotal("10");
+		response.setTableName(tableName);
+		return response;
+	}
+
+	@RequestMapping(value = "/Add_{tableName}", method = RequestMethod.POST)
+	public @ResponseBody
+	CustomGenericResponse addMaster(HttpServletRequest request,
+			@RequestParam("name") String feildData,
+			@PathVariable String tableName) throws Exception {
+		JSONObject jspros = new JSONObject();
+		JSONArray jsob = new JSONArray(feildData);
+		for (int i = 0; i < jsob.length(); i++) {
+			JSONObject jjj = new JSONObject(jsob.getString(i));
+			jspros.put(jjj.getString("name"), jjj.getString("value"));
+		}
+		LOGGER.debug("String-Obj--" + jspros.toString());
+		Boolean success = true;
+		HttpSession session = request.getSession(true);
+		CustomGenericResponse response = new CustomGenericResponse();
+		if (success) {
+
+			masterService.saveMasterJDBC(
+					ChangeColNames.change(jspros.toString(), tableName),
+					tableName);
+			String recordLists = masterService.fetchAllMastersJdbc(tableName);
+
+			session.setAttribute("recordList", recordLists);
+			response.setSuccess(true);
+			response.setMessage("Action successful!");
+			return response;
+		} else {
+			response.setSuccess(false);
+			response.setMessage("Record Already Exist");
+			return response;
+		}
+
+	}
+
+	@RequestMapping(value = "/Edit_{tableName}", method = RequestMethod.POST)
+	public @ResponseBody
+	CustomGenericResponse edit(@RequestParam("id") Integer id,
+			@RequestParam("name") String name, @PathVariable String tableName,
+			HttpServletRequest request) throws Exception {
+		JSONObject jspros = new JSONObject();
+		JSONArray jsob = new JSONArray(name);
+
+		for (int i = 2; i < jsob.length(); i++) {
+			JSONObject jjj = new JSONObject(jsob.getString(i));
+			jspros.put(jjj.getString("name"), jjj.getString("value"));
+		}
+		LOGGER.debug("String-Obj--" + jspros.toString());
+
+		Boolean success = true;
+		HttpSession session = request.getSession(true);
+
+		CustomGenericResponse response = new CustomGenericResponse();
+		if (success) {
+			masterService.updateMasterJDBC(
+					ChangeColNames.change(jspros.toString(), tableName),
+					tableName);
+
+			String recordLists = masterService.fetchAllMastersJdbc(tableName);
+
+			session.setAttribute("recordList", recordLists);
+			response.setSuccess(true);
+			response.setMessage("Action successful!");
+			return response;
+		} else {
+			response.setSuccess(false);
+			response.setMessage("Record Already Exist!");
+			return response;
+		}
+
+	}
+
+	@RequestMapping(value = "/Del_{tableName}", method = RequestMethod.POST)
+	public @ResponseBody
+	CustomGenericResponse delete(@RequestParam("id") Integer id,
+			@RequestParam("name") String name, @PathVariable String tableName,
+			HttpServletRequest request) throws Exception {
+
+		JSONObject jspros = new JSONObject();
+		JSONArray jsob = new JSONArray(name);
+
+		for (int i = 0; i < jsob.length(); i++) {
+			JSONObject jjj = new JSONObject(jsob.getString(i));
+			jspros.put(jjj.getString("name"), jjj.getString("value"));
+		}
+		LOGGER.debug("String-Obj--" + jspros.toString());
+
+		Boolean success = true;
+		HttpSession session = request.getSession(true);
+
+		CustomGenericResponse response = new CustomGenericResponse();
+		if (success) {
+			masterService.deleteMasterJDBC(jspros.toString(), tableName);
+
+			String recordLists = masterService.fetchAllMastersJdbc(tableName);
+			session.setAttribute("recordList", recordLists);
+			response.setSuccess(true);
+			response.setMessage("Action successful!");
+			return response;
+		} else {
+			response.setSuccess(false);
+			response.setMessage("Record Not Exist!");
+			return response;
+		}
+
+	}
+
+	@RequestMapping("/showtables")
+	public ModelAndView listTables(
+			@ModelAttribute("contactBean") ContactBean contactBean,
+			BindingResult result, ModelMap modelMap, HttpServletRequest request) {
+		HttpSession session = request.getSession(true);
+		ModelAndView mv = new ModelAndView("GridUser");
+
+		List<String> list = new ArrayList<String>();
+
+		List<Map<String, String>> s = null;
+		try {
+			s = masterService.listTables();
+		} catch (Exception e) {
+
+			LOGGER.error("error", e);
+		}
+		for (Map<String, String> ll : s) {
+			list.addAll(ll.values());
+		}
+
+		Map<String, String> map = new TreeMap<String, String>();
+
+		for (String ss : list) {
+			String tableName = ss.toString().toLowerCase();
+			map.put(tableName, WordUtils
+					.capitalize(tableName.replace("_", " ")).toLowerCase());
+		}
+
+		mv.addObject("tableDetailsMap", map);
+		session.setAttribute("tableDetailsMap", map);
+		return mv;
+	}
+
+	// building search parameters
+	@RequestMapping(value = "/serachColumns", method = RequestMethod.GET)
+	public @ResponseBody
+	String searchMaster(HttpServletRequest request) {
+		LOGGER.debug("=====================================search"
+				+ request.getParameter("colnames"));
+		//String str = request.getParameter("colnames");
+		//String data = request.getParameter("datalist");
+		String masterName = request.getParameter("masterName");
+		//LOGGER.debug(data);
+		// eeee
+		String d = getDependentcies(masterName);
+		System.out.println(masterName + " dependent valued :" + d);
+		JSONObject jsda;
+		String sss = "";
+		try {
+			jsda = new JSONObject(d);
+			LOGGER.debug(jsda.toString());
+			JSONArray jsar = new JSONArray(jsda.getString("dependencies"));
+			LOGGER.debug(jsar.toString());
+			System.out.println(jsar.length());
+			for (int i = 0; i < jsar.length(); i++) {
+				JSONObject dd = new JSONObject(jsar.getString(i));
+				String cc1 = dd.getString("column1");
+				String cc2 = dd.getString("column2");
+				sss = sss + "<tr><td></td><td style='width: 850px;'>"
+						+ cc1.replace("_", " ")
+						+ "</td><td><select id="+cc1+" onfocus=fun2('"
+						+ dd.getString("name") + "','" + cc2 + "','" + cc1
+						+ "') onchange=fun3(this.value,'"+dd.getString("name")+"') >";
+
+				sss = sss + "<option>..select</option> ";
+				sss = sss + "</select></td></tr>";
+			}
+			sss = sss
+					+ "<tr><td></td><td><input type=button value=Search name=search id=serchid onclick=searchfun()></input></td></tr>";
+
+		} catch (JSONException e1) {
+			LOGGER.error("error", e1);
+		}
+
+		// eeeee
+		/*
+		 * String str2 = ""; try { JSONArray jsob = new JSONArray(str);
+		 * 
+		 * for (int i = 0; i <= jsob.length(); i++) { JSONObject js = new
+		 * JSONObject(jsob.getString(i)); str2 = str2 +
+		 * "<tr align=right><td align=right>" +
+		 * js.getString("name").replace("_", " ") +
+		 * "<select id=selectId onfocus=fun2()>";
+		 * 
+		 * JSONArray d1 = new JSONArray(data); for (int k = 0; k < d1.length();
+		 * k++) { JSONObject d2 = new JSONObject(d1.getString(k));
+		 * str2=str2+"<option>"+
+		 * d2.getString(js.getString("name"))+"</option> "; }
+		 * 
+		 * str2 = str2 + "<option>..select</option> "; str2 = str2 +
+		 * "</select></td></tr>"; } str2 = str2 +
+		 * "<tr><td><input type=button value=Search name=search id=serchid onclick=searchfun()></input></td></tr>"
+		 * ; } catch (JSONException e) { LOGGER.error("error", e); }
+		 */
+
+		return sss;
+	}
+
+	//getting list of selected master details
+	@RequestMapping(value = "serchResult", method = RequestMethod.GET)
+	public @ResponseBody
+	String serchResult(HttpServletRequest request) {
+		StringBuilder  strStates = new StringBuilder();
+		strStates.append("[");
+		String recordData = null;
+		try {
+			recordData = masterService.fetchAllMastersJdbc(request
+					.getParameter("master"));
+			JSONArray hj = new JSONArray(recordData);
+			System.out.println(hj);
+			System.out.println(request.getParameter("col2"));
+			for (int i = 0; i < hj.length(); i++) {
+				JSONObject gf = new JSONObject(hj.getString(i));
+				//building json String
+				strStates.append(getJosnFormat(gf.getString(request.getParameter("col2")),gf.getString(request.getParameter("col1"))));
+				strStates.append(",");
+			}
+			LOGGER.debug(recordData);
+		} catch (Exception e) {
+			LOGGER.error("error", e);
+		}
+		String tempData=strStates.toString();
+		tempData=tempData.substring(0,tempData.length()-1);
+		tempData=tempData+("]");
+		System.out.println(tempData);
+		return tempData;
+	}
+
+	@ResponseBody
+	public String getDependentcies(String masterName) {
+
+		String data = commonControllerUtil.getJsonDependentData(masterName);
+		/*
+		 * Dependent dm = null; ObjectMapper objectMapper = new ObjectMapper();
+		 * try { dm = objectMapper.readValue(data, Dependent.class); } catch
+		 * (JsonParseException e) { LOGGER.error("error", e); } catch
+		 * (JsonMappingException e) { LOGGER.error("error", e); } catch
+		 * (IOException e) { LOGGER.error("error", e); }
+		 */
+		return data;
+	}
+
+	@SuppressWarnings("unchecked")
+	private static <S> S getJosnFormat(S key, S value) {
+		StringBuilder buffer = new StringBuilder();
+		buffer.append("{");
+
+		buffer.append("\"key\":\"" + key + "\",");
+
+		buffer.append("\"value\":\"" + value + "\"");
+
+		buffer.append("}");
+		return (S) buffer.toString();
+	}
+	
+	
+	@RequestMapping(value = "searchfilter", method = RequestMethod.GET)
+	public @ResponseBody
+	String serchFilter(HttpServletRequest request) {
+		
+		
+		
+		System.out.println(request.getParameter("value")+"  "+request.getParameter("masterName"));
+		
+		
+		
+		
+		return null;
+	}
+
+}
+================================================
+<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c"%>
+<%@ taglib uri="http://www.springframework.org/tags/form" prefix="form"%>
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+<link rel="stylesheet" type="text/css" media="screen"
+	href="css/jquery/ui-lightness/jquery-ui-1.8.6.custom.css" />
+<link rel="stylesheet" type="text/css" media="screen"
+	href="css/jqgrid/ui.jqgrid.css" />
+
+<script type="text/javascript" src="script/jquery/jquery-1.4.4.min.js"></script>
+<script type="text/javascript">
+	var jq = jQuery.noConflict();
+</script>
+<script type="text/javascript"
+	src="script/jquery/jquery-ui-1.8.6.custom.min.js"></script>
+<script type="text/javascript" src="script/jqgrid/grid.locale-en.js"></script>
+<script type="text/javascript" src="script/jqgrid/jquery.jqGrid.min.js"></script>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+</head>
+
+<body>
+
+	<input type="hidden" id="test" />
+	<script type="text/javascript">
+		jq(function() {
+			var myGrid = jQuery("#grid");
+			var dependentCol;
+			var dependentData;
+			var master;
+			$
+					.ajax({
+						type : "GET",
+						url : '${tableName}',
+						data : "",
+						dataType : "json",
+						success : function(result) {
+
+							colD = result.gridModel;
+							colN = result.colNames;
+							colM = result.colModel;
+							colT = result.tableName;
+							rows = result.rows;
+							//search
+							dependentCol=colM;
+							dependentData=rows;
+							master="${tableName}";
+							total = result.total;
+							if (jQuery.isEmptyObject(colM)) {
+								$('#jqgrid')
+										.append(
+												'<h1 align=center><br><br><font size=3 color=red>Please add <font color = Maroon><u>'
+														+ colN
+														+ '</u></font> by selecting Master Reference! </font></br></h1>')
+										.hide().fadeIn(2000);
+							}
+							colM = eval('(' + colM + ')');
+							colN = eval('(' + colN + ')');
+							rows = eval('(' + rows + ')');
+							
+							jq("#grid")
+									.jqGrid(
+											{
+
+												//	url:'${tableName}',
+												datatype : 'local',
+												mtype : 'GET',
+												colNames : colN,
+												colModel : colM,
+												postData : {},
+												rowNum : 5,
+												rowList : [ 5, 10, 15 ],
+												height : "auto",
+												autowidth : true,
+												rownumbers : true,
+												pager : '#pager',
+												sortname : 'id',
+												viewrecords : true,
+												sortorder : "asc",
+												caption : colT,
+												emptyrecords : "No Records found please add record",
+												loadonce : false,
+
+												loadComplete : function() {
+												},
+												jsonReader : {
+													root : "rows",
+													page : "page",
+													total : "total",
+													records : "records",
+													repeatitems : false,
+													cell : "cell",
+													id : "id"
+
+												},
+
+											});
+
+							for ( var i = 0; i < rows.length; i++)
+								jq("#grid").addRowData(i, rows[i]);
+							jq("#grid").setGridParam().trigger("reloadGrid");
+
+							jq("#grid").jqGrid(
+									'navGrid',
+									'#pager',
+									{
+										edit : false,
+										add : false,
+										del : false,
+										search : true
+									},
+									{},
+									{},
+									{},
+									{
+										sopt : [ 'eq', 'ne', 'lt', 'gt', 'cn',
+												'bw', 'ew' ],
+										closeOnEscape : true,
+										multipleSearch : true,
+										multipleGroup : true,
+										closeAfterSearch : true
+									});
+
+							jq("#grid").navButtonAdd('#pager', {
+								caption : "Add",
+								buttonicon : "ui-icon-plus",
+								onClickButton : addRow,
+								position : "last",
+								title : "",
+								cursor : "pointer",
+
+							});
+
+							jq("#grid").navButtonAdd('#pager', {
+								caption : "Edit",
+								buttonicon : "ui-icon-pencil",
+								onClickButton : editRow,
+								position : "last",
+								title : "",
+								cursor : "pointer",
+								id : "edit_"
+							});
+
+							/* jq("#grid").navButtonAdd('#pager', {
+								caption : "Search",
+								buttonicon : "ui-icon-pencil",
+								onClickButton : editRow,
+								position : "last",
+								title : "", 
+								cursor : "pointer",
+								id: "search_" 
+								}); */
+
+							jq("#grid").navButtonAdd('#pager', {
+								caption : "Del",
+								buttonicon : "ui-icon-trash",
+								onClickButton : delRow,
+								position : "last",
+								title : "",
+								cursor : "pointer",
+								id : "del_"
+							});
+
+							if (rows.length == 0) {
+								$("#edit_").addClass('ui-state-disabled');
+								$("#search_" + myGrid[0].id).addClass(
+										'ui-state-disabled');
+								$("#refresh_" + myGrid[0].id).addClass(
+										'ui-state-disabled');
+
+							}
+							//alert(dependentCol);
+							search(dependentCol,dependentData,master);
+							
+						}
+
+					});
+
+		});
+	</script>
+
+
+	<script type="text/javascript">
+		function addRow() {
+			var jsondata;
+
+			// Get the currently selected row
+			jq("#grid")
+					.jqGrid(
+							'editGridRow',
+							'new',
+							{ //url: "add?tableName="+'${tableName}',    	
+								//url : "Add_" + '${tableName}?name='+jsondata,
+
+								url : "Add_" + '${tableName}',
+								editData : {},
+								recreateForm : false,
+								beforeShowForm : function(form) {
+
+								},
+								closeAfterAdd : true,
+								reloadAfterSubmit : true,
+
+								onclickSubmit : function(options, rowid) {
+									var frm = $('#FrmGrid_grid');
+									jsondata = JSON.stringify(frm
+											.serializeArray());
+									jq("#test").val(jsondata);
+									options.url += "?name=" + jq("#test").val();
+									return {}; // you can return additional data which will be sent to the server
+								},
+
+								afterSubmit : function(response, postdata) {
+									var result = eval('('
+											+ response.responseText + ')');
+
+									var errors = "";
+									if (result.success == false) {
+										for ( var i = 0; i < result.message.length; i++) {
+											errors += result.message[i]
+													+ "<br/>";
+
+										}
+
+									} else {
+										jq("#dialog")
+												.text(
+														'Entry has been added successfully');
+										jq("#dialog").dialog({
+
+											title : 'Success',
+											modal : true,
+											buttons : {
+												"Ok" : function() {
+													jq(this).dialog("close");
+													location.reload();
+												}
+											}
+										});
+
+									}
+
+									// only used for adding new records
+									var new_id = null;
+									return [ result.success, errors, new_id ];
+
+								}
+
+							});
+
+		}
+
+		function editRow() {
+			// Get the currently selected row
+
+			var row = jq("#grid").jqGrid('getGridParam', 'selrow');
+
+			if (row != null)
+				jq("#grid")
+						.jqGrid(
+								'editGridRow',
+								row,
+								{
+									url : "Edit_" + '${tableName}',
+									editData : {},
+									recreateForm : true,
+									beforeShowForm : function(form) {
+									},
+									closeAfterEdit : true,
+									reloadAfterSubmit : true,
+									onclickSubmit : function(options, rowid) {
+										var frm = $('#FrmGrid_grid');
+										jsondata = JSON.stringify(frm
+												.serializeArray());
+										jq("#test").val(jsondata);
+										options.url += "?name="
+												+ jq("#test").val();
+										return {}; // you can return additional data which will be sent to the server
+									},
+									afterSubmit : function(response, postdata) {
+										var result = eval('('
+												+ response.responseText + ')');
+										var errors = "";
+
+										if (result.success == false) {
+											for ( var i = 0; i < result.message.length; i++) {
+												errors += result.message[i]
+														+ "<br/>";
+											}
+										} else {
+											jq("#dialog")
+													.text(
+															'Entry has been edited successfully');
+											jq("#dialog")
+													.dialog(
+															{
+																title : 'Success',
+																modal : true,
+																buttons : {
+																	"Ok" : function() {
+																		jq(this)
+																				.dialog(
+																						"close");
+																		location
+																				.reload();
+																	}
+																}
+															});
+										}
+
+										return [ result.success, errors, null ];
+									}
+								});
+			else
+				jq("#dialogSelectRow").dialog();
+		}
+
+		function delRow() {
+			// Get the currently selected row
+			var row = jq("#grid").jqGrid('getGridParam', 'selrow');
+
+			if (row != null)
+				jq("#grid")
+						.jqGrid(
+								'editGridRow',
+								row,
+								{
+									url : "Del_" + '${tableName}',
+									editData : {},
+									recreateForm : true,
+									beforeShowForm : function(form) {
+									},
+									closeAfterEdit : true,
+									reloadAfterSubmit : true,
+									onclickSubmit : function(options, rowid) {
+										var frm = $('#FrmGrid_grid');
+										jsondata = JSON.stringify(frm
+												.serializeArray());
+										jq("#test").val(jsondata);
+										options.url += "?name="
+												+ jq("#test").val();
+										return {}; // you can return additional data which will be sent to the server
+									},
+									afterSubmit : function(response, postdata) {
+										var result = eval('('
+												+ response.responseText + ')');
+										var errors = "";
+
+										if (result.success == false) {
+											for ( var i = 0; i < result.message.length; i++) {
+												errors += result.message[i]
+														+ "<br/>";
+											}
+										} else {
+											jq("#dialog")
+													.text(
+															'Entry has been deleted successfully');
+											jq("#dialog")
+													.dialog(
+															{
+																title : 'Success',
+																modal : true,
+																buttons : {
+																	"Ok" : function() {
+																		jq(this)
+																				.dialog(
+																						"close");
+																		location
+																				.reload();
+																	}
+																}
+															});
+										}
+
+										return [ result.success, errors, null ];
+									}
+								});
+			else
+				jq("#dialogSelectRow").dialog();
+
+		}
+	</script>
+
+	<!-- filter grid -->
+	<script type="text/javascript">
+		//serch
+		function search(colnames,data,masterName) {
+			//alert(masterName);
+			//alert(colnames);
+			//alert(data);
+			
+			//var json = JSON.stringify(eval("(" + colnames + ")"));
+			//alert(json);
+			$.ajax({
+				type : "GET",
+				url : "serachColumns",
+				data : "colnames="+ colnames+"&datalist="+data+"&masterName="+masterName,
+				dataType : "",
+				success : function(result) {
+					//alert(result);
+					$("#filterGrid").html(result);
+				}
+			});
+		}
+		
+		function searchfun(){
+			alert("cbvkcx");
+			
+			
+			
+		}
+		
+		
+		function fun2(name,col2,col1){
+			//alert("fun2");
+		var id=col1;
+		//alert("name:"+name+"col1:"+col1+"col2:"+col2);
+			$.ajax({
+				type : "GET",
+				url : "serchResult",
+				data: "master="+name+"&col1="+col1+"&col2="+col2,
+				success : function(result) {
+					
+					//alert(result);
+					var r1=eval(result);
+					$('#'+id).find('option').remove();
+					  /* $('#selectId').append($("<option></option>")
+		              .attr("value","")
+		              .text("--Select--")); */
+					  $.each(r1,function(i){
+
+						 $('#'+id).append($("<option></option>")
+					              .attr("value",r1[i].key)
+					              .text(r1[i].value)); 
+						
+					});  
+				}
+			});
+		}
+		
+		function fun3(value,name){
+			//alert("dfgd");
+			//var data=$(this).siblings(":select");
+			//alrt("data Value is::"+data);
+			//alert("fun3"+value);
+			$.ajax({
+				type : "GET",
+				url : "searchfilter",
+				data: "value="+value+"&masterName="+name,
+				success : function(result) {
+					
+				}
+			});
+		}
+		
+	</script>
+
+
+	<form:form id="contact" action="gridDetails" method="GET"
+		commandName="contactBean">
+		<fieldset style="margin-top: 35px;">
+			<table style="border-width: 0px; margin-top: 0px; margin-bottom: 0px;">
+				<tr><td>                       </td>
+					<td style="width: 868px;">Select Reference Master :
+					<form:select path="tables">
+							<form:option value="" label="--- Select ---" />
+							<form:options items="${tableDetailsMap}" />
+						</form:select>
+						<input type="submit" id="table" value='GO ' /></td>
+				</tr>
+				
+			</table>
+		</fieldset>
+	</form:form>
+
+<div id="filter" style="margin-top: 50px; border-left-width: 72px; margin-left: 425px; margin-right: 483px; border-right-width: 20px;">
+		<table id="filterGrid" align="center">
+		</table>
+		<!-- <div id="search" style="padding: 0px 0px 6px 380px; margin-top: -17px; margin-left: 1px;">
+		<input type="button" id="seatchid" value='Search' onclick="searchfun()"/></div> -->
+	</div>
+	<div id="jqgrid" style="margin-top: -80px;">
+		<table id="grid">
+		</table>
+		<div id="pager" style="height: 10%; width: 100%"></div>
+	</div>
+
+	<div id="dialog" title="Feature not supported" style="display: none">
+		<p>That feature is not supported.</p>
+	</div>
+
+	<div id="dialogSelectRow" title="Warning" style="display: none">
+		<p>Please select row</p>
+	</div>
+	<%-- <form:form id="contact" action="showtables" method="GET"
+		commandName="contactBean">
+	<input type="submit" id="table" value='Back' />
+	</form:form> --%>
+	
+
+</body>
+
+</html>
+==============================================================
+
+/**
+ * 
+ */
+package com.cnk.travelerpibe.master.web.util;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Properties;
+
+import org.json.JSONArray;
+import org.json.JSONObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+
+import com.cnk.travelerpibe.common.persistence.io.ClassPathResource;
+import com.cnk.travelerpibe.common.persistence.io.Resource;
+import com.cnk.travelerpibe.master.services.IMasterService;
+
+
+/**
+ * @author sivaiah.polamreddy
+ * 
+ * @Description This is Common util class for getting grid column names and grid
+ *              colModelNames from properties files.
+ */
+@Component("commonControllerUtil")
+public class CommonControllerUtil {
+
+	@Autowired
+	private IMasterService masterService;
+	
+	private static final Logger LOGGER = LoggerFactory.getLogger(CommonControllerUtil.class);
+
+	public String getColNames(String tableName) {
+
+		String colNameTemp = "";
+		try {
+			Resource resource = new ClassPathResource("gridColNames.properties");
+			Properties properties = new Properties();
+			properties.load(resource.getInputStream());
+			colNameTemp = "[" + properties.getProperty(tableName) + "]";
+			LOGGER.debug("grid colnames: " + colNameTemp);
+		} catch (Exception e) {
+			LOGGER.error("error",e);
+		}
+		return colNameTemp;
+	}
+
+	public List<Object> getColModelNames(String tableName, String value) {
+		List<Object> colModelTemp = new ArrayList<>();
+		LOGGER.debug("value============ :" + value);
+		String str = "[";
+
+		try {
+			Resource resource = new ClassPathResource(
+					"gridColModelNames.properties");
+			Properties properties = new Properties();
+			properties.load(resource.getInputStream());
+			str = str + properties.getProperty(tableName) + value + "}]";
+			LOGGER.debug("grid colModelNames: " + str);
+			colModelTemp.add(str);
+
+		} catch (Exception e) {
+			LOGGER.error("error",e);
+		}
+
+		LOGGER.debug("colModelTemp :" + colModelTemp);
+		return colModelTemp;
+	}
+
+	public String getDependentMasterData(String tableName) {
+
+		String value = "";
+		if (tableName.equalsIgnoreCase("product_category_sub_type")) {
+			value = resultValue("product_category", "PROD_CATGRY_NAME",
+					"PROD_CATGRY_ID");
+		} else if (tableName.equalsIgnoreCase("group_company_master")) {
+			value = resultValue("group_of_companies_master",
+					"GROUP_OF_COMPANIES_NAME", "GROUP_OF_COMPANIES_ID");
+		} else if (tableName.equalsIgnoreCase("company_master")) {
+			value = resultValue("group_company_master", "GROUP_COMPANY_NAME",
+					"GROUP_COMPANY_ID");
+		} else if (tableName.equalsIgnoreCase("sbu_master")) {
+			value = resultValue("company_master", "COMPANY_NAME", "COMPANY_ID");
+		} else if (tableName.equalsIgnoreCase("bu_master")) {
+			value = resultValue("sbu_master", "SBU_NAME", "SBU_ID");
+		} else if (tableName.equalsIgnoreCase("city_master")) {
+			value = resultValue("state_master", "STATE_NAME", "STATE_ID");
+		} else if (tableName.equalsIgnoreCase("airport_city_master")) {
+			value = resultValue("city_master", "CITY_NAME", "CITY_ID");
+		} else if (tableName.equalsIgnoreCase("state_master")) {
+			value = resultValue("country_master", "COUNTRY_NAME", "COUNTRY_ID");
+		} else if (tableName.equalsIgnoreCase("country_master")) {
+			value = resultValue("continent_master", "CONTINENT_NAME",
+					"CONTINENT_ID");
+		}
+
+		return value;
+	}
+
+	public String resultValue(String table, String col1, String col2) {
+		String value = "";
+		String json;
+		try {
+			json = masterService.fetchAllMastersJdbc(table);
+
+			value = "{value:'";
+
+			JSONArray jsonArray = new JSONArray(json);
+			for (int i = 0; i < jsonArray.length(); i++) {
+				JSONObject jsondata = jsonArray.getJSONObject(i);
+				String name = jsondata.getString(col1);
+				String code = jsondata.getString(col2);
+				value = value + code + ":" + name + ";";
+			}
+		} catch (Exception e) {
+			LOGGER.error("error",e);
+		}
+		value = value + "'}";
+		value = value.replaceAll(";'", "'");
+		LOGGER.debug(value);
+		return value;
+
+	}
+	
+	public  String getJsonDependentData(String tablename) {
+
+		String jsonDependentdata = "";
+		
+		try {
+			Resource resource = new ClassPathResource("depedentMasters.properties");
+			Properties properties = new Properties();
+			properties.load(resource.getInputStream());
+			jsonDependentdata=properties.getProperty(tablename);
+		} catch (Exception e) {
+			LOGGER.error("error",e);
+		}
+		return jsonDependentdata;
+	}
+
+	
+
+}
+===================================================
+
+
+city_master={"name":"city_master","dependencies":[{"name":"continent_master","column1":"CONTINENT_NAME","column2":"CONTINENT_ID"},{"name":"country_master","column1":"COUNTRY_NAME","column2":"COUNTRY_ID"},{"name":"state_master","column1":"STATE_NAME","column2":"STATE_ID"}]}	
+
+state_master={"name":"state_master","dependencies":[{"name":"continent_master","column1":"CONTINENT_NAME","column2":"CONTINENT_ID"},{"name":"country_master","column1":"COUNTRY_NAME","column2":"COUNTRY_ID"}]}	
+
+country_master={"name":"country_master","dependencies":[{"name":"continent_master","column1":"CONTINENT_NAME","column2":"CONTINENT_ID"}]}	
+
+product_category_sub_type={"name":"product_category_sub_type","dependencies":[{"name":"product_category","column1":"PROD_CATGRY_NAME","column2":"PROD_CATGRY_ID"}]}
+
+bu_master={"name":"bu_master","dependencies":[{"name":"group_of_companies_master","column1":"GROUP_OF_COMPANIES_NAME","column2":"GROUP_OF_COMPANIES_ID"},{"name":"group_company_master","column1":"GROUP_COMPANY_NAME","column2":"GROUP_COMPANY_ID"},{"name":"company_master","column1":"COMPANY_NAME","column2":"COMPANY_ID"},{"name":"sbu_master","column1":"SBU_NAME","column2":"SBU_ID"}]}	
+
+=====================================================

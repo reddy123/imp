@@ -1,0 +1,3058 @@
+package com.cnk.travelerpibe.common.persistence.sql;
+
+//import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+//import java.util.Properties;
+
+import com.cnk.travelerpibe.common.persistence.model.AttributeDBMappingModel;
+import com.cnk.travelerpibe.common.persistence.model.EntityDBMappingModel;
+//import com.cnk.travelerpibe.common.persistence.io.ClassPathResource;
+//import com.cnk.travelerpibe.common.persistence.io.Resource;
+//import com.mmpnc.icm.io.ClassPathResource;
+//import com.mmpnc.icm.io.Resource;
+//import com.mmpnc.icm.persistence.AttributeMappingModel;
+//import com.mmpnc.icm.persistence.EntityMappingModel;
+
+public abstract class AbstractSQLGenerator implements SQLGenerator {
+
+  protected enum DML{Select, Delete,Update,Insert, Into, Where,From, Values,AND, OR};
+	
+	
+	
+	protected String LEFT_BRKT_CONST = "(";
+	protected String RIGHT_BRKT_CONST = ")";
+	protected String PLACEHOLDER_CONST = "?";
+	protected String SPACE_CONST = " ";
+	protected String EQUAL_CONST = " = ";
+	protected String SET_CONST = " SET ";
+	protected String DOT		= ".";
+	protected String SEQVAL="AIRLINE_TYPE_ID_seq.nextval";
+	
+	protected String[] columnText(EntityDBMappingModel em, final Statement statment, List<NameValuePair> columns){
+		StringBuilder retColText = new StringBuilder();
+		StringBuilder retPlaceHolderText = new StringBuilder();
+		int i=0;
+		for(NameValuePair nameValue:columns){
+			retColText.append(nameValue.name).append(", ");
+			retPlaceHolderText.append(nameValue.value).append(", ");
+			i++;
+		}
+		if(i>0){
+			int length = retColText.length();
+			int length1 = retPlaceHolderText.length();
+			retColText.replace(length-2,length,"");
+			retPlaceHolderText.replace(length1-2,length1,"");
+		}
+		return new String[]{retColText.toString(),retPlaceHolderText.toString()};
+	}
+
+	
+	
+	protected String predicateText(EntityDBMappingModel em, final Statement statment){
+		StringBuilder retColText = new StringBuilder();
+		int i=0;
+		for(NameValuePair nameValue:getConditions(em,statment)){
+			if (i>0){
+				retColText.append(SPACE_CONST).append(DML.AND).append(SPACE_CONST);
+			}
+			
+			if(nameValue.blankIfNull){
+				retColText.append("(");
+				retColText.append(nameValue.name).append(EQUAL_CONST).append(nameValue.value);
+				retColText.append(SPACE_CONST).append("OR").append(SPACE_CONST).append(nameValue.name).append(SPACE_CONST).append("IS NULL");
+				retColText.append(")");
+			} else {
+				retColText.append(nameValue.name).append(EQUAL_CONST).append(nameValue.value);
+			}
+			i++;
+		}
+		return retColText.toString();
+	}
+
+	
+//	private List<String> getColumns(EntityMappingModel em){
+//		List<String> columns=new ArrayList<String>();
+//		for(AttributeMappingModel am:em.getAttributeMapping()){
+//			String columName = am.getTargetName();
+//			columns.add(columName);
+//		}
+//		return columns;
+//	}
+
+	
+	protected List<NameValuePair> getColumns(EntityDBMappingModel em, final Statement statment){
+		List<NameValuePair> columns=new ArrayList<NameValuePair>();
+		for(AttributeDBMappingModel am:em.getAttributes()){
+			String columName = am.getTargetName();
+			String defaultValue = am.getDefaultValue();
+//			boolean isUpdAlloed=convertBoolean(am.getUpdateable());
+			boolean isUpdAlloed=am.isUpdateable();
+			
+			if (!"".equals(defaultValue) && defaultValue!=null){
+				statment.addPlaceholder(columName,am.getDataType(),isUpdAlloed ,defaultValue);
+				columns.add(new NameValuePair(columName,SEQVAL, true));//here add sequence
+			}
+			else {
+				statment.addPlaceholder(columName,am.getDataType(),isUpdAlloed );
+				columns.add(new NameValuePair(columName,PLACEHOLDER_CONST, false));
+			}
+			//columns.add(new NameValuePair(columName,PLACEHOLDER_CONST));
+		}
+		return columns;
+	}
+	
+	
+
+	/*private List<NameValuePair> getConditions(EntityDBMappingModel em, final Statement statment){
+		List<NameValuePair> columns=new ArrayList<NameValuePair>();
+		for(AttributeDBMappingModel am:em.getAttributes()){
+			String columName = am.getTargetName();
+			String defaultValue = am.getDefaultValue();
+			boolean isUpdAlloed=am.isUpdateable();
+			boolean isNotKey = !am.isKey();
+			if (isNotKey){
+				continue;
+			}
+//			String value = PLACEHOLDER_CONST;
+			
+			if (!"".equals(defaultValue) && defaultValue!=null){
+				statment.addPlaceholder(columName,am.getDataType(),isUpdAlloed ,defaultValue);
+//				value = "\'"+defaultValue+"\'";
+				if(defaultValue.startsWith("$BlankIfNull")|| defaultValue.startsWith("$BlankIfNull")){
+					columns.add(new NameValuePair(columName,PLACEHOLDER_CONST, true));
+				}else{
+					columns.add(new NameValuePair(columName,PLACEHOLDER_CONST, false));
+				}
+			}
+			else {
+				columns.add(new NameValuePair(columName,PLACEHOLDER_CONST, false));
+				statment.addPlaceholder(columName,am.getDataType(),isUpdAlloed );
+			}
+			//columns.add(new NameValuePair(columName,PLACEHOLDER_CONST));
+		}
+		return columns;
+	}
+*/
+	
+	private List<NameValuePair> getConditions(EntityDBMappingModel em, final Statement statment){
+		List<NameValuePair> columns=new ArrayList<NameValuePair>();
+		for(AttributeDBMappingModel am:em.getAttributes()){
+			String columName = am.getTargetName();
+			String defaultValue = am.getDefaultValue();
+			boolean isUpdAlloed=am.isUpdateable();
+			boolean isNotKey = !am.isKey();
+			if (isNotKey){
+				continue;
+			}
+//			String value = PLACEHOLDER_CONST;
+			
+			if (!"".equals(defaultValue) && defaultValue!=null){
+				statment.addPlaceholder(columName,am.getDataType(),isUpdAlloed ,defaultValue);
+//				value = "\'"+defaultValue+"\'";
+				if(defaultValue.startsWith("$BlankIfNull")|| defaultValue.startsWith("$BlankIfNull")){
+					columns.add(new NameValuePair(columName,PLACEHOLDER_CONST, true));
+				}else{
+					columns.add(new NameValuePair(columName,PLACEHOLDER_CONST, false));
+				}
+			}
+			else {
+				columns.add(new NameValuePair(columName,PLACEHOLDER_CONST, false));
+				statment.addPlaceholder(columName,am.getDataType(),isUpdAlloed );
+			}
+			//columns.add(new NameValuePair(columName,PLACEHOLDER_CONST));
+		}
+		return columns;
+	}
+
+	public static boolean convertBoolean(String s){
+		if ("Y".equalsIgnoreCase(s)||"Yes".equalsIgnoreCase(s)||"true".equalsIgnoreCase(s)){
+			return true;
+		}
+		return false;
+	}
+//	protected static Properties loadProperties() throws IOException{
+//		Resource resource = new ClassPathResource("dbConf.properties", AbstractSQLGenerator.class.getClassLoader());
+//		Properties properties = new Properties();
+//		properties.load(resource.getInputStream());
+//		return properties;
+//	}
+	
+}
+============================================================================
+package com.cnk.travelerpibe.common.persistence.sql;
+
+import java.util.Date;
+
+public class CurrentDateDefaultValue implements DefaultValue {
+
+	public Object getValue() {
+		return new Date();
+	}
+
+}
+=============================================================================
+package com.cnk.travelerpibe.common.persistence.sql;
+
+public interface DefaultValue {
+
+	Object getValue();
+}
+==============================================================================
+package com.cnk.travelerpibe.common.persistence.sql;
+
+import java.util.HashMap;
+import java.util.Map;
+
+
+public class DefaultValueProvider {
+
+	private Map<String,DefaultValue> defaultValues;
+	
+	
+	private static DefaultValueProvider defaultValueProvide;
+	public static DefaultValueProvider getInstance(){
+		if (defaultValueProvide == null){
+			synchronized (DefaultValueProvider.class) { //in case of lazy initialization
+				if (defaultValueProvide == null){
+					defaultValueProvide = new DefaultValueProvider();
+				}
+			}
+		}
+		return defaultValueProvide;
+	}
+	
+	private DefaultValueProvider(){
+		defaultValues = new HashMap<String, DefaultValue>();
+	}
+
+	public DefaultValue getValue(String key){
+		return defaultValues.get(key);
+	}
+	
+	public void setValue(String key, DefaultValue obj){
+		defaultValues.put(key,obj);
+	}
+}
+===========================================================================
+package com.cnk.travelerpibe.common.persistence.sql;
+
+//import java.util.Properties;
+
+import com.cnk.travelerpibe.common.persistence.model.EntityDBMappingModel;
+
+public class DeleteSQLGenerator extends AbstractSQLGenerator implements SQLGenerator {
+	private static DeleteSQLGenerator generator = new DeleteSQLGenerator();
+	private DeleteSQLGenerator(){
+	}
+	
+	public static DeleteSQLGenerator getInstance(){
+		return generator;
+	}
+	public Statement generate(EntityDBMappingModel em) throws Exception {
+//		Properties prop = loadProperties();
+//		String addSchemaBeforeTableName = (String) prop.get("addSchemaBeforeTableName");
+//		String tableName="";
+//		if("Y".equals(addSchemaBeforeTableName)){
+//			tableName = em.getPath()+DOT+em.getTargetObect();
+//		}else{
+//			tableName = em.getTargetObect();
+//		}
+		Statement stmt = new Statement();
+
+		StringBuilder sqlStmt = new StringBuilder();
+		sqlStmt.append(DML.Delete).append(SPACE_CONST);
+		sqlStmt.append(DML.From).append(SPACE_CONST);
+		//append(em.getPath()+DOT+em.getTargetObect()).append(SPACE_CONST);
+		if (!em.getPath().isEmpty()){
+			sqlStmt.append(em.getPath()).append(DOT);
+		}
+		sqlStmt.append(em.getTargetObect()).append(SPACE_CONST);
+//		append(tableName).append(SPACE_CONST);
+		stmt.refresh(); //need to reset
+		String pstr=predicateText(em,stmt);
+		if (pstr != null && !"".equals(pstr)){
+			sqlStmt.append(DML.Where).append(SPACE_CONST).append(pstr);
+		}
+		
+		stmt.statement = sqlStmt.toString();
+		return stmt;
+	}
+//	public static final void main(String[] args) throws Exception{
+//        EMUnmarshaller unmarshaller = new EMUnmarshaller();
+//      String xmlDocument = "<EntityMapping><PublishCriteria>GroupBy</PublishCriteria><Path>VPI</Path><TargetObject>ANSWER_TABLE</TargetObject><AttributeMapping><ParentId/><ParentName/><DataType>VARCHAR</DataType><IsParent>N</IsParent><TargetName>GTABLECODE1</TargetName><updateable>Y</updateable><KeyColSeq>0</KeyColSeq><DefaultValue>COVERAGE_TYPE</DefaultValue><Name/><IsKey>Y</IsKey><IsMandatory>Y</IsMandatory></AttributeMapping><AttributeMapping><ParentId/><ParentName/><DataType>VARCHAR</DataType><IsParent>N</IsParent><TargetName>GTABLECODE2</TargetName><updateable>N</updateable><KeyColSeq/><DefaultValue/><Name>GTABLECODE2</Name><IsKey>Y</IsKey><IsMandatory>N</IsMandatory></AttributeMapping><AttributeMapping><ParentId/><ParentName/><updateablCol>Y</updateablCol><DataType>VARCHAR</DataType><IsParent>N</IsParent><TargetName>GTABLENAME</TargetName><KeyColSeq/><DefaultValue/><Name>GTABLENAME</Name><IsKey>N</IsKey><IsMandatory>N</IsMandatory></AttributeMapping><AttributeMapping><ParentId/><ParentName/><DataType>DATE</DataType><IsParent>N</IsParent><TargetName>ANS_DATE_GENERATE</TargetName><updateable>Y</updateable><KeyColSeq/><DefaultValue/><Name>ANS_DATE_GENERATE</Name><IsKey>N</IsKey><IsMandatory>N</IsMandatory></AttributeMapping><TargetType>Database</TargetType></EntityMapping>";
+//      EntityMappingModel em = unmarshaller.unmarshal(xmlDocument);
+//      
+//      Statement statment =  new DeleteSQLGenerator().generate(em);
+//      System.out.println(statment.statement);
+//	}
+	
+}
+==========================================================================
+package com.cnk.travelerpibe.common.persistence.sql;
+
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
+public class GroupByValues {
+	
+	
+	Set<String> igroupByFValues = new HashSet<String>();
+	List<FieldWithValue[]> groupByValues  = new ArrayList<FieldWithValue[]>();
+
+	public void setFieldValues(FieldWithValue[] values){
+		String combField="";
+		for(FieldWithValue s:values){
+			combField+=s.value;
+		}
+		if (igroupByFValues.add(combField)){
+			groupByValues.add(values);
+		}
+	}
+	
+	public  List<FieldWithValue[]> getGroupByFValues(){
+		return groupByValues;
+	}
+	
+	public static final void main(String[] args){
+		
+		GroupByValues gv = new GroupByValues();
+		gv.setFieldValues(new FieldWithValue[]{gv.new FieldWithValue("","aaa",1),
+				gv.new FieldWithValue("","bb",1),gv.new FieldWithValue("","cc",1)});
+		
+		gv.setFieldValues(new FieldWithValue[]{gv.new FieldWithValue("","aaa",1),
+				gv.new FieldWithValue("","bb",1),gv.new FieldWithValue("","cc",1)});
+		gv.setFieldValues(new FieldWithValue[]{gv.new FieldWithValue("","aaa",1),
+				gv.new FieldWithValue("","bb",1),gv.new FieldWithValue("","ddd",1)});
+
+		for(FieldWithValue[] s:gv.getGroupByFValues()){
+			System.out.println(s);
+		}
+	}
+	
+	public class FieldWithValue{
+		public String field;
+		public int index;
+		public String value;
+		
+		public FieldWithValue(String field,String value, int index){
+			this.field = field;
+			this.index = index;
+			this.value = value;
+		}
+		
+		
+	}
+}
+
+============================================================================
+package com.cnk.travelerpibe.common.persistence.sql;
+
+//import java.util.Properties;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import com.cnk.travelerpibe.common.persistence.model.AttributeDBMappingModel;
+import com.cnk.travelerpibe.common.persistence.model.EntityDBMappingModel;
+
+public class InsertSQLGenerator extends AbstractSQLGenerator implements SQLGenerator {
+
+	private static InsertSQLGenerator generator = new InsertSQLGenerator();
+	private InsertSQLGenerator(){
+	}
+	
+	public static InsertSQLGenerator getInstance(){
+		return generator;
+	}
+	
+	public Statement generate(EntityDBMappingModel em) throws Exception {
+//		Properties prop = loadProperties();
+//		String addSchemaBeforeTableName = (String) prop.get("addSchemaBeforeTableName");
+//		
+//		String tableName="";
+//		if("Y".equals(addSchemaBeforeTableName)){
+//			tableName = em.getPath()+DOT+em.getTargetObect();
+//		}else{
+//			tableName = em.getTargetObect();
+//		}
+		Statement stmt = new Statement();
+		
+		String[] columns =  columnText(em,stmt,getColumnsInsert(em, stmt));
+		StringBuilder sqlStmt = new StringBuilder();
+		sqlStmt.append(DML.Insert).append(SPACE_CONST);
+		sqlStmt.append(DML.Into).append(SPACE_CONST);
+		//sqlStmt.append(em.getPath()+DOT+em.getTargetObect()).append(SPACE_CONST).
+		if (!em.getPath().isEmpty()){
+			sqlStmt.append(em.getPath()).append(DOT);
+		}
+		sqlStmt.append(em.getTargetObect()).append(SPACE_CONST).append(LEFT_BRKT_CONST).append(SPACE_CONST);
+		sqlStmt.append(columns[0]).append(SPACE_CONST).append(RIGHT_BRKT_CONST).append(SPACE_CONST);
+
+		sqlStmt.append(DML.Values).append(SPACE_CONST);
+		sqlStmt.append(LEFT_BRKT_CONST).append(SPACE_CONST);
+		sqlStmt.append(columns[1]).append(SPACE_CONST).append(RIGHT_BRKT_CONST).append(SPACE_CONST);
+		
+		stmt.statement = sqlStmt.toString();
+		
+		return stmt;
+	}
+//	public static final void main(String[] args) throws Exception{
+//        EMUnmarshaller unmarshaller = new EMUnmarshaller();
+//      String xmlDocument = "<EntityMapping><PublishCriteria>GroupBy</PublishCriteria><Path>VPI</Path><TargetObject>ANSWER_TABLE</TargetObject><AttributeMapping><ParentId/><ParentName/><DataType>VARCHAR</DataType><IsParent>N</IsParent><TargetName>GTABLECODE1</TargetName><updateable>Y</updateable><KeyColSeq>0</KeyColSeq><DefaultValue>COVERAGE_TYPE</DefaultValue><Name/><IsKey>Y</IsKey><IsMandatory>Y</IsMandatory></AttributeMapping><AttributeMapping><ParentId/><ParentName/><DataType>VARCHAR</DataType><IsParent>N</IsParent><TargetName>GTABLECODE2</TargetName><updateable>N</updateable><KeyColSeq/><DefaultValue/><Name>GTABLECODE2</Name><IsKey>Y</IsKey><IsMandatory>N</IsMandatory></AttributeMapping><AttributeMapping><ParentId/><ParentName/><updateablCol>Y</updateablCol><DataType>VARCHAR</DataType><IsParent>N</IsParent><TargetName>GTABLENAME</TargetName><KeyColSeq/><DefaultValue/><Name>GTABLENAME</Name><IsKey>N</IsKey><IsMandatory>N</IsMandatory></AttributeMapping><AttributeMapping><ParentId/><ParentName/><DataType>DATE</DataType><IsParent>N</IsParent><TargetName>ANS_DATE_GENERATE</TargetName><updateable>Y</updateable><KeyColSeq/><DefaultValue/><Name>ANS_DATE_GENERATE</Name><IsKey>N</IsKey><IsMandatory>N</IsMandatory></AttributeMapping><TargetType>Database</TargetType></EntityMapping>";
+//      EntityMappingModel em = unmarshaller.unmarshal(xmlDocument);
+//      
+//      Statement statment =  new InsertSQLGenerator().generate(em);
+//      System.out.println(statment);
+//	}
+
+	
+	
+	private List<NameValuePair> getColumnsInsert(EntityDBMappingModel em, final Statement statment){
+		List<NameValuePair> columns=new ArrayList<NameValuePair>();
+		for(AttributeDBMappingModel am:em.getAttributes()){
+			if (am.isKey() && am.isKeySeq()){
+				continue;
+			}
+			String columName = am.getTargetName();
+			String defaultValue = am.getDefaultValue();
+//			boolean isUpdAlloed=convertBoolean(am.getUpdateable());
+			boolean isUpdAlloed=am.isUpdateable();
+			
+			
+			if (!"".equals(defaultValue) && defaultValue!=null){
+				statment.addPlaceholder(columName,am.getDataType(),isUpdAlloed ,defaultValue);
+				columns.add(new NameValuePair(columName,SEQVAL, true));//here add sequence
+			}
+			else {
+				statment.addPlaceholder(columName,am.getDataType(),isUpdAlloed );
+				columns.add(new NameValuePair(columName,PLACEHOLDER_CONST, false));
+			}
+			//columns.add(new NameValuePair(columName,PLACEHOLDER_CONST));
+		}
+		return columns;
+	}
+
+}
+===============================================================================
+package com.cnk.travelerpibe.common.persistence.sql;
+
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.util.Properties;
+
+/*import junit.framework.Assert;
+
+import org.junit.Test;*/
+
+import com.cnk.travelerpibe.common.persistence.io.ClassPathResource;
+import com.cnk.travelerpibe.common.persistence.io.Resource;
+
+public class JDBCConnection {
+	public static Connection connection;
+//	public static boolean isLocalDB;
+	
+	static {
+		try {
+			Resource resource = new ClassPathResource("dbConf.properties", AbstractSQLGenerator.class.getClassLoader());
+			Properties properties = new Properties();
+			properties.load(resource.getInputStream());
+
+			Class.forName( properties.getProperty("driver") );
+	        String url = properties.getProperty("url");
+	        String usr = properties.getProperty("user");
+	        String pwd = properties.getProperty("password");
+	        connection = DriverManager.getConnection(url, "siva_master", "siva_master");
+	      //  isLocalDB = Boolean.valueOf( properties.getProperty("isLocalDB") );
+		} catch (Exception e) {
+			throw new RuntimeException("Error occured during initializing the connection",e);
+		}
+		
+	}
+	
+	/*@Test
+	public void connection(){
+		Assert.assertNotNull( connection );
+		
+	}*/
+}
+===========================================================================
+package com.cnk.travelerpibe.common.persistence.sql;
+
+public class NameValuePair {
+		String name;
+		String value;
+		boolean blankIfNull;
+		
+		NameValuePair(String name,String value, boolean blankIfNull){
+			this.name = name;
+			this.value = value;
+			this.blankIfNull = blankIfNull;
+		}
+}
+===============================================================================
+package com.cnk.travelerpibe.common.persistence.sql;
+
+import java.util.ArrayList;
+import java.util.List;
+
+public class OrderByCols {
+	
+	public static String ORDER_BY = "Order By";
+	public enum OrderByOrder{ASC,DESC};
+	public OrderByOrder order=OrderByOrder.ASC;
+	public List<String> cols = new ArrayList<>();
+	
+}
+================================================================================
+package com.cnk.travelerpibe.common.persistence.sql;
+
+import java.sql.Connection;
+
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+import java.sql.Types;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Date;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+
+import com.cnk.travelerpibe.common.persistence.jdbc.JDBCConnectionProvider;
+import com.cnk.travelerpibe.common.persistence.sql.Statement.Placeholders;
+import com.cnk.travelerpibe.common.persistence.util.StatementUtil;
+
+
+/**
+ * Persist Helper to perfomr persistence and other DB operations like making queries 
+ * @author vishwanath.dubey
+ *
+ */
+public class PersistHelper {
+	public enum SQLStatements{Insert,Update,Delete,Select,SelectNonUpd};
+
+	private static PersistHelper persistHelper;
+	
+	
+	public static PersistHelper getInstance(){
+		if (persistHelper == null){
+			synchronized (PersistHelper.class) {
+				if (persistHelper == null){
+					persistHelper = new PersistHelper();
+				}
+			}
+		}
+		return persistHelper;
+	}
+	
+	public void persist( Map<SQLStatements,Statement> statements,
+			List<Map<String,String>> recordValues) throws Exception{
+		if (statements == null || recordValues == null
+				|| statements.size()==0 ){
+			// throw exception
+		}
+		
+		if (statements == null || recordValues == null
+				|| statements.size()==0 ){
+			// throw exception
+		}
+		for(Map<String,String> record:recordValues){
+			persist(statements,record);
+		}
+		
+
+	}
+	
+	/**
+	 * It will persist a record in database. It will first check if current record is available in database based on key provided, 
+	 * it will perform the updated otherwise insert operation will be performed.
+	 * @param statements
+	 * @param values
+	 * @throws Exception
+	 */
+	public void persist( Map<SQLStatements,Statement> statements,
+						 Map<String,String> recordValues) throws Exception{
+		if (statements == null || recordValues == null
+				|| statements.size()==0 ){
+			// throw exception
+		}
+		
+		Statement selectStmt = statements.get(SQLStatements.Select);
+		Statement insertStmt = statements.get(SQLStatements.Insert);
+		Statement updateStmt = statements.get(SQLStatements.Update);
+		
+		if (selectStmt==null || insertStmt == null || updateStmt == null){
+			//throw exception
+		} 
+		//boolean isExist = isExist(insertStmt, recordValues);
+		/*boolean isExist = isExist(selectStmt, recordValues); // select statenent
+		if (isExist ){
+			executeUpdate(updateStmt, recordValues);
+		}
+		else {
+			executeUpdate(insertStmt, recordValues);
+		}*/
+		executeUpdate(insertStmt, recordValues);
+	}
+
+	/**
+	 * Update/Insert operation
+	 * @param statement
+	 * @param values
+	 * @throws Exception
+	 */
+	public void executeUpdate(Statement statement, Map<String,String> values)	throws Exception
+	{
+		Connection conn=JDBCConnectionProvider.getInstance().getConnection();
+		ResultSet resultSet=null;
+		PreparedStatement pstmt = null;
+
+//		logger.log(Level.INFO, "SQL statement "+statement.statement, entityName);
+
+		try{
+			pstmt = conn.prepareStatement(
+					statement.statement);
+			for(Placeholders placeholders:statement.placeholder){
+				String value = values.get(placeholders.fieldName);
+				setSQLValue(pstmt,placeholders,value);
+			}
+			pstmt.executeUpdate();
+		}
+		finally{
+			if (resultSet != null){
+				resultSet.close();
+			}
+			if (pstmt != null){
+				pstmt.close();
+			}
+		}
+	}
+	
+
+	/**
+	 * Update/Insert operation
+	 * @param statement
+	 * @param values
+	 * @throws Exception
+	 */
+	public void executeBatch(Statement statement, List<Map<String,String>> values)	throws Exception
+	{
+		Connection conn=JDBCConnectionProvider.getInstance().getConnection();
+		ResultSet resultSet=null;
+		PreparedStatement pstmt = null;
+
+//		logger.log(Level.INFO, "SQL statement "+statement.statement, entityName);
+
+		int batchSize = 1000;
+		int count = 0;
+		try{
+			pstmt = conn.prepareStatement(
+					statement.statement);
+			
+			for(Map<String,String> record:values){
+				for(Placeholders placeholders:statement.placeholder){
+					String value = record.get(placeholders.fieldName);
+					setSQLValue(pstmt,placeholders,value);
+				}
+				pstmt.addBatch();
+			    if(++count % batchSize == 0) {
+			    	pstmt.executeBatch();
+			    }
+			}
+			pstmt.executeBatch();
+			
+		}
+		finally{
+			if (resultSet != null){
+				resultSet.close();
+			}
+			if (pstmt != null){
+				pstmt.close();
+			}
+		}
+	}
+	
+	
+
+	/**
+	 * Perform query 
+	 * @param statement
+	 * @param inputs
+	 * @return 
+	 * @throws Exception
+	 */
+	public List<Map<String,String>> executeQuery(Statement statement,Map<String,String> inputs)
+	throws Exception
+	{
+		Connection conn = JDBCConnectionProvider.getInstance().getConnection();
+		ResultSet resultSet=null;
+		PreparedStatement pstmt = null;
+		List<Map<String,String>> retVals = new ArrayList<Map<String,String>>();
+//		logger.log(Level.INFO, "SQL statement "+statement.statement, entityName);
+		try{
+			pstmt = conn.prepareStatement(
+					statement.statement);
+			if (inputs == null && statement.placeholder.size()>0){
+				inputs = Collections.emptyMap();
+			}
+			for(Placeholders placeholders:statement.placeholder){
+				String value = inputs.get(placeholders.fieldName);
+				setSQLValue(pstmt,placeholders,value);
+			}
+			resultSet = pstmt.executeQuery();
+			while (resultSet.next()){
+			    ResultSetMetaData rsmd = resultSet.getMetaData();
+			    int numColumns = rsmd.getColumnCount();
+			    Map<String,String> row = new LinkedHashMap<>();
+			    // Get the column names; column indices start from 1
+			    for (int i=1; i<numColumns+1; i++) {
+			        String columnName = rsmd.getColumnName(i);
+			        DataType type = DataType.valueOf(rsmd.getColumnTypeName(i));
+			        String val = "";
+			        if (type == DataType.Date || type == DataType.DATE){
+			        	Date dt = resultSet.getDate(columnName);
+			        	SimpleDateFormat sdf = new SimpleDateFormat(DATE_FORMAT);
+			        	if (dt != null) {
+			        		val = sdf.format(dt);
+			        	}
+			        }else{
+			        	val = resultSet.getString(columnName);
+			        }
+			        row.put(columnName, val);
+			    }
+			    retVals.add(row);
+			}
+			//return retVals;
+		}catch (Exception e ){
+			System.out.println(e);
+		}
+		/*finally{
+			if (resultSet != null){
+				resultSet.close();
+			}
+			if (pstmt != null){
+				pstmt.close();
+			}
+		}*/return retVals;
+	}
+	
+	private boolean isExist(Statement statement, Map<String,String> values)
+			throws Exception
+	{
+		//Connection conn = connector.getConnection();
+		Connection conn = JDBCConnectionProvider.getInstance().getConnection();
+		ResultSet resultSet=null;
+		PreparedStatement pstmt = null;
+		//			logger.log(Level.INFO, "SQL statement "+statement.statement, entityName);
+		try{
+			List<Placeholders> placeHolder = new ArrayList<Placeholders>(statement.placeholder);
+			String statementS = checkForNull(statement,values,placeHolder);
+
+			pstmt = conn.prepareStatement(
+					statementS);
+			for(Placeholders placeholders:placeHolder){
+				String value = values.get(placeholders.fieldName);
+				setSQLValue(pstmt,placeholders,value);
+			}
+			resultSet = pstmt.executeQuery();
+			if (resultSet.next()){
+				return true;
+			}
+			return false;
+		}
+		finally{
+			if (resultSet != null){
+				resultSet.close();
+			}
+			if (pstmt != null){
+				pstmt.close();
+			}
+		}
+	}
+	
+	
+	private String checkForNull(Statement statement,
+			Map<String,String> values, List<Placeholders> placeholder){
+		List<String> deletedKeys = new ArrayList<String>();
+		String statementStr = StatementUtil.checkForNullClause(statement.statement, values,deletedKeys);
+		
+		for(String deletedKey:deletedKeys){
+//		for(Entry<String,String> row:values.entrySet()){
+//			if (row.getValue() == null||row.getValue().isEmpty()){
+				List<Placeholders> list1 = Collections.unmodifiableList(placeholder);
+				for(Placeholders pl:list1){
+//					if (pl.fieldName.equals(row.getKey())){
+					if (pl.fieldName.equals( deletedKey )){
+						placeholder.remove(pl);
+					}
+//				}
+			}
+		}
+		return statementStr;
+	}
+	
+	
+	
+	private enum DataType{VARCHAR,Varchar,VARCHAR2, Varchar2,TEXT,Text,
+		DECIMAL,Decimal,NUMERIC,Numeric,DATE,Date, NUMBER, Number, CHAR,INT,INTEGER,TINYINT,CLOB}
+	private static final String DATE_FORMAT="dd-MMM-yyyy";
+	
+	private static void setSQLValue(PreparedStatement stmt,
+			Placeholders placeholders,String value ) throws Exception{
+		
+		try {
+			
+
+		if (value == "" || value == null){
+			value = placeholders.defaultValue;
+			if (value != null && value.startsWith("@")){
+				value = value.substring(1);//starts from @sysdate in @@sysdate
+			} 
+//			else {
+//				value = "";
+//			}
+		}
+		DefaultValue defaultValueObject = null;
+		Object valueObject = null;
+		if(!value.startsWith("$BlankIfNull")){
+			if (value.startsWith("@@")||value.startsWith("@")){ //again start with @ meant it is default value where default value provider needs to provide
+				value = value.substring(1);
+			}
+			if (value.startsWith("@")){ //again start with @ meant it is default value where default value provider needs to provide
+				defaultValueObject = DefaultValueProvider.getInstance().getValue(value);
+			}
+			if (defaultValueObject == null){
+				valueObject = value;
+			}else{
+				valueObject = defaultValueObject.getValue();
+			}
+		}else{
+			valueObject = "";
+		}	
+		String dbDataType="";
+		if(placeholders.type!=null && placeholders.type.trim().isEmpty())
+		{
+			dbDataType=DataType.VARCHAR.toString();
+		}
+		else
+		{
+			dbDataType=placeholders.type.trim();
+		}
+		DataType dataType = DataType.valueOf(dbDataType.toUpperCase());
+		if (dataType == DataType.VARCHAR || dataType == DataType.Varchar
+			|| dataType == DataType.VARCHAR2 || dataType == DataType.Varchar2	
+			|| dataType == DataType.TEXT || dataType == DataType.Text || dataType == DataType.CHAR	|| dataType == DataType.CLOB || dataType == DataType.INT || dataType == DataType.TINYINT
+		){
+			stmt.setString(placeholders.placeHolderIndex, valueObject.toString());
+		}
+		else if ( dataType == DataType.Date ||dataType == DataType.DATE ){
+			Date dt=null;
+			if(valueObject != null && !"".equals(valueObject)){
+				if (!(valueObject instanceof Date)){
+					SimpleDateFormat sdf = new SimpleDateFormat(DATE_FORMAT);
+					dt = sdf.parse(valueObject.toString());
+				}else
+				{
+					dt= (Date)valueObject;
+				}
+				stmt.setDate(placeholders.placeHolderIndex, new java.sql.Date(dt.getTime()));
+			}else{
+				stmt.setNull(placeholders.placeHolderIndex, Types.DATE);
+			}
+		
+		} 
+		else if ( dataType == DataType.Decimal||dataType == DataType.DECIMAL){
+			if(valueObject != null && !"".equals(valueObject)){
+				stmt.setDouble(placeholders.placeHolderIndex, Double.valueOf(valueObject.toString()) );
+			}else{
+				stmt.setNull(placeholders.placeHolderIndex, Types.DECIMAL);
+			}
+		}
+		else if ( dataType == DataType.Numeric||dataType == DataType.NUMERIC 
+				|| dataType == DataType.NUMBER|| dataType == DataType.Number){
+			stmt.setDouble(placeholders.placeHolderIndex,  Double.valueOf(valueObject.toString()));
+		}
+		} catch (Exception e) {
+//			clogger.error("Error occured for place holder "+placeholders+ 
+//					" for value "+value + " PersistHelper:setSQLValue()", e);
+			throw e;
+		}
+	}
+}
+=========================================================================
+package com.cnk.travelerpibe.common.persistence.sql;
+
+import java.util.ArrayList;
+import java.util.List;
+//import java.util.Properties;
+
+import com.cnk.travelerpibe.common.persistence.model.AttributeDBMappingModel;
+import com.cnk.travelerpibe.common.persistence.model.EntityDBMappingModel;
+
+
+public class SelectNonUpdSQLGenerator extends AbstractSQLGenerator implements SQLGenerator {
+
+	private static SelectNonUpdSQLGenerator generator = new SelectNonUpdSQLGenerator();
+	private SelectNonUpdSQLGenerator(){
+	}
+	
+	public static SelectNonUpdSQLGenerator getInstance(){
+		return generator;
+	}
+	
+	
+	public Statement generate(EntityDBMappingModel em) throws Exception {
+//		Properties prop = loadProperties();
+//		String addSchemaBeforeTableName = (String) prop.get("addSchemaBeforeTableName");
+//		String tableName="";
+//		if("Y".equals(addSchemaBeforeTableName)){
+//			tableName = em.getPath()+DOT+em.getTargetObect();
+//		}else{
+//			tableName = em.getTargetObect();
+//		}
+		Statement stmt = new Statement();
+		String[] columns = columnText(em,stmt, getColumns(em, stmt));
+		if (!"".equals(columns[0])){
+			StringBuilder sqlStmt = new StringBuilder();
+			sqlStmt.append(DML.Select).append(SPACE_CONST);
+			sqlStmt.append(columns[0]).append(SPACE_CONST);
+			sqlStmt.append(DML.From).append(SPACE_CONST);
+			//append(em.getPath()+DOT+em.getTargetObect()).append(SPACE_CONST);
+			if (!em.getPath().isEmpty()){
+				sqlStmt.append(em.getPath()).append(DOT);
+			}
+			sqlStmt.append(em.getTargetObect()).append(SPACE_CONST);
+
+//			append(tableName).append(SPACE_CONST);
+			stmt.refresh(); //need to reset
+			String pstr=predicateText(em,stmt);
+			if (pstr != null && !"".equals(pstr)){
+				sqlStmt.append(DML.Where).append(SPACE_CONST).append(pstr);
+			}
+			stmt.statement = sqlStmt.toString();
+		}
+		return stmt;
+	}
+	
+	
+	protected List<NameValuePair> getColumns(EntityDBMappingModel em, final Statement statment){
+		List<NameValuePair> columns=new ArrayList<NameValuePair>();
+		for(AttributeDBMappingModel am:em.getAttributes()){
+			String columName = am.getTargetName();
+			String defaultValue = am.getDefaultValue();
+			boolean isUpdAlloed=am.isUpdateable();
+			
+			if (!isUpdAlloed){
+				statment.addPlaceholder(columName,am.getDataType(),isUpdAlloed ,defaultValue);
+				columns.add(new NameValuePair(columName,PLACEHOLDER_CONST, false));
+			}
+		}
+		return columns;
+	}
+	
+//	public static final void main(String[] args) throws Exception{
+//        EMUnmarshaller unmarshaller = new EMUnmarshaller();
+//      String xmlDocument = "<EntityMapping><PublishCriteria>GroupBy</PublishCriteria><Path>VPI</Path><TargetObject>ANSWER_TABLE</TargetObject><AttributeMapping><ParentId/><ParentName/><DataType>VARCHAR</DataType><IsParent>N</IsParent><TargetName>GTABLECODE1</TargetName><updateable>Y</updateable><KeyColSeq>0</KeyColSeq><DefaultValue>COVERAGE_TYPE</DefaultValue><Name/><IsKey>Y</IsKey><IsMandatory>Y</IsMandatory></AttributeMapping><AttributeMapping><ParentId/><ParentName/><DataType>VARCHAR</DataType><IsParent>N</IsParent><TargetName>GTABLECODE2</TargetName><updateable>Y</updateable><KeyColSeq/><DefaultValue/><Name>GTABLECODE2</Name><IsKey>Y</IsKey><IsMandatory>N</IsMandatory></AttributeMapping><AttributeMapping><ParentId/><ParentName/><updateablCol>Y</updateablCol><DataType>VARCHAR</DataType><IsParent>N</IsParent><TargetName>GTABLENAME</TargetName><KeyColSeq/><DefaultValue/><Name>GTABLENAME</Name><IsKey>N</IsKey><IsMandatory>N</IsMandatory></AttributeMapping><AttributeMapping><ParentId/><ParentName/><DataType>DATE</DataType><IsParent>N</IsParent><TargetName>ANS_DATE_GENERATE</TargetName><updateable>Y</updateable><KeyColSeq/><DefaultValue/><Name>ANS_DATE_GENERATE</Name><IsKey>N</IsKey><IsMandatory>N</IsMandatory></AttributeMapping><TargetType>Database</TargetType></EntityMapping>";
+//      EntityMappingModel em = unmarshaller.unmarshal(xmlDocument);
+//      
+//      Statement statment =  new SelectNonUpdSQLGenerator().generate(em);
+//      System.out.println(statment);
+//	}
+
+}
+===========================================================================
+package com.cnk.travelerpibe.common.persistence.sql;
+
+//import java.util.Properties;
+
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
+import com.cnk.travelepribe.common.persistence.pattern.FreeFromLineCondition;
+import com.cnk.travelepribe.common.persistence.pattern.ICondition;
+import com.cnk.travelepribe.common.persistence.pattern.SimpleCondition;
+import com.cnk.travelerpibe.common.persistence.model.AttributeDBMappingModel;
+import com.cnk.travelerpibe.common.persistence.model.EntityDBMappingModel;
+import com.cnk.travelerpibe.common.persistence.model.ReferenceDBMappingModel;
+
+
+
+public class SelectSQLGenerator extends AbstractSQLGenerator implements SQLGenerator {
+	private static SelectSQLGenerator generator = new SelectSQLGenerator();
+	private SelectSQLGenerator(){
+	}
+	
+	public static SelectSQLGenerator getInstance(){
+		return generator;
+	}
+	public Statement generate(EntityDBMappingModel em) throws Exception {
+//		Properties prop = loadProperties();
+//		String addSchemaBeforeTableName = (String) prop.get("addSchemaBeforeTableName");
+//		String tableName="";
+//		if("Y".equals(addSchemaBeforeTableName)){
+//			tableName = em.getPath()+DOT+em.getTargetObect();
+//		}else{
+//			tableName = em.getTargetObect();
+//		}
+		
+		
+		StringBuilder sqlStmt = new StringBuilder();
+		Statement stmt = generateSelect(em);
+		sqlStmt.append(stmt.statement );
+		String pstr=predicateText(em,stmt);
+		if (pstr != null && !"".equals(pstr)){
+			sqlStmt.append(DML.Where).append(SPACE_CONST).append(pstr);
+		}
+		stmt.statement = sqlStmt.toString();
+		System.out.println("stmt------------"+stmt);
+		return stmt;
+	}
+	
+	public Statement generate(EntityDBMappingModel em, OrderByCols orderByCols){
+		Statement stmt = generateSelect(em);
+
+		if (orderByCols == null || orderByCols.cols.size() == 0){
+			return stmt;
+		}
+		
+		List<String> targetCols = new ArrayList<>( orderByCols.cols.size());
+		for(AttributeDBMappingModel am:em.getAttributes()){
+			if (orderByCols.cols.contains( am.getName()) ) {
+				targetCols.add(am.getTargetName());
+			}
+		}
+		
+		if (targetCols.size() == 0){
+			return stmt;
+		}
+		StringBuilder sqlStmt = new StringBuilder();
+		sqlStmt.append(stmt.statement );
+		sqlStmt.append(OrderByCols.ORDER_BY).append(SPACE_CONST);
+		for(String col:targetCols){
+			sqlStmt.append(col).append(SPACE_CONST);
+		}
+		sqlStmt.append(orderByCols.order );
+		stmt.statement = sqlStmt.toString();
+		System.out.println("stmtdddddd------------"+stmt);
+		return stmt;
+	}
+	
+	private Statement generateSelect(EntityDBMappingModel em){
+		Statement stmt = new Statement();
+		StringBuilder sqlStmt = new StringBuilder();
+		sqlStmt.append(DML.Select).append(SPACE_CONST);
+		sqlStmt.append(columnText(em,stmt, getColumns(em, stmt))[0]).append(SPACE_CONST);
+		sqlStmt.append(DML.From).append(SPACE_CONST);
+		//append(em.getPath()+DOT+em.getTargetObect()).append(SPACE_CONST);
+		if (!em.getPath().isEmpty()){
+			sqlStmt.append(em.getPath()).append(DOT);
+		}
+		sqlStmt.append(em.getTargetObect()).append(SPACE_CONST);
+//		append(tableName).append(SPACE_CONST);
+		stmt.refresh(); //need to reset
+		stmt.statement = sqlStmt.toString();
+		System.out.println("stmtssssss------------"+stmt);
+		return stmt;
+	}
+	
+	/**
+	 * Generate join select statement
+	 * @param em
+	 * @return
+	 */
+	public Statement generateJoinSelect(EntityDBMappingModel em){
+		return generateJoinSelect(em,null,null);
+	}
+
+	
+	/**
+	 * Generate join select statement
+	 * @param em
+	 * @return
+	 */
+	public Statement generateJoinSelect(EntityDBMappingModel em, List<ICondition> conditions){
+		return generateJoinSelect(em,null,conditions);
+	}
+
+
+	/**
+	 * Generate join select statement
+	 * @param em
+	 * @return
+	 */
+	public Statement generateJoinSelect(EntityDBMappingModel em, List<String> resultColumns, List<ICondition> conditions){
+		Statement stmt = new Statement();
+		StringBuilder sqlStmt = new StringBuilder();
+		List<EntityDBMappingModel.DBColumn> dbAllColumns = em.allColumns(); //All columns required for retrieving tables and join statement
+		List<EntityDBMappingModel.DBColumn> dbColumns = filterResultColumns( dbAllColumns, resultColumns) ;
+		sqlStmt.append(DML.Select).append(SPACE_CONST);
+		String columnText = selectColumnText(dbColumns);
+		sqlStmt.append(columnText).append(SPACE_CONST);
+		String tablesText = selectTableText(dbAllColumns);
+
+		sqlStmt.append(DML.From).append(SPACE_CONST);
+		sqlStmt.append(tablesText).append(SPACE_CONST);
+
+		String joinText = selectJoinText(dbAllColumns,em.getReferences());
+		if (!joinText.isEmpty()){
+			sqlStmt.append(DML.Where).append(SPACE_CONST);
+			sqlStmt.append(joinText).append(SPACE_CONST);
+		}
+		
+		//below code add conditions based on user provided.
+		if ( conditions != null && conditions.size() > 0 ){
+			int i=0;
+			
+			for(ICondition condition: conditions){
+				if (condition.getClass() == SimpleCondition.class){
+					SimpleCondition scondition = (SimpleCondition)condition;
+					AttributeDBMappingModel am = em.findByColumnName(scondition.getLoperand());
+					if (am == null){
+						continue;//cannot be added because do not know the data type
+					}
+					
+//					String defaultValue = am.getDefaultValue();
+					boolean isUpdAlloed = am.isUpdateable();
+					stmt.addPlaceholder(scondition.getLoperand(),am.getDataType(), isUpdAlloed, scondition.getRoperand());
+
+//					if (!"".equals(defaultValue) && defaultValue!=null){
+//						stmt.addPlaceholder(scondition.getLoperand(),am.getDataType(),isUpdAlloed ,defaultValue);
+//					}
+//					else {
+//						stmt.addPlaceholder(scondition.getLoperand(),am.getDataType(),isUpdAlloed );
+//					}
+
+					appendWhereORAND(joinText.isEmpty(),i,sqlStmt);
+					sqlStmt.append(em.getTargetObect()).append(DOT).append(scondition.getLoperand()).append(SPACE_CONST)
+					   .append(scondition.getOperator()).append(SPACE_CONST)
+					   .append(PLACEHOLDER_CONST);
+					i++;
+				}
+				else if( condition.getClass() == FreeFromLineCondition.class ) {
+
+					appendWhereORAND(joinText.isEmpty(),i,sqlStmt);
+					FreeFromLineCondition scondition = (FreeFromLineCondition)condition;
+					sqlStmt.append(scondition.getText()).append(SPACE_CONST);
+					i++;
+				}
+			}
+		}
+		
+		stmt.statement = sqlStmt.toString();
+		return stmt;
+	}
+	
+	
+	
+	private List<EntityDBMappingModel.DBColumn> filterResultColumns(List<EntityDBMappingModel.DBColumn> dbColumns, List<String> resultColumns){
+		if (resultColumns == null || resultColumns.isEmpty()){
+			return dbColumns;
+		}
+		List<EntityDBMappingModel.DBColumn> retList = new ArrayList<>();
+		for(EntityDBMappingModel.DBColumn dbcolumn: dbColumns){
+			if (resultColumns.contains(dbcolumn.name) && !dbcolumn.isReference){
+				retList.add(dbcolumn);
+			}
+		}
+		return retList;
+	}
+	private void appendWhereORAND(boolean isWhere, int i,StringBuilder sqlStmt){
+		if (isWhere && i==0){
+			sqlStmt.append(DML.Where).append(SPACE_CONST);
+		} else if (i==0){
+			sqlStmt.append("AND").append(SPACE_CONST);
+		}
+		if (i>0){
+			sqlStmt.append("AND").append(SPACE_CONST);
+		}
+		
+	}
+
+	protected String selectColumnText(final List<EntityDBMappingModel.DBColumn> dbColumns){
+		StringBuilder retColText = new StringBuilder();
+		int i=0;
+		for(EntityDBMappingModel.DBColumn dbColumn:dbColumns){
+			retColText.append(dbColumn.DBObject).append(DOT).append(dbColumn.columnName)
+					.append(SPACE_CONST).append(dbColumn.aliasName).append(", ");
+			i++;
+		}
+		
+		if(i>0){
+			int length = retColText.length();
+			retColText.replace(length-2,length,"");
+		}
+		return retColText.toString();
+	}
+	protected String selectTableText(final List<EntityDBMappingModel.DBColumn> dbColumns){
+		StringBuilder tablesT = new StringBuilder();
+		Set<String> tables = new HashSet<>();
+		for(EntityDBMappingModel.DBColumn dbColumn:dbColumns){
+			tables.add(dbColumn.DBObject);
+		}
+		int i=0;
+		for(String tableName:tables){
+			tablesT.append(tableName).append(", ");
+			i++;
+		}
+		
+		if(i>0){
+			int length = tablesT.length();
+			tablesT.replace(length-2,length,"");
+		}
+		return tablesT.toString();
+	}
+	protected String selectJoinText(final List<EntityDBMappingModel.DBColumn> dbColumns,List<ReferenceDBMappingModel> references){
+		StringBuilder tablesT = new StringBuilder();
+		
+		int i =0;
+		for(ReferenceDBMappingModel refDBModel:references){
+			for(EntityDBMappingModel.DBColumn dbColumn: dbColumns){
+				if (dbColumn.name.equals(refDBModel.getName())){ //assuming first record will be the attribute from the list [not the reference]
+					if (i>0){
+						tablesT.append("AND").append(SPACE_CONST);
+					}
+					tablesT.append(dbColumn.DBObject).append(DOT).append(dbColumn.columnName);
+					tablesT.append(SPACE_CONST).append(EQUAL_CONST).append(SPACE_CONST);
+					tablesT.append(refDBModel.getTargetObject()).append(DOT).append(refDBModel.getTargetAttribute())
+					.append(SPACE_CONST);
+					i++;
+					break;
+				}
+			}
+		}
+		return tablesT.toString();
+	}
+			
+	
+	
+//	public static final void main(String[] args) throws Exception{
+//        EMUnmarshaller unmarshaller = new EMUnmarshaller();
+//      String xmlDocument = "<EntityMapping><PublishCriteria>GroupBy</PublishCriteria><Path>VPI</Path><TargetObject>ANSWER_TABLE</TargetObject><AttributeMapping><ParentId/><ParentName/><DataType>VARCHAR</DataType><IsParent>N</IsParent><TargetName>GTABLECODE1</TargetName><updateable>Y</updateable><KeyColSeq>0</KeyColSeq><DefaultValue>COVERAGE_TYPE</DefaultValue><Name/><IsKey>Y</IsKey><IsMandatory>Y</IsMandatory></AttributeMapping><AttributeMapping><ParentId/><ParentName/><DataType>VARCHAR</DataType><IsParent>N</IsParent><TargetName>GTABLECODE2</TargetName><updateable>N</updateable><KeyColSeq/><DefaultValue>@@BlankIfNull</DefaultValue><Name>GTABLECODE2</Name><IsKey>Y</IsKey><IsMandatory>N</IsMandatory></AttributeMapping><AttributeMapping><ParentId/><ParentName/><updateablCol>Y</updateablCol><DataType>VARCHAR</DataType><IsParent>N</IsParent><TargetName>GTABLENAME</TargetName><KeyColSeq/><DefaultValue/><Name>GTABLENAME</Name><IsKey>N</IsKey><IsMandatory>N</IsMandatory></AttributeMapping><AttributeMapping><ParentId/><ParentName/><DataType>DATE</DataType><IsParent>N</IsParent><TargetName>ANS_DATE_GENERATE</TargetName><updateable>Y</updateable><KeyColSeq/><DefaultValue/><Name>ANS_DATE_GENERATE</Name><IsKey>N</IsKey><IsMandatory>N</IsMandatory></AttributeMapping><TargetType>Database</TargetType></EntityMapping>";
+//      EntityMappingModel em = unmarshaller.unmarshal(xmlDocument);
+//      
+//      Statement statment =  new SelectSQLGenerator().generate(em);
+//      System.out.println(statment);
+//	}
+
+}
+
+============================================================================
+package com.cnk.travelerpibe.common.persistence.sql;
+
+import com.cnk.travelerpibe.common.persistence.model.EntityDBMappingModel;
+
+
+public interface SQLGenerator {
+
+	public Statement generate(EntityDBMappingModel em) throws Exception;
+}
+============================================================================
+package com.cnk.travelerpibe.common.persistence.sql;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
+public class Statement {
+
+	int lastIndex = 0;
+	//set is used to make sure that unique columns are added.
+	Set<String> columns = new HashSet<String>();
+	List<Placeholders> placeholder = new ArrayList<Placeholders>();
+	public String statement;
+	
+	
+	public void addPlaceholder(String fieldName,String type, boolean updateable){
+		addPlaceholder(fieldName,type,updateable, null);
+	}
+
+	public void addPlaceholder(String fieldName,String type,boolean updateable, String defaultValue){
+		if (columns.add(fieldName)){
+			/*if(!"".equals(defaultValue) && defaultValue!=null && "@AIRLINE_TYPE_ID_seq.nextval".equals(defaultValue)){
+				// added to skip place holder for sequence value
+				
+			}else	{
+				placeholder.add(new Placeholders(fieldName,type,++lastIndex,updateable,defaultValue));
+		}*/	
+		placeholder.add(new Placeholders(fieldName,type,++lastIndex,updateable,defaultValue));
+		
+		}
+		
+	}
+	
+	public void removePlaceHolder(String fieldName){
+		if (columns.contains(fieldName)){
+			columns.remove(fieldName);
+			List<Placeholders> list1 = Collections.unmodifiableList(placeholder);
+			for(Placeholders pl:list1){
+				if (pl.fieldName.equals(fieldName)){
+					placeholder.remove(pl);
+				}
+			}
+		}
+		
+	}
+	
+	public boolean isUpdateable(String columnName){
+		for(Placeholders ph:placeholder){
+			if (columnName.equals(ph.fieldName) && ph.updateable){
+				return true;
+			}
+		}
+		return false;
+	}
+	
+	public void refresh(){
+		lastIndex = 0;
+		placeholder.clear();
+		columns.clear();
+	}
+	
+	
+	
+	@Override
+	public String toString() {
+		StringBuilder sb = new StringBuilder();
+		sb.append(this.statement);
+        for(Placeholders ss:placeholder){
+        	sb.append(ss.toString());
+        }
+		return sb.toString();
+	}
+
+
+
+	class Placeholders {
+		
+		Placeholders(String fieldName,String type,int index,boolean updateable,String defaultValue){
+			placeHolderIndex = index;
+			this.fieldName = fieldName;
+			this.type = type;
+			this.updateable = updateable;
+			this.defaultValue = defaultValue;
+		}
+
+		int placeHolderIndex;
+		String fieldName;
+		String type;
+		String defaultValue;
+		boolean updateable;
+		
+		@Override
+		public String toString() {
+			StringBuilder sb = new StringBuilder();
+			sb.append("\nField:").append(fieldName).append(" ");
+			sb.append("Type:").append(type).append(" ");
+			sb.append("DefaultValue:").append(defaultValue).append(" ");
+			sb.append("Updateable:").append(updateable).append(" ");
+			sb.append("Index:").append(placeHolderIndex).append(" ");
+			
+			return sb.toString();
+		}
+ 
+	}
+}
+============================================================================
+package com.cnk.travelerpibe.common.persistence.sql;
+
+import java.util.ArrayList;
+import java.util.List;
+//import java.util.Properties;
+
+import com.cnk.travelerpibe.common.persistence.model.AttributeDBMappingModel;
+import com.cnk.travelerpibe.common.persistence.model.EntityDBMappingModel;
+
+public class UpdateSQLGenerator extends AbstractSQLGenerator implements SQLGenerator {
+
+	
+	private static UpdateSQLGenerator generator = new UpdateSQLGenerator();
+	private UpdateSQLGenerator(){
+	}
+	
+	public static UpdateSQLGenerator getInstance(){
+		return generator;
+	}
+	public Statement generate(EntityDBMappingModel em) throws Exception {
+//		Properties prop = loadProperties();
+//		String addSchemaBeforeTableName = (String) prop.get("addSchemaBeforeTableName");
+//		String tableName="";
+//		if("Y".equals(addSchemaBeforeTableName)){
+//			tableName = em.getPath()+DOT+em.getTargetObect();
+//		}else{
+//			tableName = em.getTargetObect();
+//		}
+		Statement stmt = new Statement();
+		
+		String updateT = updateText(em,stmt);
+		StringBuilder sqlStmt = new StringBuilder();
+		if (!"".equals(updateT)){
+			sqlStmt.append(DML.Update).append(SPACE_CONST);
+			//sqlStmt.append(em.getPath()+DOT+em.getTargetObect()).append(SET_CONST);
+			if (!em.getPath().isEmpty()){
+				sqlStmt.append(em.getPath()).append(DOT);
+			}
+			sqlStmt.append(em.getTargetObect()).append(SPACE_CONST);
+//			sqlStmt.append(tableName).append(SPACE_CONST);
+			sqlStmt.append(SET_CONST).append(SPACE_CONST);
+			sqlStmt.append(updateT);
+
+			//stmt.refresh(); //need to reset
+			String pstr=predicateText(em,stmt);
+			if (pstr != null && !"".equals(pstr)){
+				sqlStmt.append(SPACE_CONST).append(DML.Where).append(SPACE_CONST).append(pstr);
+			}
+		}
+		stmt.statement = sqlStmt.toString();
+		return stmt;
+	}
+	
+	protected String updateText(EntityDBMappingModel em, final Statement statment){
+		StringBuilder retColText = new StringBuilder();
+		int i=0;
+		for(NameValuePair nameValue:getColumns(em,statment)){
+			if (statment.isUpdateable(nameValue.name)){
+				retColText.append(nameValue.name).append(SPACE_CONST).append(EQUAL_CONST).append(SPACE_CONST);
+				retColText.append(nameValue.value).append(", ");
+				i++;
+			}
+		}
+		if(i>0){
+			int length = retColText.length();
+			retColText.replace(length-2,length,"");
+		}
+		return retColText.toString();
+	}
+
+	@Override
+	protected List<NameValuePair> getColumns(EntityDBMappingModel em, final Statement statment){
+		List<NameValuePair> columns=new ArrayList<NameValuePair>();
+		for(AttributeDBMappingModel am:em.getAttributes()){
+			String columName = am.getTargetName();
+			String defaultValue = am.getDefaultValue();
+			boolean isUpdAlloed=am.isUpdateable();
+			boolean isKey = am.isKey();
+			if (!isUpdAlloed || isKey){
+				continue;
+			}
+			
+			if (!"".equals(defaultValue) && defaultValue!=null){
+				statment.addPlaceholder(columName,am.getDataType(),isUpdAlloed ,defaultValue);
+				columns.add(new NameValuePair(columName,PLACEHOLDER_CONST, true));
+			}
+			else {
+				statment.addPlaceholder(columName,am.getDataType(),isUpdAlloed );
+				columns.add(new NameValuePair(columName,PLACEHOLDER_CONST, false));
+			}
+			//columns.add(new NameValuePair(columName,PLACEHOLDER_CONST));
+		}
+		return columns;
+	}
+
+	
+//	public static final void main(String[] args) throws Exception{
+//      EMUnmarshaller unmarshaller = new EMUnmarshaller();
+//      String xmlDocument = "<EntityMapping><PublishCriteria>GroupBy</PublishCriteria><Path>VPI</Path><TargetObject>ANSWER_TABLE</TargetObject><AttributeMapping><ParentId/><ParentName/><DataType>VARCHAR</DataType><IsParent>N</IsParent><TargetName>GTABLECODE1</TargetName><updateable>Y</updateable><KeyColSeq>0</KeyColSeq><DefaultValue>COVERAGE_TYPE</DefaultValue><Name/><IsKey>Y</IsKey><IsMandatory>Y</IsMandatory></AttributeMapping><AttributeMapping><ParentId/><ParentName/><DataType>VARCHAR</DataType><IsParent>N</IsParent><TargetName>GTABLECODE2</TargetName><updateable>N</updateable><KeyColSeq/><DefaultValue/><Name>GTABLECODE2</Name><IsKey>Y</IsKey><IsMandatory>N</IsMandatory></AttributeMapping><AttributeMapping><ParentId/><ParentName/><updateablCol>Y</updateablCol><DataType>VARCHAR</DataType><IsParent>N</IsParent><TargetName>GTABLENAME</TargetName><KeyColSeq/><DefaultValue/><Name>GTABLENAME</Name><IsKey>N</IsKey><IsMandatory>N</IsMandatory></AttributeMapping><AttributeMapping><ParentId/><ParentName/><DataType>DATE</DataType><IsParent>N</IsParent><TargetName>ANS_DATE_GENERATE</TargetName><updateable>Y</updateable><KeyColSeq/><DefaultValue/><Name>ANS_DATE_GENERATE</Name><IsKey>N</IsKey><IsMandatory>N</IsMandatory></AttributeMapping><TargetType>Database</TargetType></EntityMapping>";
+//      EntityMappingModel em = unmarshaller.unmarshal(xmlDocument);
+//      
+//      Statement statment =  new UpdateSQLGenerator().generate(em);
+//      System.out.println(statment);
+//	}
+	
+	
+}
+============================================================================
+package com.cnk.travelerpibe.common.persistence.model;
+
+/**
+ * Generic class to bind attributes values with their respective keys
+ * @author vishwanath.dubey
+ *
+ */
+public class AttributeDBMappingModel {
+	
+	private String name;           //Name of attribute: it should be unique in an entity's attributes list. REQUIRED 
+	private boolean isRequired;	   //to qualify if this attribute is mandatory : REQUIRED
+	private String targetName;     //target column name : REQUIRED
+	private String dataType;	   //Data Type: need to refer to mapping DB data type: REQUIRED 
+	private boolean isKey;		   //to qualify if this attribute is part of key for updating the required.: 
+	private short KeyColSeq;	   // if it is part of key, then specify key sequence number.
+	private boolean isUpdateable=true;  //whether this field is updateable
+	private short orderNo;         //specify order No 
+	private String defaultValue="";   //default value if any
+	private boolean isKeySeq=false;   //default value if any
+
+//	private int length;
+//	private int decimalPrecision;
+	
+	public AttributeDBMappingModel(){
+		
+	}
+	
+	public AttributeDBMappingModel(String name, String targetName, String dataType){
+		this(name,targetName,dataType,false);
+	}
+
+	public AttributeDBMappingModel(String name, String targetName, String dataType, boolean isRequired){
+		this(name,targetName,dataType,isRequired,false);
+	}
+	
+	public AttributeDBMappingModel(String name, String targetName, String dataType, boolean isRequired, boolean isKey){
+		this.name = name;
+		this.targetName = targetName;
+		this.dataType = dataType;
+		this.isRequired = isRequired;
+		this.isKey = isKey;
+		if (isKey){ //the key column can not be updateable
+			isUpdateable = false;
+		}
+	}
+
+	public String getName() {
+		return name;
+	}
+	public void setName(String name) {
+		this.name = name;
+	}
+	public boolean isRequired() {
+		return isRequired;
+	}
+	public void setRequired(boolean isRequired) {
+		this.isRequired = isRequired;
+	}
+	public String getTargetName() {
+		return targetName;
+	}
+	public void setTargetName(String targetName) {
+		this.targetName = targetName;
+	}
+	public String getDataType() {
+		return dataType;
+	}
+	public void setDataType(String dataType) {
+		this.dataType = dataType;
+	}
+	public boolean isKey() {
+		return isKey;
+	}
+	public void setKey(boolean isKey) {
+		this.isKey = isKey;
+	}
+	public short getKeyColSeq() {
+		return KeyColSeq;
+	}
+	public void setKeyColSeq(short keyColSeq) {
+		KeyColSeq = keyColSeq;
+	}
+	public boolean isUpdateable() {
+		return isUpdateable;
+	}
+	public void setUpdateable(boolean isUpdateable) {
+		this.isUpdateable = isUpdateable;
+	}
+	public short getOrderNo() {
+		return orderNo;
+	}
+	public void setOrderNo(short orderNo) {
+		this.orderNo = orderNo;
+	}
+	public String getDefaultValue() {
+		return defaultValue;
+	}
+	public void setDefaultValue(String defaultValue) {
+		this.defaultValue = defaultValue;
+	}
+	
+
+	public boolean isKeySeq() {
+		return isKeySeq;
+	}
+	public void setKeySeq(boolean isKeySeq) {
+		this.isKeySeq = isKeySeq;
+	}
+	
+}
+==========================================================================
+package com.cnk.travelerpibe.common.persistence.model;
+
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
+/**
+ * A generic entity model to be used to bind the entity value records 
+ * @author vishwanath.dubey
+ *
+ */
+
+public class EntityDBMappingModel {
+
+	private String name;
+	 
+	private String targetObect;  //E.g. Table Name
+
+	private String targetType;	//E.G. DB name
+	
+	private String path;		//E.g. Schema name of Database
+
+	
+	List<AttributeDBMappingModel> attributes = new ArrayList<>(1); 
+	List<ReferenceDBMappingModel> references = new ArrayList<>(1); 
+	
+	public EntityDBMappingModel(){
+		
+	}
+	public EntityDBMappingModel(String name, String targetObject, String path, String targetType){
+		this.name = name;
+		this.path = path;
+		this.targetObect = targetObject;
+		this.targetType = targetType;
+	}
+	
+	
+	public String getName() {
+		return name; 
+	}
+
+	public void setName(String name) {
+		this.name = name;
+	}
+
+	public String getTargetObect() {
+		return targetObect;
+	}
+
+	public void setTargetObect(String targetObect) {
+		this.targetObect = targetObect;
+	}
+
+	public String getTargetType() {
+		return targetType;
+	}
+
+	public void setTargetType(String targetType) {
+		this.targetType = targetType;
+	}
+
+	public String getPath() {
+		return path;
+	}
+
+	public void setPath(String path) {
+		this.path = path;
+	}
+
+	public List<AttributeDBMappingModel> getAttributes() {
+		return attributes;
+	}
+
+	public void setAttributes(List<AttributeDBMappingModel> attributes) {
+		this.attributes = attributes;
+	}
+	
+	public void addAttribute(AttributeDBMappingModel am) {
+		attributes.add(am);
+	}
+
+	
+	public List<ReferenceDBMappingModel> getReferences() {
+		return references;
+	}
+
+	public void setReferences(List<ReferenceDBMappingModel> references) {
+		this.references = references;
+	}
+	
+	public void addAttribute(ReferenceDBMappingModel am) {
+		references.add(am);
+	}
+
+	public List<DBColumn> allColumns(){
+		List<DBColumn> columnList = new ArrayList<>();
+		Set<String> colNames = new HashSet<>();
+		for( AttributeDBMappingModel attrDBModel:attributes ){
+			DBColumn dbColumn = new DBColumn();
+			dbColumn.name = attrDBModel.getName();
+			dbColumn.DBObject = this.targetObect;
+			dbColumn.columnName = attrDBModel.getTargetName();
+			dbColumn.aliasName = dbColumn.columnName;
+			columnList.add(dbColumn);
+			colNames.add( attrDBModel.getName() );
+		}
+		
+		for( ReferenceDBMappingModel refDBModel:references ){
+			if (!colNames.contains(refDBModel.getName()) ){ //this provides check for if reference column is defined in attribute list or not.
+				continue;// 
+			}
+			if (refDBModel.getTargetDispAttribute() == null || refDBModel.getTargetDispAttribute().isEmpty()){
+				continue;
+			}
+
+			DBColumn dbColumn = new DBColumn();
+			dbColumn.name = refDBModel.getName();
+			dbColumn.DBObject = refDBModel.getTargetObject();
+			dbColumn.columnName = refDBModel.getTargetDispAttribute();
+			if (refDBModel.getAliasName() != null && !refDBModel.getAliasName().isEmpty()){
+				dbColumn.aliasName = refDBModel.getAliasName();
+			}else{
+				dbColumn.aliasName = refDBModel.getTargetObject()+"_"+dbColumn.columnName;
+			}
+			
+			dbColumn.isReference = true;
+			columnList.add(dbColumn);
+		}
+		return columnList;
+	}
+	
+	
+	public AttributeDBMappingModel findByColumnName(String dbColumnName){
+		for(AttributeDBMappingModel attribDBModel: attributes){
+			if (attribDBModel.getTargetName().equals(dbColumnName) ){
+				return attribDBModel;
+			}
+		}
+		return null;
+	}
+
+	
+	public class DBColumn{
+		public String name;
+		public String DBObject;
+		public String columnName;
+		public String aliasName;
+		public boolean isReference = false;
+		
+//		@Override
+//		public boolean equals(Object obj) {
+//			if (this == obj){
+//				return true;
+//			}
+//			if (obj == null){
+//				return false;
+//			}
+//			if ( getClass() != obj.getClass()){
+//				return false;
+//			}
+//			DBColumn dbCol = (DBColumn)obj;
+//			return dbCol.columnName != null && dbCol.columnName.equals(this.columnName);
+//			
+//		}
+//
+//		@Override
+//		public int hashCode() {
+//			 final int prime = 31;
+//		        int result = 1;
+//		        result = prime * result
+//		                + ((columnName == null) ? 0 : columnName.hashCode());
+//		        return result;
+//			
+//		}
+		 
+		
+	}
+}
+===========================================================================
+package com.cnk.travelerpibe.common.persistence.model;
+
+/**
+ * All references defined for an entity's attribute to be captured.
+ * @author vishwanath.dubey
+ *
+ */
+public class ReferenceDBMappingModel {
+	private String name;           //Name of attribute: it should match with a name of attribute specified for entity model 
+	private String targetObject;     //target column name : REQUIRED
+	private String targetAttribute;     //target column name : REQUIRED
+	private String targetDispAttribute;     //target display column name : REQUIRED
+	private String aliasName;     //target alias as display name
+	
+	
+	public ReferenceDBMappingModel(){
+		
+	}
+	
+	public ReferenceDBMappingModel(String name, 
+				String targetObject, 
+				String targetAttribute,
+				String targetDispAttribute	){
+		
+		this.name = name;
+		this.targetObject = targetObject;
+		this.targetAttribute = targetAttribute;
+		this.targetDispAttribute = targetDispAttribute;
+		
+	}
+
+	public String getName() {
+		return name;
+	}
+
+	public void setName(String name) {
+		this.name = name;
+	}
+
+	public String getTargetObject() {
+		return targetObject;
+	}
+
+	public void setTargetObject(String targetObject) {
+		this.targetObject = targetObject;
+	}
+
+	public String getTargetAttribute() {
+		return targetAttribute;
+	}
+
+	public void setTargetAttribute(String targetAttribute) {
+		this.targetAttribute = targetAttribute;
+	}
+
+	public String getTargetDispAttribute() {
+		return targetDispAttribute;
+	}
+
+	public void setTargetDispAttribute(String targetDispAttribute) {
+		this.targetDispAttribute = targetDispAttribute;
+	}
+
+	/**
+	 * @return the aliasName
+	 */
+	public String getAliasName() {
+		return aliasName;
+	}
+
+	/**
+	 * @param aliasName the aliasName to set
+	 */
+	public void setAliasName(String aliasName) {
+		this.aliasName = aliasName;
+	}
+
+	
+	
+}
+============================================================================
+package com.cnk.travelepribe.common.persistence.pattern;
+
+public abstract class AbstractCondition implements ICondition {
+
+    String key;
+	String loperand; //left side operator
+	
+	
+	/**
+	 * @return the key
+	 */
+	public String getKey() {
+		return key;
+	}
+	/**
+	 * @param key the key to set
+	 */
+	public void setKey(String key) {
+		this.key = key;
+	}
+	/**
+	 * @return the loperand
+	 */
+	public String getLoperand() {
+		return loperand;
+	}
+	/**
+	 * @param loperand the loperand to set
+	 */
+	public void setLoperand(String loperand) {
+		this.loperand = loperand;
+	}
+
+	
+	
+}
+============================================================================
+package com.cnk.travelepribe.common.persistence.pattern;
+
+public class CompositeFieldConstraint implements IConstraint {
+    /**
+     * Means that any of the children can resolve to be true.
+     */
+    public static final String COMPOSITE_TYPE_OR = "||";
+
+    /**
+     * Means that ALL of the children constraints must resolve to be true.
+     */
+    public static final String COMPOSITE_TYPE_AND = "&&";
+
+
+    /**
+     * The type of composite that it is.
+     */
+    public String compositeJunctionType = null;
+
+
+    /**
+     * This is the child field constraints of the composite.
+     * They may be single constraints, or composite themselves.
+     * If this composite is it at the "top level"  - then
+     * there is no need to look at the compositeType property
+     * (as they are all children that are "anded" together anyway in the fact
+     * pattern that contains it).
+     */
+    public IConstraint[] constraints = null;
+
+
+    //Note this is a bit ugly, GWT had some early limitations which required this to kind of work this way.
+    //when generics are available, could probably switch to it, but remember this is persistent stuff
+    //so don't want to break backwards compat (as XStream is used)
+    public void addConstraint(final IConstraint constraint) {
+        if ( this.constraints == null ) {
+            this.constraints = new IConstraint[1];
+            this.constraints[0] = constraint;
+        } else {
+            final IConstraint[] newList = new IConstraint[this.constraints.length + 1];
+            for ( int i = 0; i < this.constraints.length; i++ ) {
+                newList[i] = this.constraints[i];
+            }
+            newList[this.constraints.length] = constraint;
+            this.constraints = newList;
+        }
+    }
+
+    public void removeConstraint(final int idx) {
+        //Unfortunately, this is kinda duplicate code with other methods,
+        //but with typed arrays, and GWT, its not really possible to do anything "better"
+        //at this point in time.
+        final IConstraint[] newList = new IConstraint[this.constraints.length - 1];
+        int newIdx = 0;
+        for ( int i = 0; i < this.constraints.length; i++ ) {
+
+            if ( i != idx ) {
+                newList[newIdx] = this.constraints[i];
+                newIdx++;
+            }
+
+        }
+        this.constraints = newList;
+
+    }
+}
+============================================================================
+package com.cnk.travelepribe.common.persistence.pattern;
+
+public class FreeFromLineCondition implements ICondition{
+
+	private String text;
+
+	/**
+	 * @return the text
+	 */
+	public String getText() {
+		return text;
+	}
+
+	/**
+	 * @param text the text to set
+	 */
+	public void setText(String text) {
+		this.text = text;
+	}
+	
+	
+	
+}
+============================================================================
+package com.cnk.travelepribe.common.persistence.pattern;
+
+public interface ICondition {
+
+}
+===========================================================================
+package com.cnk.travelepribe.common.persistence.pattern;
+
+public interface IConstraint {
+
+}
+===========================================================================
+package com.cnk.travelepribe.common.persistence.pattern;
+
+import java.io.Serializable;
+
+public interface IPattern extends Serializable {
+
+	
+}
+=============================================================================
+package com.cnk.travelepribe.common.persistence.pattern;
+
+import java.util.List;
+
+public class Pattern implements IPattern {
+
+    /**
+	 * 
+	 */
+	private static final long serialVersionUID = 897537248580281239L;
+	public CompositeFieldConstraint constraintList;
+
+	public Pattern() {
+    }
+
+
+
+    /**
+     * This will add a top level constraint.
+     */
+    public void addConstraint(final IConstraint constraint) {
+        if (constraintList == null) {
+        	constraintList = new CompositeFieldConstraint();
+        }
+        this.constraintList.addConstraint( constraint );
+    }
+
+    public void removeConstraint(final int idx) {
+        this.constraintList.removeConstraint( idx );
+    }
+
+
+    /**
+     * This will return the list of field constraints that are in the root
+     * CompositeFieldConstraint object.
+     * If there is no root, then an empty array will be returned.
+     *
+     * @return an empty array, or the list of constraints (which may be composites).
+     */
+    public IConstraint[] getFieldConstraints() {
+        if (this.constraintList == null) {
+            return new IConstraint[0];
+        } 
+        return this.constraintList.constraints;
+    }
+
+    public void setConstraints(final List<IConstraint> sortedConstraints) {
+        if (sortedConstraints != null) {
+            if (this.constraintList != null) {
+                this.constraintList.constraints = new IConstraint[sortedConstraints.size()];
+                for (int i = 0; i < sortedConstraints.size(); i++) {
+                    this.constraintList.constraints[i] = (IConstraint) sortedConstraints.get(i);
+                }
+            } else if (sortedConstraints.size() > 0) {
+                throw new IllegalStateException("Cannot have constraints if constraint list is null.");
+            }
+            } else {
+                this.constraintList.constraints = null;
+            }
+        }
+
+}
+============================================================================
+package com.cnk.travelepribe.common.persistence.pattern;
+
+public enum SIMPLE_OPERATOR {
+	EQUAL("="),
+	DOUBLE_EQUAL("=="),
+	GREATER_THAN_OR_EQUAL(">="),
+	GREATER_THAN(">");
+	
+	String op;
+	SIMPLE_OPERATOR(String operator){
+		this.op = operator;
+	}
+	public String getOperator(){
+		return op;
+	}
+	
+	public String[] names(){
+		String[] names = new String[SIMPLE_OPERATOR.values().length];
+	    int i=0;
+		for(SIMPLE_OPERATOR temp:SIMPLE_OPERATOR.values()){
+			names[i++] = temp.name();
+		}
+		return names;
+	}
+
+	public String[] operatorValues(){
+		String[] names = new String[SIMPLE_OPERATOR.values().length];
+	    int i=0;
+		for(SIMPLE_OPERATOR temp:SIMPLE_OPERATOR.values()){
+			names[i++] = temp.getOperator();
+		}
+		return names;
+	}
+
+}
+===========================================================================
+package com.cnk.travelepribe.common.persistence.pattern;
+
+public class SimpleCondition extends AbstractCondition implements ICondition{
+	
+	String roperand;
+	String operator;
+	
+	public SimpleCondition(){
+		
+	}
+	
+	public SimpleCondition(String loperand,String operator, String roperator){
+		this.loperand = loperand;
+		this.operator = operator;
+		this.roperand = roperator;
+				
+	}
+	
+	/**
+	 * @return the roperand
+	 */
+	public String getRoperand() {
+		return roperand;
+	}
+	/**
+	 * @param roperand the roperand to set
+	 */
+	public void setRoperand(String roperand) {
+		this.roperand = roperand;
+	}
+	/**
+	 * @return the operator
+	 */
+	public String getOperator() {
+		return operator;
+	}
+	/**
+	 * @param operator the operator to set
+	 */
+	public void setOperator(String operator) {
+		this.operator = operator;
+	}
+
+	
+	
+}
+============================================================================
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>com.cnk.travelerpibe</groupId>
+		<artifactId>productsetup</artifactId>
+		<version>1.0-SNAPSHOT</version>
+	</parent>
+	<groupId>com.cnk.travelerpibe</groupId>
+	<artifactId>cnk-ibe-masters-persisthelper</artifactId>
+	<version>1.0-SNAPSHOT</version>
+	<name>cnk-ibe-masters-persisthelper</name>
+
+	<properties>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<sonar.language>java</sonar.language>
+	</properties>
+
+	<build>
+		<pluginManagement>
+			<plugins>
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-compiler-plugin</artifactId>
+					<configuration>
+						<verbose>true</verbose>
+						<compilerVersion>1.7</compilerVersion>
+						<source>1.7</source>
+						<target>1.7</target>
+					</configuration>
+				</plugin>
+
+				<plugin>
+					<groupId>org.codehaus.mojo</groupId>
+					<artifactId>sonar-maven-plugin</artifactId>
+					<version>2.0</version>
+				</plugin>
+
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-surefire-plugin</artifactId>
+					<version>2.14</version>
+					<dependencies>
+						<dependency>
+							<groupId>org.apache.maven.surefire</groupId>
+							<artifactId>surefire-junit47</artifactId>
+							<version>2.14</version>
+						</dependency>
+					</dependencies>
+					<!-- <configuration> <groups>com.cnk.travelerpibe.common.persistence.PeristenceTest</groups> 
+						</configuration> <executions> <execution> <goals> <goal>integration-test</goal> 
+						</goals> <configuration> <includes> <include>**/*.class</include> </includes> 
+						</configuration> </execution> </executions> -->
+				</plugin>
+			</plugins>
+		</pluginManagement>
+	</build>
+
+	<!-- <modules> <module>cnk-common-empersist</module> </modules> -->
+
+	<dependencies>
+		<dependency>
+			<groupId>org.codehaus.jackson</groupId>
+			<artifactId>jackson-mapper-asl</artifactId>
+			<version>1.9.12</version>
+		</dependency>
+		<dependency>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+			<version>4.8.1</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>mckoi</groupId>
+			<artifactId>mckoi</artifactId>
+			<version>1.0.2</version>
+			<scope>test</scope>
+		</dependency>
+	</dependencies>
+
+</project>
+============================================================================
+driver=com.mckoi.JDBCDriver
+url=jdbc:mckoi:local://D:/visv-Framework/mckoi1.0.6/db.conf?create_or_boot=true
+user=admin_user
+password=aupass00
+
+isLocalDB=true
+
+
+#driver=oracle.jdbc.driver.OracleDriver
+#jdbc.dialect=org.hibernate.dialect.Oracle10gDialect
+#url=jdbc:oracle:thin:@10.21.12.129:1521:XE
+#user=siva_master
+#password=siva_master
+=============================================================================
+package com.cnk.travelerpibe.common.persistence.sql;
+
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+
+import junit.framework.Assert;
+
+import org.codehaus.jackson.map.ObjectMapper;
+import org.codehaus.jackson.type.TypeReference;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
+import com.cnk.travelepribe.common.persistence.pattern.ICondition;
+import com.cnk.travelepribe.common.persistence.pattern.SimpleCondition;
+import com.cnk.travelerpibe.common.persistence.jdbc.JDBCConnectionProvider;
+import com.cnk.travelerpibe.common.persistence.model.EntityDBMappingModel;
+
+public class PersistHelperTest {
+
+//	String jasonCityModel = "{\"name\":\"City\",\"targetObect\":\"CITY\",\"targetType\":\"DB\",\"path\":\"\",\"attributes\":[{\"name\":\"code\",\"targetName\":\"CODE\",\"dataType\":\"VARCHAR\",\"orderNo\":0,\"defaultValue\":\"\",\"key\":true,\"required\":true,\"keyColSeq\":0,\"updateable\":false},{\"name\":\"description\",\"targetName\":\"DESCRIPTION\",\"dataType\":\"VARCHAR\",\"orderNo\":0,\"defaultValue\":\"\",\"key\":false,\"required\":true,\"keyColSeq\":0,\"updateable\":true},{\"name\":\"orderNo\",\"targetName\":\"ORDER_NO\",\"dataType\":\"NUMERIC\",\"orderNo\":0,\"defaultValue\":\"\",\"key\":false,\"required\":false,\"keyColSeq\":0,\"updateable\":true}]}";
+//	String jsonaCityData = "[{\"CODE\":\"MUMB\",\"DESCRIPTION\":\"Mumbai\",\"ORDER_NO\":0},{\"CODE\":\"DEL\",\"DESCRIPTION\":\"Delhi\",\"ORDER_NO\":0},{\"CODE\":\"BENG\",\"DESCRIPTION\":\"Bengaluru\",\"ORDER_NO\":0}]";
+	
+	String jasonContinentModel = "{\"name\":\"Continent\",\"targetObect\":\"CONTINENT\",\"targetType\":\"DB\",\"path\":\"\",\"attributes\":[{\"name\":\"Code\",\"targetName\":\"CODE\",\"dataType\":\"VARCHAR\",\"orderNo\":0,\"defaultValue\":\"\",\"key\":true,\"required\":true,\"keyColSeq\":0,\"updateable\":false},{\"name\":\"Name\",\"targetName\":\"NAME\",\"dataType\":\"VARCHAR\",\"orderNo\":0,\"defaultValue\":\"\",\"key\":false,\"required\":true,\"keyColSeq\":0,\"updateable\":true},{\"name\":\"OrderNo\",\"targetName\":\"ORDER_NO\",\"dataType\":\"NUMERIC\",\"orderNo\":0,\"defaultValue\":\"\",\"key\":false,\"required\":false,\"keyColSeq\":0,\"updateable\":true}]}";
+	String jasonContinentData = "[{\"CODE\":\"ASIA\",\"NAME\":\"Asia\",\"ORDER_NO\":1},{\"CODE\":\"AUSTRALIA\",\"NAME\":\"Australia\",\"ORDER_NO\":2},{\"CODE\":\"EUROPE\",\"NAME\":\"Europe\",\"ORDER_NO\":4},{\"CODE\":\"AMERICA\",\"NAME\":\"America\",\"ORDER_NO\":5}]";
+	
+	
+	String jasonCountryModel = "{\"name\":\"Country\",\"targetObect\":\"COUNTRY\",\"targetType\":\"DB\",\"path\":\"\",\"attributes\":[{\"name\":\"Code\",\"targetName\":\"CODE\",\"dataType\":\"VARCHAR\",\"orderNo\":0,\"defaultValue\":\"\",\"key\":true,\"required\":true,\"keyColSeq\":0,\"updateable\":false},{\"name\":\"Name\",\"targetName\":\"NAME\",\"dataType\":\"VARCHAR\",\"orderNo\":0,\"defaultValue\":\"\",\"key\":false,\"required\":true,\"keyColSeq\":0,\"updateable\":true},{\"name\":\"ContinentCode\",\"targetName\":\"CONTINENT_CODE\",\"dataType\":\"VARCHAR\",\"orderNo\":0,\"defaultValue\":\"\",\"key\":false,\"required\":true,\"keyColSeq\":0,\"updateable\":false},{\"name\":\"OrderNo\",\"targetName\":\"ORDER_NO\",\"dataType\":\"NUMERIC\",\"orderNo\":0,\"defaultValue\":\"\",\"key\":false,\"required\":false,\"keyColSeq\":0,\"updateable\":true}],\"references\":[{\"name\":\"ContinentCode\",\"targetObject\":\"CONTINENT\",\"targetAttribute\":\"CODE\",\"targetDispAttribute\":\"NAME\",\"targetDispAttribute\":\"NAME\"}]}";
+	String jasonCountryData = "[{\"CODE\":\"IND\",\"NAME\":\"India\",\"ORDER_NO\":1,\"CONTINENT_CODE\":\"ASIA\"},{\"CODE\":\"JAP\",\"NAME\":\"Japan\",\"ORDER_NO\":1,\"CONTINENT_CODE\":\"ASIA\"},{\"CODE\":\"CHI\",\"NAME\":\"China\",\"ORDER_NO\":1,\"CONTINENT_CODE\":\"ASIA\"},{\"CODE\":\"AUS\",\"NAME\":\"Austrailia\",\"ORDER_NO\":1,\"CONTINENT_CODE\":\"AUSTRALIA\"},{\"CODE\":\"BRIT\",\"NAME\":\"Greate Britain\",\"ORDER_NO\":1,\"CONTINENT_CODE\":\"EUROPE\"},{\"CODE\":\"FRANC\",\"NAME\":\"France\",\"ORDER_NO\":1,\"CONTINENT_CODE\":\"EUROPE\"},{\"CODE\":\"NA\",\"NAME\":\"North America\",\"ORDER_NO\":5,\"CONTINENT_CODE\":\"AMERICA\"}]";
+	
+	
+	String jasonStateModel = "{\"name\":\"State\",\"targetObect\":\"STATE\",\"targetType\":\"DB\",\"path\":\"\",\"attributes\":[{\"name\":\"Code\",\"targetName\":\"CODE\",\"dataType\":\"VARCHAR\",\"orderNo\":0,\"defaultValue\":\"\",\"key\":true,\"required\":true,\"keyColSeq\":0,\"updateable\":false},{\"name\":\"Name\",\"targetName\":\"NAME\",\"dataType\":\"VARCHAR\",\"orderNo\":0,\"defaultValue\":\"\",\"key\":false,\"required\":true,\"keyColSeq\":0,\"updateable\":true},{\"name\":\"CountryCode\",\"targetName\":\"COUNTRY_CODE\",\"dataType\":\"VARCHAR\",\"orderNo\":0,\"defaultValue\":\"\",\"key\":false,\"required\":true,\"keyColSeq\":0,\"updateable\":false},{\"name\":\"ContinentCode\",\"targetName\":\"CONTINENT_CODE\",\"dataType\":\"VARCHAR\",\"orderNo\":0,\"defaultValue\":\"\",\"key\":false,\"required\":true,\"keyColSeq\":0,\"updateable\":false},{\"name\":\"OrderNo\",\"targetName\":\"ORDER_NO\",\"dataType\":\"NUMERIC\",\"orderNo\":0,\"defaultValue\":\"\",\"key\":false,\"required\":false,\"keyColSeq\":0,\"updateable\":true}],\"references\":[{\"name\":\"CountryCode\",\"targetObject\":\"COUNTRY\",\"targetAttribute\":\"CODE\",\"targetDispAttribute\":\"NAME\"},{\"name\":\"ContinentCode\",\"targetObject\":\"CONTINENT\",\"targetAttribute\":\"CODE\",\"targetDispAttribute\":\"NAME\",\"aliasName\":\"CONTINENT_NAME2222\"}]}";
+	String jasonStateData = "[{\"CODE\":\"DEL\",\"NAME\":\"Delhi\",\"ORDER_NO\":1,\"COUNTRY_CODE\":\"IND\",\"CONTINENT_CODE\":\"ASIA\"},{\"CODE\":\"UP\",\"NAME\":\"Uttar Pradesh\",\"ORDER_NO\":1,\"COUNTRY_CODE\":\"IND\",\"CONTINENT_CODE\":\"ASIA\"},{\"CODE\":\"MAH\",\"NAME\":\"Maharashtra\",\"ORDER_NO\":1,\"COUNTRY_CODE\":\"IND\",\"CONTINENT_CODE\":\"ASIA\"},{\"CODE\":\"NY\",\"NAME\":\"New York\",\"ORDER_NO\":1,\"COUNTRY_CODE\":\"NA\",\"CONTINENT_CODE\":\"AMERICA\"},{\"CODE\":\"CA\",\"NAME\":\"California\",\"ORDER_NO\":1,\"COUNTRY_CODE\":\"NA\",\"CONTINENT_CODE\":\"AMERICA\"},{\"CODE\":\"MI\",\"NAME\":\"Massachusats\",\"ORDER_NO\":1,\"COUNTRY_CODE\":\"NA\",\"CONTINENT_CODE\":\"AMERICA\"}]"; 
+			
+	
+	String jasonCityModel = "{\"name\":\"City\",\"targetObect\":\"CITY\",\"targetType\":\"DB\",\"path\":\"\",\"attributes\":[{\"name\":\"Code\",\"targetName\":\"CODE\",\"dataType\":\"VARCHAR\",\"orderNo\":0,\"defaultValue\":\"\",\"key\":true,\"required\":true,\"keyColSeq\":0,\"updateable\":false},{\"name\":\"Name\",\"targetName\":\"NAME\",\"dataType\":\"VARCHAR\",\"orderNo\":0,\"defaultValue\":\"\",\"key\":false,\"required\":true,\"keyColSeq\":0,\"updateable\":true},{\"name\":\"StateCode\",\"targetName\":\"STATE_CODE\",\"dataType\":\"VARCHAR\",\"orderNo\":0,\"defaultValue\":\"\",\"key\":false,\"required\":true,\"keyColSeq\":0,\"updateable\":false},{\"name\":\"CountryCode\",\"targetName\":\"COUNTRY_CODE\",\"dataType\":\"VARCHAR\",\"orderNo\":0,\"defaultValue\":\"\",\"key\":false,\"required\":true,\"keyColSeq\":0,\"updateable\":false},{\"name\":\"ContinentCode\",\"targetName\":\"CONTINENT_CODE\",\"dataType\":\"VARCHAR\",\"orderNo\":0,\"defaultValue\":\"\",\"key\":false,\"required\":true,\"keyColSeq\":0,\"updateable\":false},{\"name\":\"OrderNo\",\"targetName\":\"ORDER_NO\",\"dataType\":\"NUMERIC\",\"orderNo\":0,\"defaultValue\":\"\",\"key\":false,\"required\":false,\"keyColSeq\":0,\"updateable\":true}],\"references\":[{\"name\":\"StateCode\",\"targetObject\":\"STATE\",\"targetAttribute\":\"CODE\",\"targetDispAttribute\":\"NAME\"},{\"name\":\"CountryCode\",\"targetObject\":\"COUNTRY\",\"targetAttribute\":\"CODE\",\"targetDispAttribute\":\"NAME\"},{\"name\":\"ContinentCode\",\"targetObject\":\"CONTINENT\",\"targetAttribute\":\"CODE\",\"targetDispAttribute\":\"NAME\",\"aliasName\":\"CONTINENT_NAME\"}]}";
+	String jasonCityData = "[{\"CODE\":\"DEL\",\"NAME\":\"Delhi\",\"ORDER_NO\":1,\"STATE_CODE\":\"DEL\",\"COUNTRY_CODE\":\"IND\",\"CONTINENT_CODE\":\"ASIA\"},{\"CODE\":\"LKO\",\"NAME\":\"Lucknow\",\"ORDER_NO\":1,\"STATE_CODE\":\"UP\",\"COUNTRY_CODE\":\"IND\",\"CONTINENT_CODE\":\"ASIA\"},{\"CODE\":\"MUM\",\"NAME\":\"Mumbai\",\"ORDER_NO\":1,\"STATE_CODE\":\"MAH\",\"COUNTRY_CODE\":\"IND\",\"CONTINENT_CODE\":\"ASIA\"},{\"CODE\":\"NY\",\"NAME\":\"New York\",\"ORDER_NO\":1,\"STATE_CODE\":\"NY\",\"COUNTRY_CODE\":\"NA\",\"CONTINENT_CODE\":\"AMERICA\"},{\"CODE\":\"SF\",\"NAME\":\"San Francisco\",\"ORDER_NO\":1,\"STATE_CODE\":\"CA\",\"COUNTRY_CODE\":\"NA\",\"CONTINENT_CODE\":\"AMERICA\"},{\"CODE\":\"BOS\",\"NAME\":\"Boston\",\"ORDER_NO\":1,\"STATE_CODE\":\"MI\",\"COUNTRY_CODE\":\"NA\",\"CONTINENT_CODE\":\"AMERICA\"}]";
+			
+	static ObjectMapper objectMapper;
+
+	@Test
+	public void persistContinent() throws Exception{
+		EntityDBMappingModel em = objectMapper.readValue(jasonContinentModel, EntityDBMappingModel.class);
+		Assert.assertNotNull(em);
+		Assert.assertEquals("Continent", em.getName());
+
+		List<Map<String,String>> list = objectMapper.readValue(jasonContinentData,
+												new TypeReference<ArrayList<LinkedHashMap<String,String>>>() {});
+
+		PersistHelper persistHelper = PersistHelper.getInstance();
+		
+		Map<PersistHelper.SQLStatements,Statement> statements= new HashMap<>(); 
+		
+		InsertSQLGenerator insSqlGen = InsertSQLGenerator.getInstance();
+		Statement statement = insSqlGen.generate(em);
+		Assert.assertTrue(!statement.statement.isEmpty());
+		statements.put(PersistHelper.SQLStatements.Insert, statement);
+
+		UpdateSQLGenerator updSqlGen = UpdateSQLGenerator.getInstance();
+		statement = updSqlGen.generate(em);
+		Assert.assertTrue(!statement.statement.isEmpty());
+		statements.put(PersistHelper.SQLStatements.Update, statement);
+
+		DeleteSQLGenerator delSqlGen = DeleteSQLGenerator.getInstance();
+		statement = delSqlGen.generate(em);
+		Assert.assertTrue(!statement.statement.isEmpty());
+		statements.put(PersistHelper.SQLStatements.Delete, statement);
+
+		
+		SelectSQLGenerator selSqlGen = SelectSQLGenerator.getInstance();
+		statement = selSqlGen.generate(em);
+		Assert.assertTrue(!statement.statement.isEmpty());
+		statements.put(PersistHelper.SQLStatements.Select, statement);
+
+		
+		SelectNonUpdSQLGenerator selNoUpdSqlGen = SelectNonUpdSQLGenerator.getInstance();
+		statement = selNoUpdSqlGen.generate(em);
+		Assert.assertTrue(!statement.statement.isEmpty());
+		statements.put(PersistHelper.SQLStatements.SelectNonUpd, statement);
+		
+		
+		persistHelper.persist(statements, list);
+		
+		for(Map<String,String> record: list){
+			List<Map<String,String>> retRecord = persistHelper.executeQuery(statements.get( PersistHelper.SQLStatements.Select), record);
+			Assert.assertEquals(1, retRecord.size());
+			Assert.assertEquals(record.get("CODE"), retRecord.get(0).get("CODE"));
+		}
+		
+		statement = selSqlGen.generate(em, null);
+		List<Map<String,String>> retRecord = persistHelper.executeQuery(statement, null);
+		Assert.assertEquals(4, retRecord.size());
+	}
+	
+
+	@Test
+	public void persistCountry() throws Exception{
+	 //insert continent
+		
+		EntityDBMappingModel emCont = objectMapper.readValue(jasonCountryModel, EntityDBMappingModel.class);
+		Assert.assertNotNull(emCont);
+		Assert.assertEquals("Country", emCont.getName());
+
+		List<Map<String,String>> list = objectMapper.readValue(jasonCountryData,
+												new TypeReference<ArrayList<LinkedHashMap<String,String>>>() {});
+		
+		PersistHelper persistHelper = PersistHelper.getInstance();
+		
+		
+		InsertSQLGenerator insSqlGen = InsertSQLGenerator.getInstance();
+		Statement statement = insSqlGen.generate(emCont);
+		Assert.assertTrue(!statement.statement.isEmpty());
+		
+		persistHelper.executeBatch(statement, list);
+
+		SelectSQLGenerator selSqlGen = SelectSQLGenerator.getInstance();
+		statement = selSqlGen.generate(emCont);
+
+		for(Map<String,String> record: list){
+			List<Map<String,String>> retRecord = persistHelper.executeQuery( statement, record);
+			Assert.assertEquals(1, retRecord.size());
+			Assert.assertEquals(record.get("CODE"), retRecord.get(0).get("CODE"));
+		}
+		
+		statement = selSqlGen.generateJoinSelect(emCont);
+		List<Map<String,String>> retRecord = persistHelper.executeQuery(statement, null);
+		Assert.assertEquals(7, retRecord.size());
+		
+		
+		//StateEM Model
+		EntityDBMappingModel emState = objectMapper.readValue(jasonStateModel, EntityDBMappingModel.class);
+		Assert.assertNotNull(emState);
+		Assert.assertEquals("State", emState.getName());
+
+		list = objectMapper.readValue(jasonStateData,
+												new TypeReference<ArrayList<LinkedHashMap<String,String>>>() {});
+		
+		insSqlGen = InsertSQLGenerator.getInstance();
+		statement = insSqlGen.generate(emState);
+		Assert.assertTrue(!statement.statement.isEmpty());
+		
+		persistHelper.executeBatch(statement, list);
+
+		selSqlGen = SelectSQLGenerator.getInstance();
+		statement = selSqlGen.generate(emState);
+
+		for(Map<String,String> record: list){
+			retRecord = persistHelper.executeQuery( statement, record);
+			Assert.assertEquals(1, retRecord.size());
+			Assert.assertEquals(record.get("CODE"), retRecord.get(0).get("CODE"));
+		}
+		
+		statement = selSqlGen.generateJoinSelect(emState);
+		retRecord = persistHelper.executeQuery(statement, null);
+		Assert.assertEquals(6, retRecord.size());
+
+		
+		List<String> resultCols = Arrays.asList(new String[]{"Code","Name"}); 
+		statement = selSqlGen.generateJoinSelect(emState,resultCols,null);
+		retRecord = persistHelper.executeQuery(statement, null);
+		Assert.assertEquals(6, retRecord.size());
+
+		statement = selSqlGen.generateJoinSelect(emState,resultCols,
+				   Arrays.asList(new ICondition[]{new SimpleCondition("CODE","=","DEL")})
+				   );
+		retRecord = persistHelper.executeQuery(statement, null);
+		Assert.assertEquals(1, retRecord.size());
+		// End State EM Model
+		
+	}
+	
+	
+	@BeforeClass
+	public static void init() {
+
+		JDBCConnectionProvider.getInstance().allocateConnection( JDBCConnection1.connection);
+		if (JDBCConnection1.isLocalDB){
+			try{
+			createDropCity();
+			}
+			catch(SQLException se){
+				JDBCConnectionProvider.getInstance().savePointComplete(false);
+			}
+		}
+		objectMapper = new ObjectMapper();
+	}
+	@AfterClass
+	public static void releaseConnection(){
+		JDBCConnectionProvider.getInstance().savePointComplete(false);
+	}
+
+	
+	private static void createDropCity() throws SQLException{
+		String[] dropTables =  {"DROP TABLE IF EXISTS CITY",
+								"DROP TABLE IF EXISTS STATE",
+								"DROP TABLE IF EXISTS COUNTRY",
+								"DROP TABLE IF EXISTS CONTINENT"
+								};
+//		String stateDropStmtText =  "DROP TABLE IF EXISTS STATE";
+//		String countryDropStmtText =  "DROP TABLE IF EXISTS COUNTRY";
+//		String continentDropStmtText =  "DROP TABLE IF EXISTS CONTINENT";
+//		String 	cityCreateString = "create table CITY (CODE VARCHAR(10), DESCRIPTION VARCHAR(30), ORDER_NO numeric(10), PRIMARY KEY ( CODE ))";
+		
+		String[] 	createString = {
+		"create table CITY (CODE VARCHAR(10), NAME VARCHAR(30), ORDER_NO numeric(10), STATE_CODE VARCHAR(10), COUNTRY_CODE VARCHAR(10), CONTINENT_CODE VARCHAR(10), PRIMARY KEY ( CODE ))",
+		"create table STATE (CODE VARCHAR(10), NAME VARCHAR(30), ORDER_NO numeric(10), COUNTRY_CODE VARCHAR(10), CONTINENT_CODE VARCHAR(10),PRIMARY KEY ( CODE ))",
+		"create table COUNTRY (CODE VARCHAR(10), NAME VARCHAR(30), ORDER_NO numeric(10), CONTINENT_CODE VARCHAR(10),PRIMARY KEY ( CODE ))",
+		"create table CONTINENT (CODE VARCHAR(10), NAME VARCHAR(30), ORDER_NO numeric(10), CONTINENT_CODE VARCHAR(10),PRIMARY KEY ( CODE ))"
+		};
+//		String 	cityCreateString = "create table CITY (CODE VARCHAR(10), NAME VARCHAR(30), ORDER_NO numeric(10), STATE_CODE VARCHAR(10), COUNTRY_CODE VARCHAR(10), CONTINENT_CODE VARCHAR(10), PRIMARY KEY ( CODE ))";
+//		String 	stateCreateString = "create table STATE (CODE VARCHAR(10), NAME VARCHAR(30), ORDER_NO numeric(10), COUNTRY_CODE VARCHAR(10), CONTINENT_CODE VARCHAR(10),PRIMARY KEY ( CODE ))";
+//		String 	countryCreateString = "create table COUNTY (CODE VARCHAR(10), NAME VARCHAR(30), ORDER_NO numeric(10), CONTINENT_CODE VARCHAR(10),PRIMARY KEY ( CODE ))";
+//		String 	continentCreateString = "create table CONTINENT (CODE VARCHAR(10), NAME VARCHAR(30), ORDER_NO numeric(10), CONTINENT_CODE VARCHAR(10),PRIMARY KEY ( CODE ))";
+
+		java.sql.Statement stmt=null ;
+		Connection con = JDBCConnectionProvider.getInstance().getConnection();
+		try {
+			
+			stmt = con.createStatement();
+			for(String dropTable:dropTables){
+				stmt.executeUpdate(dropTable);
+			}
+		}
+		catch(Exception e){ //it is just to catch and avoid any throw for droping a table.
+		}
+		
+		try {
+			stmt = con.createStatement();
+			for(String createTable:createString){
+				stmt.executeUpdate(createTable);
+			}
+
+		}
+		finally {
+			if (stmt != null ){
+				stmt.close();
+			}
+			
+		}
+
+
+	}
+}
+===========================================================================
+package com.cnk.travelerpibe.common.persistence.sql;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import org.codehaus.jackson.map.ObjectMapper;
+import org.junit.Assert;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
+import com.cnk.travelepribe.common.persistence.pattern.FreeFromLineCondition;
+import com.cnk.travelepribe.common.persistence.pattern.ICondition;
+import com.cnk.travelepribe.common.persistence.pattern.SimpleCondition;
+import com.cnk.travelerpibe.common.persistence.model.AttributeDBMappingModel;
+import com.cnk.travelerpibe.common.persistence.model.EntityDBMappingModel;
+
+public class SQLGeneratorTest {
+
+	static ObjectMapper objectMapper;
+	
+	@BeforeClass
+	public static void init(){
+		objectMapper = new ObjectMapper();
+	}
+	
+
+	
+	
+	@Test
+	public void sQLGenerator() throws Exception{
+		EntityDBMappingModel em = new EntityDBMappingModel( "City","CITY","TRAVELERP","DB" );
+		AttributeDBMappingModel amCode = new AttributeDBMappingModel("code","CODE","VARCHAR",true,true);
+		amCode.setKeySeq(true);
+		AttributeDBMappingModel amDescription = new AttributeDBMappingModel("description","DESCRIPTION","VARCHAR",true);
+		AttributeDBMappingModel amOrder = new AttributeDBMappingModel("orderNo","ORDER_NO","NUMERIC");
+		em.addAttribute(amCode);
+		em.addAttribute(amDescription);
+		em.addAttribute(amOrder);
+		
+		InsertSQLGenerator insSqlGen = InsertSQLGenerator.getInstance();
+		Statement statement = insSqlGen.generate(em);
+		Assert.assertTrue(!statement.statement.isEmpty());
+
+		UpdateSQLGenerator updSqlGen = UpdateSQLGenerator.getInstance();
+		statement = updSqlGen.generate(em);
+		Assert.assertTrue(!statement.statement.isEmpty());
+
+		DeleteSQLGenerator delSqlGen = DeleteSQLGenerator.getInstance();
+		statement = delSqlGen.generate(em);
+		Assert.assertTrue(!statement.statement.isEmpty());
+
+		
+		SelectSQLGenerator selSqlGen = SelectSQLGenerator.getInstance();
+		statement = selSqlGen.generate(em);
+		Assert.assertTrue(!statement.statement.isEmpty());
+
+		
+		SelectNonUpdSQLGenerator selNoUpdSqlGen = SelectNonUpdSQLGenerator.getInstance();
+		statement = selNoUpdSqlGen.generate(em);
+		Assert.assertTrue(!statement.statement.isEmpty());
+
+	}
+	
+	@Test
+	public void selectSQLGenerator() throws Exception{
+		EntityDBMappingModel em = new EntityDBMappingModel( "City","CITY","TRAVELERP","DB" );
+		AttributeDBMappingModel amCode = new AttributeDBMappingModel("code","CODE","VARCHAR",true,true);
+		AttributeDBMappingModel amDescription = new AttributeDBMappingModel("description","DESCRIPTION","VARCHAR",true);
+		AttributeDBMappingModel amOrder = new AttributeDBMappingModel("orderNo","ORDER_NO","NUMERIC");
+		em.addAttribute(amCode);
+		em.addAttribute(amDescription);
+		em.addAttribute(amOrder);
+
+		SelectSQLGenerator selSqlGen = SelectSQLGenerator.getInstance();
+		Statement statement = selSqlGen.generate(em,null);
+		Assert.assertTrue(!statement.statement.isEmpty());
+
+		OrderByCols orderByCols = new OrderByCols();
+		orderByCols.cols.add("description1");
+	    statement = selSqlGen.generate(em,orderByCols);
+		Assert.assertTrue(!statement.statement.isEmpty());
+
+		
+		orderByCols.cols.clear();
+		orderByCols.cols.add("description");
+		statement = selSqlGen.generate(em,orderByCols);
+		Assert.assertTrue(!statement.statement.isEmpty());
+
+		
+	}
+	
+	@Test
+	public void selectJoinSQLGenerator() throws Exception{
+		String jsonModelData = "{\"name\":\"State\",\"targetObect\":\"STATE\",\"targetType\":\"DB\",\"path\":\"TRAVELERP\",\"attributes\":[{\"name\":\"Code\",\"targetName\":\"CODE\",\"dataType\":\"VARCHAR\",\"orderNo\":0,\"defaultValue\":\"\",\"key\":true,\"required\":true,\"keyColSeq\":0,\"keySeq\":true,\"updateable\":false},{\"name\":\"Name\",\"targetName\":\"NAME\",\"dataType\":\"VARCHAR\",\"orderNo\":0,\"defaultValue\":\"\",\"key\":false,\"required\":true,\"keyColSeq\":0,\"updateable\":true},{\"name\":\"CountryCode\",\"targetName\":\"COUNTRY_CODE\",\"dataType\":\"VARCHAR\",\"orderNo\":0,\"defaultValue\":\"\",\"key\":false,\"required\":true,\"keyColSeq\":0,\"updateable\":false},{\"name\":\"ContinentCode\",\"targetName\":\"CONTINENT_CODE\",\"dataType\":\"VARCHAR\",\"orderNo\":0,\"defaultValue\":\"\",\"key\":false,\"required\":true,\"keyColSeq\":0,\"updateable\":false},{\"name\":\"OrderNo\",\"targetName\":\"ORDER_NO\",\"dataType\":\"NUMERIC\",\"orderNo\":0,\"defaultValue\":\"\",\"key\":false,\"required\":false,\"keyColSeq\":0,\"updateable\":true}],\"references\":[{\"name\":\"CountryCode\",\"targetObject\":\"COUNTRY\",\"targetAttribute\":\"CODE\",\"targetDispAttribute\":\"NAME\"},{\"name\":\"ContinentCode\",\"targetObject\":\"CONTINENT\",\"targetAttribute\":\"CODE\",\"targetDispAttribute\":\"NAME\",\"aliasName\":\"CONTINENT_NAME\"}]}";
+		
+		EntityDBMappingModel model = objectMapper.readValue(jsonModelData, EntityDBMappingModel.class);
+	
+		InsertSQLGenerator insSqlGen = InsertSQLGenerator.getInstance();
+		Statement statement = insSqlGen.generate(model);
+		Assert.assertTrue(!statement.statement.isEmpty());
+
+		
+		SelectSQLGenerator selSqlGen = SelectSQLGenerator.getInstance();
+		statement = selSqlGen.generateJoinSelect(model,null);
+		Assert.assertTrue(!statement.statement.isEmpty());
+	
+	}
+
+	@Test
+	public void selectJoinSQLGeneratorCity() throws Exception{
+		String jsonModelData = "{\"name\":\"City\",\"targetObect\":\"CITY\",\"targetType\":\"DB\",\"path\":\"TRAVELERP\",\"attributes\":[{\"name\":\"Code\",\"targetName\":\"CODE\",\"dataType\":\"VARCHAR\",\"orderNo\":0,\"defaultValue\":\"\",\"key\":true,\"required\":true,\"keyColSeq\":0,\"updateable\":false},{\"name\":\"Name\",\"targetName\":\"NAME\",\"dataType\":\"VARCHAR\",\"orderNo\":0,\"defaultValue\":\"\",\"key\":false,\"required\":true,\"keyColSeq\":0,\"updateable\":true},{\"name\":\"StateCode\",\"targetName\":\"STATE_CODE\",\"dataType\":\"VARCHAR\",\"orderNo\":0,\"defaultValue\":\"\",\"key\":false,\"required\":true,\"keyColSeq\":0,\"updateable\":false},{\"name\":\"CountryCode\",\"targetName\":\"COUNTRY_CODE\",\"dataType\":\"VARCHAR\",\"orderNo\":0,\"defaultValue\":\"\",\"key\":false,\"required\":true,\"keyColSeq\":0,\"updateable\":false},{\"name\":\"ContinentCode\",\"targetName\":\"CONTINENT_CODE\",\"dataType\":\"VARCHAR\",\"orderNo\":0,\"defaultValue\":\"\",\"key\":false,\"required\":true,\"keyColSeq\":0,\"updateable\":false},{\"name\":\"OrderNo\",\"targetName\":\"ORDER_NO\",\"dataType\":\"NUMERIC\",\"orderNo\":0,\"defaultValue\":\"\",\"key\":false,\"required\":false,\"keyColSeq\":0,\"updateable\":true}],\"references\":[{\"name\":\"StateCode\",\"targetObject\":\"STATE\",\"targetAttribute\":\"CODE\",\"targetDispAttribute\":\"NAME\"},{\"name\":\"CountryCode\",\"targetObject\":\"COUNTRY\",\"targetAttribute\":\"CODE\",\"targetDispAttribute\":\"NAME\"},{\"name\":\"ContinentCode\",\"targetObject\":\"CONTINENT\",\"targetAttribute\":\"CODE\",\"targetDispAttribute\":\"NAME\",\"aliasName\":\"CONTINENT_NAME22222\"}]}";
+		
+		EntityDBMappingModel model = objectMapper.readValue(jsonModelData, EntityDBMappingModel.class);
+	
+		SelectSQLGenerator selSqlGen = SelectSQLGenerator.getInstance();
+		Statement statement = selSqlGen.generateJoinSelect(model,null);
+		Assert.assertTrue(!statement.statement.isEmpty());
+
+		FreeFromLineCondition fcondition1 = new FreeFromLineCondition();
+		fcondition1.setText("CODE = '001'");
+		SimpleCondition fcondition2 = new SimpleCondition();
+		
+		fcondition2.setLoperand("NAME");
+		fcondition2.setOperator(" = ");
+		fcondition2.setRoperand("DAVID");
+		
+		List<ICondition> conds = new ArrayList<>();
+		conds.add( fcondition1);
+		conds.add( fcondition2);
+		statement = selSqlGen.generateJoinSelect(model,conds);
+		Assert.assertTrue(!statement.statement.isEmpty());
+
+		
+	}
+
+
+	@Test
+	public void selectJoinSQLGeneratorContinent() throws Exception{
+		String jsonModelData = "{\"name\":\"Continent\",\"targetObect\":\"CONTINENT\",\"targetType\":\"DB\",\"path\":\"TRAVELERP\",\"attributes\":[{\"name\":\"Code\",\"targetName\":\"CODE\",\"dataType\":\"VARCHAR\",\"orderNo\":0,\"defaultValue\":\"\",\"key\":true,\"required\":true,\"keyColSeq\":0,\"updateable\":false},{\"name\":\"Name\",\"targetName\":\"NAME\",\"dataType\":\"VARCHAR\",\"orderNo\":0,\"defaultValue\":\"\",\"key\":false,\"required\":true,\"keyColSeq\":0,\"updateable\":true},{\"name\":\"OrderNo\",\"targetName\":\"ORDER_NO\",\"dataType\":\"NUMERIC\",\"orderNo\":0,\"defaultValue\":\"\",\"key\":false,\"required\":false,\"keyColSeq\":0,\"updateable\":true}]}";
+		
+		EntityDBMappingModel model = objectMapper.readValue(jsonModelData, EntityDBMappingModel.class);
+	
+		SelectSQLGenerator selSqlGen = SelectSQLGenerator.getInstance();
+		Statement statement = selSqlGen.generateJoinSelect(model,null);
+		Assert.assertTrue(!statement.statement.isEmpty());
+
+		FreeFromLineCondition fcondition1 = new FreeFromLineCondition();
+		fcondition1.setText("CODE = '001'");
+		SimpleCondition fcondition2 = new SimpleCondition();
+		
+		fcondition2.setLoperand("NAME");
+		fcondition2.setOperator(" = ");
+		fcondition2.setRoperand("DAVID");
+		
+		List<ICondition> conds = new ArrayList<>();
+		conds.add( fcondition1);
+		conds.add( fcondition2);
+		statement = selSqlGen.generateJoinSelect(model,conds);
+		Assert.assertTrue(!statement.statement.isEmpty());
+
+		List<String> resultColumns = new ArrayList<>();
+		resultColumns.add("Code");
+		resultColumns.add("Name");
+		
+		statement = selSqlGen.generateJoinSelect(model,resultColumns,conds);
+		Assert.assertTrue(!statement.statement.isEmpty());
+	
+	}
+
+	
+}
+=============================================================================
+package com.cnk.travelerpibe.common.persistence.sql;
+
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.util.Properties;
+
+import junit.framework.Assert;
+
+import org.junit.Test;
+
+import com.cnk.travelerpibe.common.persistence.io.ClassPathResource;
+import com.cnk.travelerpibe.common.persistence.io.Resource;
+
+public class JDBCConnection1 {
+	public static Connection connection;
+	public static boolean isLocalDB;
+	
+	static {
+		try {
+			Resource resource = new ClassPathResource("dbConf.properties", AbstractSQLGenerator.class.getClassLoader());
+			Properties properties = new Properties();
+			properties.load(resource.getInputStream());
+
+			Class.forName( properties.getProperty("driver") );
+	        String url = properties.getProperty("url");
+	        String usr = properties.getProperty("user");
+	        String pwd = properties.getProperty("password");
+	        connection = DriverManager.getConnection(url, usr, pwd);
+	       // isLocalDB = Boolean.valueOf( properties.getProperty("isLocalDB") );
+		} catch (Exception e) {
+			throw new RuntimeException("Error occured during initializing the connection",e);
+		}
+		
+	}
+	
+	@Test
+	public void connection(){
+		Assert.assertNotNull( connection );
+		
+	}
+}
+============================================================================
+package com.cnk.travelerpibe.common.persistence.model;
+
+import java.io.StringWriter;
+import java.io.Writer;
+
+import org.codehaus.jackson.map.ObjectMapper;
+import org.junit.Assert;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
+/**
+ * JUnit class for Attribute Mapping Model
+ * @author vishwanath.dubey
+ *
+ */
+public class AttributeMappingModelTest {
+	static ObjectMapper objectMapper;
+	
+	@BeforeClass
+	public static void init(){
+		objectMapper = new ObjectMapper();
+	}
+	
+	@Test
+	public void toJSON() throws Exception{
+		AttributeDBMappingModel atrModel = new AttributeDBMappingModel();
+		atrModel.setName("code");
+		atrModel.setDataType("String");
+		atrModel.setKey(false);
+		atrModel.setRequired(true);
+		atrModel.setOrderNo((short) 1);
+		atrModel.setTargetName("id");
+		
+		Writer strWriter = new StringWriter();
+		
+		objectMapper.writeValue(strWriter, atrModel);
+		String jsonData = strWriter.toString();
+		Assert.assertNotNull(jsonData);
+		Assert.assertTrue(jsonData.contains("\"name\":\"code\""));
+		Assert.assertTrue(jsonData.contains("\"defaultValue\":\"\""));
+	}
+	
+	@Test
+	public void fromJSON() throws Exception{
+
+		String jsonData = "{\"name\":\"code\",\"targetName\":\"id\",\"dataType\":\"String\",\"updateable\":false,\"orderNo\":1,\"defaultValue\":\"\",\"key\":false,\"required\":true,\"keyColSeq\":0}";
+		AttributeDBMappingModel model = objectMapper.readValue(jsonData, AttributeDBMappingModel.class);
+		Assert.assertNotNull(model);
+		
+	}
+
+
+	
+}
+============================================================================
+package com.cnk.travelerpibe.common.persistence.model;
+
+
+import java.io.StringWriter;
+import java.io.Writer;
+
+import org.codehaus.jackson.map.ObjectMapper;
+import org.junit.Assert;
+import org.junit.BeforeClass;
+import org.junit.Test;
+import org.junit.experimental.categories.Category;
+
+import com.cnk.travelerpibe.common.persistence.PeristenceTest;
+
+/**
+ * JUnit class for Entity Mapping Model
+ * @author vishwanath.dubey
+ *
+ */
+@Category(PeristenceTest.class)
+public class ReferenceDBMappingModelTest {
+	static ObjectMapper objectMapper;
+	
+	@BeforeClass
+	public static void init(){
+		objectMapper = new ObjectMapper();
+	}
+	
+	@Test
+	public void toJSON() throws Exception{
+		
+		ReferenceDBMappingModel model = new ReferenceDBMappingModel();
+		model.setName("City");
+		model.setTargetObject("CITY");
+		model.setTargetAttribute("CODE");
+		model.setTargetDispAttribute("NAME");
+		
+		
+		Writer strWriter = new StringWriter();
+		
+		objectMapper.writeValue(strWriter, model);
+		String jsonData = strWriter.toString();
+		Assert.assertNotNull(jsonData);
+		Assert.assertTrue(jsonData.contains("\"name\":\"City\""));
+		Assert.assertTrue(jsonData.contains("\"targetObject\":\"CITY\""));
+
+	}
+
+	@Test
+	public void fromJSON() throws Exception{
+//		String jasonData = "{\"name\":\"City\",\"targetObect\":\"City\",\"targetType\":\"DATABASE\",\"path\":\"TRAVELERP\"}";
+		String jasonData = "{\"name\":\"ContinentCode\",\"targetObject\":\"CONTINENT\",\"targetAttribute\":\"CODE\",\"targetDispAttribute\":\"NAME\"}";
+		
+		ReferenceDBMappingModel model = objectMapper.readValue(jasonData, ReferenceDBMappingModel.class);
+		Assert.assertNotNull(model);
+		Assert.assertEquals("ContinentCode", model.getName());
+		Assert.assertEquals("CONTINENT", model.getTargetObject());
+
+	}
+	
+//	@Test
+//	public void toJSONNext() throws Exception{
+//
+//		EntityDBMappingModel em = new EntityDBMappingModel( "City","CITY","TRAVELERP","DB" );
+//		AttributeDBMappingModel amCode = new AttributeDBMappingModel("code","CODE","VARCHAR",true,true);
+//		AttributeDBMappingModel amDescription = new AttributeDBMappingModel("description","DESCRIPTION","VARCHAR",true);
+//		AttributeDBMappingModel amOrder = new AttributeDBMappingModel("orderNo","ORDER_NO","NUMERIC");
+//		em.addAttribute(amCode);
+//		em.addAttribute(amDescription);
+//		em.addAttribute(amOrder);
+//		Writer strWriter = new StringWriter();
+//
+//		objectMapper.writeValue(strWriter, em);
+//		String jsonData = strWriter.toString();
+//		Assert.assertNotNull(jsonData);
+//		Assert.assertTrue(jsonData.contains("\"name\":\"City\""));
+//		Assert.assertTrue(jsonData.contains("\"path\":\"TRAVELERP\""));
+//	}
+//	
+//	
+//	@Test
+//	public void fromJSONNext() throws Exception{
+//	
+//		String jasonData = "{\"name\":\"City\",\"targetObect\":\"CITY\",\"targetType\":\"DB\",\"path\":\"TRAVELERP\",\"attributes\":[{\"name\":\"code\",\"targetName\":\"CODE\",\"dataType\":\"VARCHAR\",\"orderNo\":0,\"defaultValue\":\"\",\"key\":true,\"required\":true,\"keyColSeq\":0,\"updateable\":false},{\"name\":\"description\",\"targetName\":\"DESCRIPTION\",\"dataType\":\"VARCHAR\",\"orderNo\":0,\"defaultValue\":\"\",\"key\":false,\"required\":true,\"keyColSeq\":0,\"updateable\":true},{\"name\":\"orderNo\",\"targetName\":\"ORDER_NO\",\"dataType\":\"NUMERIC\",\"orderNo\":0,\"defaultValue\":\"\",\"key\":false,\"required\":false,\"keyColSeq\":0,\"updateable\":true}]}";
+//		EntityDBMappingModel model = objectMapper.readValue(jasonData, EntityDBMappingModel.class);
+//		Assert.assertNotNull(model);
+//		Assert.assertEquals(3, model.getAttributes().size());
+//
+//	}
+//	
+//	@Test
+//	public void mapJson() throws Exception{
+//		Map<String,String> r1 = new LinkedHashMap<>();
+//		r1.put("code", "MUMB");
+//		r1.put("description", "Mumbai");
+//		
+//		Map<String,String> r2 = new LinkedHashMap<>();
+//		r2.put("code", "DEL");
+//		r2.put("description", "Delhi");
+//		
+//		Map<String,String> r3 = new LinkedHashMap<>();
+//		r3.put("code", "BENG");
+//		r3.put("description", "Bengaluru");
+//		
+//		List<Map<String,String>> l1 = new ArrayList<>();
+//		
+//		l1.add(r1);
+//		l1.add(r2);
+//		l1.add(r3);
+//		
+//		Writer strWriter = new StringWriter();
+//
+//		objectMapper.writeValue(strWriter, l1);
+//		String jsonData = strWriter.toString();
+//		Assert.assertNotNull(jsonData);
+//		
+//		
+//	}
+//	
+//	@Test
+//	public void mapFromJson() throws Exception{
+//	
+//		String jsonaCityData = "[{\"CODE\":\"MUMB\",\"DESCRIPTION\":\"Mumbai\",\"ORDER_NO\":0},{\"CODE\":\"DEL\",\"DESCRIPTION\":\"Delhi\",\"ORDER_NO\":0},{\"CODE\":\"BENG\",\"DESCRIPTION\":\"Bengaluru\",\"ORDER_NO\":0}]";
+//		List<LinkedHashMap<String,String>> list = objectMapper.readValue(jsonaCityData,
+//					new TypeReference<ArrayList<LinkedHashMap<String,String>>>() {});
+//		Assert.assertNotNull(list.size() > 0);
+//		Assert.assertEquals("MUMB", list.get(0).get("CODE"));
+//	}
+
+}
+===========================================================================
+package com.cnk.travelerpibe.common.persistence.model;
+
+
+import java.io.StringWriter;
+import java.io.Writer;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.codehaus.jackson.map.ObjectMapper;
+import org.codehaus.jackson.type.TypeReference;
+import org.junit.Assert;
+import org.junit.BeforeClass;
+import org.junit.Test;
+import org.junit.experimental.categories.Category;
+
+import com.cnk.travelerpibe.common.persistence.PeristenceTest;
+
+/**
+ * JUnit class for Entity Mapping Model
+ * @author vishwanath.dubey
+ *
+ */
+@Category(PeristenceTest.class)
+public class EntityMappingModelTest {
+	static ObjectMapper objectMapper;
+	
+	@BeforeClass
+	public static void init(){
+		objectMapper = new ObjectMapper();
+	}
+	
+	@Test
+	public void toJSON() throws Exception{
+		
+		EntityDBMappingModel model = new EntityDBMappingModel();
+		model.setName("City");
+		model.setTargetObect("City");
+		model.setPath("TRAVELERP");
+		model.setTargetType("DATABASE");
+		
+		AttributeDBMappingModel atrModel = new AttributeDBMappingModel();
+		atrModel.setName("code");
+		atrModel.setDataType("String");
+		atrModel.setKey(false);
+		atrModel.setRequired(true);
+		atrModel.setOrderNo((short) 1);
+		atrModel.setTargetName("id");
+		model.getAttributes().add(atrModel);
+		
+		Writer strWriter = new StringWriter();
+		
+		objectMapper.writeValue(strWriter, model);
+		String jsonData = strWriter.toString();
+		Assert.assertNotNull(jsonData);
+		Assert.assertTrue(jsonData.contains("\"name\":\"City\""));
+		Assert.assertTrue(jsonData.contains("\"path\":\"TRAVELERP\""));
+
+	}
+
+	@Test
+	public void fromJSON() throws Exception{
+		String jasonData = "{\"name\":\"City\",\"targetObect\":\"City\",\"targetType\":\"DATABASE\",\"path\":\"TRAVELERP\"}";
+		
+		EntityDBMappingModel model = objectMapper.readValue(jasonData, EntityDBMappingModel.class);
+		Assert.assertNotNull(model);
+
+	}
+	
+	@Test
+	public void toJSONNext() throws Exception{
+
+		EntityDBMappingModel em = new EntityDBMappingModel( "City","CITY","TRAVELERP","DB" );
+		AttributeDBMappingModel amCode = new AttributeDBMappingModel("code","CODE","VARCHAR",true,true);
+		AttributeDBMappingModel amDescription = new AttributeDBMappingModel("description","DESCRIPTION","VARCHAR",true);
+		AttributeDBMappingModel amOrder = new AttributeDBMappingModel("orderNo","ORDER_NO","NUMERIC");
+		em.addAttribute(amCode);
+		em.addAttribute(amDescription);
+		em.addAttribute(amOrder);
+		Writer strWriter = new StringWriter();
+
+		objectMapper.writeValue(strWriter, em);
+		String jsonData = strWriter.toString();
+		Assert.assertNotNull(jsonData);
+		Assert.assertTrue(jsonData.contains("\"name\":\"City\""));
+		Assert.assertTrue(jsonData.contains("\"path\":\"TRAVELERP\""));
+	}
+	
+	
+	@Test
+	public void fromJSONNext() throws Exception{
+	
+		String jasonData = "{\"name\":\"City\",\"targetObect\":\"CITY\",\"targetType\":\"DB\",\"path\":\"TRAVELERP\",\"attributes\":[{\"name\":\"code\",\"targetName\":\"CODE\",\"dataType\":\"VARCHAR\",\"orderNo\":0,\"defaultValue\":\"\",\"key\":true,\"required\":true,\"keyColSeq\":0,\"updateable\":false},{\"name\":\"description\",\"targetName\":\"DESCRIPTION\",\"dataType\":\"VARCHAR\",\"orderNo\":0,\"defaultValue\":\"\",\"key\":false,\"required\":true,\"keyColSeq\":0,\"updateable\":true},{\"name\":\"orderNo\",\"targetName\":\"ORDER_NO\",\"dataType\":\"NUMERIC\",\"orderNo\":0,\"defaultValue\":\"\",\"key\":false,\"required\":false,\"keyColSeq\":0,\"updateable\":true}]}";
+		EntityDBMappingModel model = objectMapper.readValue(jasonData, EntityDBMappingModel.class);
+		Assert.assertNotNull(model);
+		Assert.assertEquals(3, model.getAttributes().size());
+
+	}
+	
+	@Test
+	public void mapJson() throws Exception{
+		Map<String,String> r1 = new LinkedHashMap<>();
+		r1.put("code", "MUMB");
+		r1.put("description", "Mumbai");
+		
+		Map<String,String> r2 = new LinkedHashMap<>();
+		r2.put("code", "DEL");
+		r2.put("description", "Delhi");
+		
+		Map<String,String> r3 = new LinkedHashMap<>();
+		r3.put("code", "BENG");
+		r3.put("description", "Bengaluru");
+		
+		List<Map<String,String>> l1 = new ArrayList<>();
+		
+		l1.add(r1);
+		l1.add(r2);
+		l1.add(r3);
+		
+		Writer strWriter = new StringWriter();
+
+		objectMapper.writeValue(strWriter, l1);
+		String jsonData = strWriter.toString();
+		Assert.assertNotNull(jsonData);
+		
+		
+	}
+	
+	@Test
+	public void mapFromJson() throws Exception{
+	
+		String jsonaCityData = "[{\"CODE\":\"MUMB\",\"DESCRIPTION\":\"Mumbai\",\"ORDER_NO\":0},{\"CODE\":\"DEL\",\"DESCRIPTION\":\"Delhi\",\"ORDER_NO\":0},{\"CODE\":\"BENG\",\"DESCRIPTION\":\"Bengaluru\",\"ORDER_NO\":0}]";
+		List<LinkedHashMap<String,String>> list = objectMapper.readValue(jsonaCityData,
+					new TypeReference<ArrayList<LinkedHashMap<String,String>>>() {});
+		Assert.assertNotNull(list.size() > 0);
+		Assert.assertEquals("MUMB", list.get(0).get("CODE"));
+	}
+	
+
+	@Test
+	public void fromJsonForCountry() throws Exception{
+		
+		String jsonModelData = "{\"name\":\"Country\",\"targetObect\":\"COUNTRY\",\"targetType\":\"DB\",\"path\":\"TRAVELERP\",\"attributes\":[{\"name\":\"Code\",\"targetName\":\"CODE\",\"dataType\":\"VARCHAR\",\"orderNo\":0,\"defaultValue\":\"\",\"key\":true,\"required\":true,\"keyColSeq\":0,\"updateable\":false},{\"name\":\"Name\",\"targetName\":\"NAME\",\"dataType\":\"VARCHAR\",\"orderNo\":0,\"defaultValue\":\"\",\"key\":false,\"required\":true,\"keyColSeq\":0,\"updateable\":true},{\"name\":\"ContinentCode\",\"targetName\":\"CONTINENT_CODE\",\"dataType\":\"VARCHAR\",\"orderNo\":0,\"defaultValue\":\"\",\"key\":false,\"required\":true,\"keyColSeq\":0,\"updateable\":false},{\"name\":\"OrderNo\",\"targetName\":\"ORDER_NO\",\"dataType\":\"NUMERIC\",\"orderNo\":0,\"defaultValue\":\"\",\"key\":false,\"required\":false,\"keyColSeq\":0,\"updateable\":true}],\"references\":[{\"name\":\"ContinentCode\",\"targetObject\":\"CONTINENT\",\"targetAttribute\":\"CODE\",\"targetDispAttribute\":\"NAME\"}]}";
+		
+		EntityDBMappingModel model = objectMapper.readValue(jsonModelData, EntityDBMappingModel.class);
+		Assert.assertNotNull(model);
+		Assert.assertEquals(1, model.getReferences().size());
+	}
+	
+	@Test
+	public void fromJsonForState() throws Exception{
+		
+		String jsonModelData = "{\"name\":\"State\",\"targetObect\":\"STATE\",\"targetType\":\"DB\",\"path\":\"TRAVELERP\",\"attributes\":[{\"name\":\"Code\",\"targetName\":\"CODE\",\"dataType\":\"VARCHAR\",\"orderNo\":0,\"defaultValue\":\"\",\"key\":true,\"required\":true,\"keyColSeq\":0,\"updateable\":false},{\"name\":\"Name\",\"targetName\":\"NAME\",\"dataType\":\"VARCHAR\",\"orderNo\":0,\"defaultValue\":\"\",\"key\":false,\"required\":true,\"keyColSeq\":0,\"updateable\":true},{\"name\":\"CountryCode\",\"targetName\":\"COUNTRY_CODE\",\"dataType\":\"VARCHAR\",\"orderNo\":0,\"defaultValue\":\"\",\"key\":false,\"required\":true,\"keyColSeq\":0,\"updateable\":false},{\"name\":\"ContinentCode\",\"targetName\":\"CONTINENT_CODE\",\"dataType\":\"VARCHAR\",\"orderNo\":0,\"defaultValue\":\"\",\"key\":false,\"required\":true,\"keyColSeq\":0,\"updateable\":false},{\"name\":\"OrderNo\",\"targetName\":\"ORDER_NO\",\"dataType\":\"NUMERIC\",\"orderNo\":0,\"defaultValue\":\"\",\"key\":false,\"required\":false,\"keyColSeq\":0,\"updateable\":true}],\"references\":[{\"name\":\"CountryCode\",\"targetObject\":\"COUNTRY\",\"targetAttribute\":\"CODE\",\"targetDispAttribute\":\"NAME\"},{\"name\":\"ContinentCode\",\"targetObject\":\"CONTINENT\",\"targetAttribute\":\"CODE\",\"targetDispAttribute\":\"NAME\"}]}";
+		
+		EntityDBMappingModel model = objectMapper.readValue(jsonModelData, EntityDBMappingModel.class);
+		Assert.assertNotNull(model);
+		Assert.assertEquals(2, model.getReferences().size());
+		
+		List<EntityDBMappingModel.DBColumn>  dbColumns = model.allColumns();
+		
+		Assert.assertTrue(dbColumns.size()>0);
+				
+		
+	}
+
+}
+============================================================================
+package com.cnk.travelerpibe.common.persistence;
+
+public interface PeristenceTest {
+
+}

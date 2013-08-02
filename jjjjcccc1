@@ -1,0 +1,3748 @@
+package com.cnk.travelerpibe.master.web;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import javax.servlet.ServletConfig;
+import javax.servlet.ServletContext;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
+
+import org.springframework.web.context.WebApplicationContext;
+import org.springframework.web.context.support.WebApplicationContextUtils;
+
+import com.cnk.travelerpibe.master.services.IMasterService;
+import com.tangosol.net.CacheFactory;
+import com.tangosol.net.NamedCache;
+
+public class CacheFilterServlet extends HttpServlet {
+
+  private static final long serialVersionUID = 1L;
+	private static String CACHE_NAME = "VirtualCache";
+	private static String SERVICE_NAME = "masterService";
+	//private static String TABLE_NAME = "TABLE_NAME";
+
+	private static Map<String, String> tables = new HashMap<>();
+	static {
+		tables.put("city_master", "CITY_ID");
+		tables.put("state_master", "STATE_ID");
+		tables.put("country_master", "COUNTRY_ID");
+		tables.put("continent_master", "CONTINENT_ID");
+		tables.put("product_category", "PROD_CATGRY_ID");
+		tables.put("status_master", "STATUS_ID");
+		tables.put("product_category_sub_type", "PROD_CATGRY_SUB_TYPE_ID");
+		tables.put("url_type_master", "URL_TYPE_ID");
+		tables.put("cabin_class", "CABIN_CLASS_ID");
+		tables.put("traveler_program_master", "TRAVELER_PROGRAM_ID");
+		tables.put("airline_type", "AIRLINE_TYPE_ID");
+		tables.put("group_of_companies_master", "GROUP_OF_COMPANIES_ID");
+		tables.put("group_company_master", "GROUP_COMPANY_ID");
+		tables.put("company_master", "COMPANY_ID");
+		tables.put("sbu_master", "SBU_ID");
+		tables.put("bu_master", "BU_ID");
+		tables.put("airport_city_master", "AIRPORT_CITY_ID");
+		tables.put("market_master", "MARKET_ID");
+		tables.put("file_name_master", "FILE_NAME_ID");
+		tables.put("area_master", "AREA_ID");
+		tables.put("amenity_master", "AMENITY_ID");
+		tables.put("chain_master", "CHAIN_ID");
+		tables.put("brand_master", "BRAND_ID");
+		tables.put("rating_master", "HOTEL_RATING_ID");
+		tables.put("interest_master", "INTEREST_MASTER_ID");
+		tables.put("affiliation_master", "AFFILIATION_ID");
+		tables.put("ancillary_type", "ANCILLARY_TYPE_ID");
+		tables.put("ancillary_master", "ANCILLARY_ID");
+		tables.put("room_category", "ROOM_CATEGORY_ID");
+		tables.put("room_type", "ROOM_TYPE_ID");
+
+	}
+
+	public CacheFilterServlet() {
+		super();
+	}
+
+	@Override
+	public void init(ServletConfig config) throws ServletException {
+
+		super.init(config);
+		CacheFactory.ensureCluster();
+		ServletContext servletContext = this.getServletContext();
+
+		WebApplicationContext wac = WebApplicationContextUtils
+				.getRequiredWebApplicationContext(servletContext);
+
+		IMasterService masterService = (IMasterService) wac
+				.getBean(SERVICE_NAME);
+		NamedCache cache = CacheFactory.getCache(CACHE_NAME);
+
+		for (String tableName : tables.keySet()) {
+			List<Map<String, String>> masterData = null;
+			try {
+				masterData = masterService.fetchAllMasters(tableName);
+			} catch (Exception e) {
+				// errror log.
+			}
+			if (masterData == null) {
+				continue;
+			}
+
+			/*for (Map<String, String> rec : masterData) {
+				rec.put(TABLE_NAME, tableName);
+				cache.put(tableName + "-" + rec.get(tables.get(tableName)), rec);
+				
+			}*/
+				cache.put(tableName, masterData);
+
+		}
+
+	}
+
+}
+=====================================================
+package com.cnk.travelerpibe.master.web.util;
+
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import com.tangosol.net.CacheFactory;
+import com.tangosol.net.NamedCache;
+import com.tangosol.util.Filter;
+import com.tangosol.util.filter.AndFilter;
+import com.tangosol.util.filter.EqualsFilter;
+
+public class CachingUtl {
+
+	private static String CACHE_NAME = "VirtualCache";
+	private static String TABLE_NAME = "TABLE_NAME";
+
+	public static List<Map<String, String>> retrieveCachedObject(
+			String tableName, Map<String, String> conditions) {
+		NamedCache cache = CacheFactory.getCache(CACHE_NAME);
+
+		Filter filter = new EqualsFilter(new HashMapValueExtractor(TABLE_NAME),
+				tableName);
+		for (String key : conditions.keySet()) {
+			filter = new AndFilter(filter, new EqualsFilter(
+					new HashMapValueExtractor(key), conditions.get(key)));
+		}
+		Set<?> filters = cache.keySet(filter);
+
+		@SuppressWarnings("unchecked")
+		Iterator<Map<String, String>> it = cache.getAll(filters).values()
+				.iterator();
+		List<Map<String, String>> retObject = new ArrayList<>();
+		while (it.hasNext()) {
+			retObject.add(it.next());
+		}
+		return retObject;
+	}
+
+}
+===========================================================================
+package com.cnk.travelerpibe.master.web.util;
+
+import java.io.Serializable;
+import java.util.Map;
+
+import com.tangosol.util.ValueExtractor;
+
+class HashMapValueExtractor implements ValueExtractor, Serializable {
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 8494798845806835373L;
+	String key;
+
+	HashMapValueExtractor(String key) {
+		this.key = key;
+	}
+
+	@Override
+	public Object extract(Object arg0) {
+
+		if (arg0 instanceof Map<?, ?>) {
+			@SuppressWarnings({ "unchecked", "rawtypes" })
+			Map<String, String> cachedObject = (Map) arg0;
+			String val = cachedObject.get(key);
+			return val;
+		}
+
+		return null;
+	}
+
+}
+=======================================================================
+
+<%@page import="java.util.HashMap"%>
+<%@page import="java.util.List"%>
+<%@page import="java.util.Map"%>
+<%@page import="com.cnk.travelerpibe.master.web.util.CachingUtl"%>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+<title>Insert title here</title>
+</head>
+<body>
+
+	<%
+		Map<String, String> conditions = new HashMap<String, String>();
+		//conditions.put("PROD_CATGRY_ID", "1");
+		conditions.put("CHAIN_ID", "314");
+		List<Map<String, String>> maps = CachingUtl.retrieveCachedObject("brand_master", conditions);
+		for (Object obj : maps) {
+			System.out.println(" " + obj);
+		}
+	%>
+
+</html>
+
+=============================================================================
+/**
+ * 
+ */
+package com.cnk.travelerp.masters.test;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.junit.Test;
+
+import com.cnk.travelerpibe.master.web.util.CachingUtl;
+import com.tangosol.net.CacheFactory;
+import com.tangosol.net.NamedCache;
+
+/**
+ * @author sivaiah.polamreddy
+ *
+ */
+public class CacheTest {
+	
+	@Test
+	public void cacheTest(){
+		Map<String, String> conditions = new HashMap<String, String>();
+		conditions.put("CHAIN_ID", "314");
+		List<Map<String, String>> maps = CachingUtl.retrieveCachedObject("brand_master", conditions);
+		for (Object obj : maps) {
+			System.out.println(" " + obj);
+		}
+	}
+	
+	@Test
+	public void cacheTest1(){
+		Map<String, String> conditions = new HashMap<String, String>();
+		conditions.put("PROD_CATGRY_ID", "1");
+		List<Map<String, String>> maps = CachingUtl.retrieveCachedObject("product_category_sub_type", conditions);
+		for (Object obj : maps) {
+			System.out.println(" " + obj);
+		}
+	}
+	
+	@Test
+	public void cacheTest2(){
+		NamedCache cache = CacheFactory.getCache("VirtualCache");
+		System.out.println(cache.get("chain_master"));
+	}
+	
+	@Test
+	public void cacheTest3(){
+		Map<String, String> conditions = new HashMap<String, String>();
+		conditions.put("COUNTRY_ID", "35");
+		List<Map<String, String>> maps = CachingUtl.retrieveCachedObject("city_master", conditions);
+		for (Object obj : maps) {
+			System.out.println(" " + obj);
+		}
+	}
+	
+	@Test
+	public void cacheTest4(){
+		Map<String, String> conditions = new HashMap<String, String>();
+		conditions.put("CITY_ID", "43");
+		List<Map<String, String>> maps = CachingUtl.retrieveCachedObject("city_master", conditions);
+		for (Object obj : maps) {
+			System.out.println("sample " + obj);
+		}
+	}
+
+
+}
+
+=========================================================================
+web:
+
+/**
+ * 
+ */
+package com.cnk.travelerpibe.master.web;
+
+import java.util.ArrayList;
+
+import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpSession;
+
+import org.apache.commons.lang.WordUtils;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.ModelMap;
+import org.springframework.validation.BindingResult;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.servlet.ModelAndView;
+
+import com.cnk.travelerpibe.master.bean.ContactBean;
+import com.cnk.travelerpibe.master.services.IMasterService;
+import com.cnk.travelerpibe.master.services.json.CustomGenericResponse;
+import com.cnk.travelerpibe.master.services.json.CustomUserResponse;
+import com.cnk.travelerpibe.master.web.util.ChangeColNames;
+import com.cnk.travelerpibe.master.web.util.CommonControllerUtil;
+
+
+/**
+ * @author sivaiah.polamreddy
+ * 
+ * @Description This is Common Controller class for all reference masters in
+ *              search , add, edit and delete operations.
+ */
+@Controller
+public class MasterController {
+
+	@Autowired
+	private IMasterService masterService;
+
+	@Autowired
+	private CommonControllerUtil commonControllerUtil;
+
+	private static final Logger LOGGER = LoggerFactory
+			.getLogger(MasterController.class);
+
+	@RequestMapping(value = "/{tableName}", method = RequestMethod.GET)
+	@ResponseBody
+	public CustomUserResponse getAllResponse(@PathVariable String tableName,
+			HttpServletRequest request) {
+		HttpSession session = request.getSession(true);
+		String search = request.getParameter("value");
+		String recordData = null;
+		try {
+			if (search.toString().equals("]")) {
+				recordData = masterService.fetchAllMastersJdbc(tableName);
+			} else {
+				recordData = masterService.fetchAllMastersJdbc(tableName,
+						search);
+			}
+		} catch (Exception e) {
+			LOGGER.error("error", e);
+		}
+		session.setAttribute("recordList", recordData);
+		CustomUserResponse response = new CustomUserResponse();
+		response.setRows(recordData);
+		response.setRecords(String.valueOf(2));
+		response.setColNames(commonControllerUtil.getColNames(tableName));
+		response.setColModel(commonControllerUtil.getColModelNames(tableName));
+		response.setPage("1");
+		response.setTotal("10");
+		response.setTableName(tableName);
+		return response;
+	}
+
+	@RequestMapping(value = "/Add_{tableName}", method = RequestMethod.POST)
+	@ResponseBody
+	public CustomGenericResponse addMaster(HttpServletRequest request,
+			@RequestParam("name") String feildData,
+			@PathVariable String tableName) throws Exception {
+
+		String data=getGridData(feildData,tableName);
+		
+		Boolean success = true;
+		CustomGenericResponse response = new CustomGenericResponse();
+		if (success) {
+
+			masterService.saveMasterJDBC(change(data, tableName),tableName);
+			response=getCommonResponse(tableName,request);
+			return response;
+		} else {
+			response.setSuccess(false);
+			response.setMessage("Record Already Exist");
+			return response;
+		}
+
+	}
+
+	@RequestMapping(value = "/Edit_{tableName}", method = RequestMethod.POST)
+	@ResponseBody
+	public CustomGenericResponse edit(@RequestParam("id") Integer id,
+			@RequestParam("name") String name, @PathVariable String tableName,
+			HttpServletRequest request) throws Exception {
+
+		String data=getGridData(name,tableName);
+		Boolean success = true;
+		
+		CustomGenericResponse response = new CustomGenericResponse();
+		if (success) {
+			masterService.updateMasterJDBC(change(data, tableName),tableName);
+
+			response=getCommonResponse(tableName,request);
+			return response;
+		} else {
+			response.setSuccess(false);
+			response.setMessage("Record Already Exist!");
+			return response;
+		}
+
+	}
+
+	@RequestMapping(value = "/Del_{tableName}", method = RequestMethod.POST)
+	@ResponseBody
+	public CustomGenericResponse delete(@RequestParam("id") Integer id,
+			@RequestParam("name") String name, @PathVariable String tableName,
+			HttpServletRequest request) throws Exception {
+
+		String data=getGridData(name,tableName);
+		Boolean success = true;
+		CustomGenericResponse response = new CustomGenericResponse();
+		if (success) {
+			masterService.deleteMasterJDBC(data, tableName);
+			response=getCommonResponse(tableName,request);
+			return response;
+		} else {
+			response.setSuccess(false);
+			response.setMessage("Record Not Exist!");
+			return response;
+		}
+
+	}
+
+	@RequestMapping("/showtables")
+	public ModelAndView listTables(
+			@ModelAttribute("contactBean") ContactBean contactBean,
+			BindingResult result, ModelMap modelMap, HttpServletRequest request) {
+		HttpSession session = request.getSession(true);
+		ModelAndView mv = new ModelAndView("GridUser");
+
+		List<String> list = new ArrayList<String>();
+
+		List<Map<String, String>> s = null;
+		try {
+			s = masterService.listTables();
+		} catch (Exception e) {
+
+			LOGGER.error("error", e);
+		}
+		for (Map<String, String> ll : s) {
+			list.addAll(ll.values());
+		}
+
+		Map<String, String> map = new TreeMap<String, String>();
+
+		for (String ss : list) {
+			String tableName = ss.toString().toLowerCase();
+			map.put(tableName, WordUtils
+					.capitalize(tableName.replace("_", " ")).toLowerCase());
+		}
+
+		mv.addObject("tableDetailsMap", map);
+		session.setAttribute("tableDetailsMap", map);
+		return mv;
+	}
+
+	@RequestMapping(value = "/serachColumns", method = RequestMethod.GET)
+	@ResponseBody
+	public String searchMaster(HttpServletRequest request) {
+
+		String masterName = request.getParameter("masterName");
+		String d = getDependentcies(masterName);
+		return d;
+	}
+
+	@RequestMapping(value = "serchResult", method = RequestMethod.GET)
+	@ResponseBody
+	public String serchResult(HttpServletRequest request) {
+		StringBuilder strStates = new StringBuilder();
+		strStates.append("[");
+		String recordData = null;
+		try {
+			recordData = masterService.fetchAllMastersJdbc(request
+					.getParameter("master"));
+			JSONArray hj = new JSONArray(recordData);
+
+			for (int i = 0; i < hj.length(); i++) {
+				JSONObject gf = new JSONObject(hj.getString(i));
+
+				strStates.append(getJosnFormat(
+						gf.getString(request.getParameter("col2")),
+						gf.getString(request.getParameter("col1"))));
+				strStates.append(",");
+			}
+			LOGGER.debug(recordData);
+		} catch (Exception e) {
+			LOGGER.error("error", e);
+		}
+		String tempData = strStates.toString();
+		tempData = tempData.substring(0, tempData.length() - 1);
+		tempData = tempData + ("]");
+
+		return tempData;
+	}
+
+	@ResponseBody
+	public String getDependentcies(String masterName) {
+		String data = commonControllerUtil.getJsonDependentData(masterName);
+		return data;
+	}
+
+	@SuppressWarnings("unchecked")
+	private static <S> S getJosnFormat(S key, S value) {
+		StringBuilder buffer = new StringBuilder();
+		buffer.append("{");
+
+		buffer.append("\"key\":\"" + key + "\",");
+
+		buffer.append("\"value\":\"" + value + "\"");
+
+		buffer.append("}");
+		return (S) buffer.toString();
+	}
+
+	@RequestMapping(value = "searchfilter", method = RequestMethod.GET)
+	@ResponseBody
+	public String serchFilter(HttpServletRequest request) {
+
+		StringBuilder strStates = new StringBuilder();
+		strStates.append("[");
+		String recordData = null;
+		try {
+			recordData = masterService.fetchAllMastersJdbc(
+					request.getParameter("masterName"),
+					request.getParameter("value"),
+					request.getParameter("parentId"));
+			JSONArray hj = new JSONArray(recordData);
+
+			for (int i = 0; i < hj.length(); i++) {
+				JSONObject gf = new JSONObject(hj.getString(i));
+
+				strStates.append(getJosnFormat(
+						gf.getString(request.getParameter("childfeild2")),
+						gf.getString(request.getParameter("childfeild"))));
+				strStates.append(",");
+			}
+			LOGGER.debug(recordData);
+		} catch (Exception e) {
+			LOGGER.error("error", e);
+		}
+		String tempData = strStates.toString();
+		tempData = tempData.substring(0, tempData.length() - 1);
+		tempData = tempData + ("]");
+		return tempData;
+
+	}
+
+	@RequestMapping(value = "loadDepMasterList", method = RequestMethod.GET)
+	@ResponseBody
+	public String loadDepMasterList(HttpServletRequest request) {
+		String masterName = request.getParameter("masterName");
+
+		String value = "[";
+		String d = getDependentcies(masterName);
+		JSONObject depndent;
+		String totaldata = "";
+		String data2 = null;
+		try {
+
+			depndent = new JSONObject(d);
+			JSONArray dm = new JSONArray(depndent.getString("dependencies"));
+
+			for (int i = 0; i < dm.length(); i++) {
+				JSONObject de = new JSONObject(dm.getString(i));
+				value = value + "{" + "\"feildName\":\""
+						+ de.getString("column1") + "\",\"value\":[";
+				StringBuilder list = new StringBuilder();
+				list.append("{");
+				totaldata = masterService.fetchAllMastersJdbc(de
+						.getString("name"));
+				JSONArray array = new JSONArray(totaldata);
+				for (int k = 0; k < array.length(); k++) {
+					JSONObject gf = new JSONObject(array.getString(k));
+					list.append(getJson(gf.getString(de.getString("column2")),
+							gf.getString(de.getString("column1"))));
+					list.append(",");
+				}
+
+				String data = list.toString();
+				data = data.substring(0, data.length() - 1);
+				value += data + "}]},";
+
+			}
+
+			data2 = value.substring(0, value.length() - 1);
+			data2 = data2 + "]";
+			LOGGER.debug(data2);
+		} catch (Exception e) {
+			LOGGER.error("", e);
+		}
+
+		return data2;
+	}
+
+	@SuppressWarnings("unchecked")
+	private static <S> S getJson(S key, S value) {
+		StringBuilder buffer = new StringBuilder();
+		buffer.append("\"" + key + "\":\"" + value + "\"");
+		String data = buffer.toString();
+
+		return (S) data;
+	}
+	
+	public String getGridData(String gridData, String tableName){
+		
+		JSONObject jspros = new JSONObject();
+		JSONArray jsob;
+		try {
+			jsob = new JSONArray(gridData);
+			for (int i = 0; i < jsob.length(); i++) {
+				JSONObject jjj = new JSONObject(jsob.getString(i));
+				jspros.put(jjj.getString("name"), jjj.getString("value"));
+			}
+		} catch (JSONException e) {
+			LOGGER.error("error", e);
+		}
+		LOGGER.debug("String-Obj--" + jspros.toString());
+				
+		return jspros.toString();
+	}
+	
+	public CustomGenericResponse getCommonResponse(String tableName,HttpServletRequest request){
+		
+		HttpSession session = request.getSession(true);
+		CustomGenericResponse response = new CustomGenericResponse();
+		String recordLists = null;
+		try {
+			recordLists = masterService.fetchAllMastersJdbc(tableName);
+		} catch (Exception e) {
+			LOGGER.error("error", e);
+		}
+
+		session.setAttribute("recordList", recordLists);
+		response.setSuccess(true);
+		response.setMessage("Action successful!");
+		
+		return response;
+	}
+	
+	public String change(String inputData,String tableName){
+		String jsprosvalue = inputData;
+		String dependent = getDependentcies(tableName);
+		JSONObject depndent1;
+		try {
+
+			depndent1 = new JSONObject(dependent);
+			JSONArray dm = new JSONArray(depndent1.getString("dependencies"));
+			if(dm.length() > 0){
+			for (int i = 0; i < dm.length(); i++) {
+				JSONObject de = new JSONObject(dm.getString(i));
+				jsprosvalue = jsprosvalue.replace(de.getString("column1"), de.getString("column2"));		
+
+		
+			}
+			}else{
+				jsprosvalue=inputData;
+			}
+		}catch (Exception e) {
+			LOGGER.error("error", e);
+		}
+		return jsprosvalue;
+	}
+	
+
+}
+==========================================================================
+package com.cnk.travelerpibe.master.web;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpSession;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.ModelMap;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+
+
+@Controller
+public class LoginController {
+
+	private HttpSession session;
+	private static final Logger LOGGER = LoggerFactory.getLogger(LoginController.class);
+
+	public HttpSession getSession() {
+		return session;
+	}
+
+	@RequestMapping(value = "/welcome", method = RequestMethod.GET)
+	public String login(ModelMap model,
+			HttpServletRequest request) {
+
+		String userName = (String) SecurityContextHolder.getContext()
+				.getAuthentication().getName();
+		LOGGER.debug("login name",userName);
+		String roleType = SecurityContextHolder.getContext()
+				.getAuthentication().getAuthorities().toString();
+		session = request.getSession(true);
+		putSession(userName, roleType, session);
+
+		return "home";
+
+	}
+
+	@RequestMapping(value = "/login", method = RequestMethod.GET)
+	public String log(ModelMap model) {
+		return "login";
+
+	}
+
+	@RequestMapping(value = "/loginfailed", method = RequestMethod.GET)
+	public String loginerror(ModelMap model) {
+
+		model.addAttribute("error", "true");
+		return "login";
+
+	}
+
+	@RequestMapping(value = "/logout", method = RequestMethod.GET)
+	public String logout(ModelMap model, HttpServletRequest request) {
+
+		request.getSession().invalidate();
+		return "login";
+
+	}
+
+	public void putSession(String userName, String roleType, HttpSession session) {
+		session.setAttribute("loginName", userName);
+		session.setAttribute("roleType", roleType);
+	}
+}
+===========================================================================
+package com.cnk.travelerpibe.master.web;
+
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.ModelMap;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+
+import com.cnk.travelerpibe.master.bean.ContactBean;
+
+@Controller
+public class GridController {
+
+	@RequestMapping(value = "/gridDetails", method = RequestMethod.GET)
+	public String getUsersPage(
+			@ModelAttribute("contactBean") ContactBean contactBean,
+			ModelMap model) {
+		model.addAttribute("tableName", contactBean.getTables());
+		return "GridUser";
+	}
+
+}
+===============================================================================
+/**
+ * 
+ */
+package com.cnk.travelerpibe.master.web.util;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Properties;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
+
+import com.cnk.travelerpibe.common.persistence.io.ClassPathResource;
+import com.cnk.travelerpibe.common.persistence.io.Resource;
+
+
+/**
+ * @author sivaiah.polamreddy
+ * 
+ * @Description This is Common util class for getting grid column names and grid
+ *              colModelNames from properties files.
+ */
+@Component("commonControllerUtil")
+public class CommonControllerUtil {
+
+	
+	
+	private static final Logger LOGGER = LoggerFactory.getLogger(CommonControllerUtil.class);
+
+	public String getColNames(String tableName) {
+
+		String colNameTemp = "";
+		try {
+			Resource resource = new ClassPathResource("gridColNames.properties");
+			Properties properties = new Properties();
+			properties.load(resource.getInputStream());
+			colNameTemp =properties.getProperty(tableName);
+			LOGGER.debug("grid colnames: " + colNameTemp);
+		} catch (Exception e) {
+			LOGGER.error("error",e);
+		}
+		return colNameTemp;
+	}
+
+	public List<Object> getColModelNames(String tableName) {
+		List<Object> colModelTemp = new ArrayList<>();
+		String str = "";
+
+		try {
+			Resource resource = new ClassPathResource(
+					"gridColModelNames.properties");
+			Properties properties = new Properties();
+			properties.load(resource.getInputStream());
+			str = properties.getProperty(tableName);
+			LOGGER.debug("grid colModelNames: " + str);
+			colModelTemp.add(str);
+
+		} catch (Exception e) {
+			LOGGER.error("error",e);
+		}
+
+		LOGGER.debug("colModelTemp :" + colModelTemp);
+		return colModelTemp;
+	}
+
+	
+	
+	public  String getJsonDependentData(String tablename) {
+
+		String jsonDependentdata = "";
+		
+		try {
+			Resource resource = new ClassPathResource("depedentMasters.properties");
+			Properties properties = new Properties();
+			properties.load(resource.getInputStream());
+			jsonDependentdata=properties.getProperty(tablename);
+		} catch (Exception e) {
+			LOGGER.error("error",e);
+		}
+		return jsonDependentdata;
+	}
+
+	
+
+}
+===============================================================================
+depedentMasters.properties:
+
+city_master={"name":"city_master","dependencies":
+
+[{"name":"continent_master","column1":"CONTINENT_NAME","column2":"CONTINENT_ID","display":"Continent Name"},
+
+{"name":"country_master","column1":"COUNTRY_NAME","column2":"COUNTRY_ID","display":"Country Name"},
+
+{"name":"state_master","column1":"STATE_NAME","column2":"STATE_ID","display":"State Name"}]}	
+
+airport_city_master={"name":"airport_city_master","dependencies":
+
+[{"name":"city_master","column1":"CITY_NAME","column2":"CITY_ID","display":"City Name"}]}	
+
+state_master={"name":"state_master","dependencies":
+
+[{"name":"continent_master","column1":"CONTINENT_NAME","column2":"CONTINENT_ID","display":"Continent Name"},
+
+{"name":"country_master","column1":"COUNTRY_NAME","column2":"COUNTRY_ID","display":"Country Name"}]}	
+
+country_master={"name":"country_master","dependencies":
+
+[{"name":"continent_master","column1":"CONTINENT_NAME","column2":"CONTINENT_ID","display":"Continent Name"}]}	
+
+continent_master={"name":"continent_master","dependencies":[]}	
+
+
+product_category={"name":"product_category","dependencies":[]}
+
+product_category_sub_type={"name":"product_category_sub_type","dependencies":
+
+[{"name":"product_category","column1":"PROD_CATGRY_NAME","column2":"PROD_CATGRY_ID","display":"Product CategoryName"}]}
+
+
+group_of_companies_master={"name":"group_of_companies_master","dependencies":[]}
+
+group_company_master={"name":"group_company_master","dependencies":
+
+[{"name":"group_of_companies_master","column1":"GROUP_OF_COMPANIES_NAME","column2":"GROUP_OF_COMPANIES_ID","display":"Grou
+
+p of CompanyName"}]}
+
+company_master={"name":"company_master","dependencies":
+
+[{"name":"group_of_companies_master","column1":"GROUP_OF_COMPANIES_NAME","column2":"GROUP_OF_COMPANIES_ID","display":"Grou
+
+p of CompanyName"},
+
+{"name":"group_company_master","column1":"GROUP_COMPANY_NAME","column2":"GROUP_COMPANY_ID","display":"Group Company"}]}	
+
+sbu_master={"name":"sbu_master","dependencies":
+
+[{"name":"group_of_companies_master","column1":"GROUP_OF_COMPANIES_NAME","column2":"GROUP_OF_COMPANIES_ID","display":"Grou
+
+p of CompanyName"},
+
+{"name":"group_company_master","column1":"GROUP_COMPANY_NAME","column2":"GROUP_COMPANY_ID","display":"Group Company"},
+
+{"name":"company_master","column1":"COMPANY_NAME","column2":"COMPANY_ID","display":"Company"}]}	
+
+bu_master={"name":"bu_master","dependencies":
+
+[{"name":"group_of_companies_master","column1":"GROUP_OF_COMPANIES_NAME","column2":"GROUP_OF_COMPANIES_ID","display":"Grou
+
+p of CompanyName"},
+
+{"name":"group_company_master","column1":"GROUP_COMPANY_NAME","column2":"GROUP_COMPANY_ID","display":"Group 
+
+CompanyName"},{"name":"company_master","column1":"COMPANY_NAME","column2":"COMPANY_ID","display":"Company Name"},
+
+{"name":"sbu_master","column1":"SBU_NAME","column2":"SBU_ID","display":"SBU Name"}]}	
+
+market_master={"name":"market_master","dependencies":[]}
+
+url_type_master={"name":"url_type_master","dependencies":[]}
+
+cabin_class={"name":"cabin_class","dependencies":[]}
+
+traveler_program_master={"name":"traveler_program_master","dependencies":[]}
+
+airline_type={"name":"airline_type","dependencies":[]}
+
+status_master={"name":"status_master","dependencies":[]}
+
+file_name_master={"name":"file_name_master","dependencies":[]}
+
+file_category_master={"name":"file_category_master","dependencies":[]}
+
+
+#ACCOMMODATION
+
+area_master={"name":"area_master","dependencies":
+
+[{"name":"continent_master","column1":"CONTINENT_NAME","column2":"CONTINENT_ID","display":"Continent Name"},
+
+{"name":"country_master","column1":"COUNTRY_NAME","column2":"COUNTRY_ID","display":"Country Name"},
+
+{"name":"state_master","column1":"STATE_NAME","column2":"STATE_ID","display":"State Name"},
+
+{"name":"city_master","column1":"CITY_NAME","column2":"CITY_ID","display":"City Name"}]}	
+
+location_master={"name":"location_master","dependencies":
+
+[{"name":"continent_master","column1":"CONTINENT_NAME","column2":"CONTINENT_ID","display":"Continent Name"},
+
+{"name":"country_master","column1":"COUNTRY_NAME","column2":"COUNTRY_ID","display":"Country Name"},
+
+{"name":"state_master","column1":"STATE_NAME","column2":"STATE_ID","display":"State Name"},
+
+{"name":"city_master","column1":"CITY_NAME","column2":"CITY_ID","display":"City Name"},
+
+{"name":"area_master","column1":"AREA_NAME","column2":"AREA_ID","display":"Area Name"}]}	
+
+amenity_master={"name":"amenity_master","dependencies":[]}
+
+chain_master={"name":"chain_master","dependencies":[]}	
+
+brand_master={"name":"brand_master","dependencies":
+
+[{"name":"chain_master","column1":"CHAIN_NAME","column2":"CHAIN_ID","display":"Chain Name"}]}	
+
+rating_master={"name":"rating_master","dependencies":[]}
+	
+interest_master={"name":"interest_master","dependencies":[]}	
+
+affiliation_master={"name":"affiliation_master","dependencies":[]}	
+
+ancillary_type={"name":"ancillary_type","dependencies":[]}	
+
+ancillary_master={"name":"ancillary_master","dependencies":
+
+[{"name":"ancillary_type","column1":"ANCILLARY_TYPE_NAME","column2":"ANCILLARY_TYPE_ID","display":"Ancillary Type Name"}]}	
+
+room_category={"name":"room_category","dependencies":[]}	
+
+room_type={"name":"room_type","dependencies":[]}	
+
+=================================================================================
+gridColModelNames.properties
+
+#Table Names                                 ColModelNames
+
+
+product_category=[{name:'PROD_CATGRY_ID', index:'PROD_CATGRY_ID', editable: true, hidden: true},{name:'PROD_CATGRY_NAME', 
+
+index:'PROD_CATGRY_NAME', editrules:{required:true},editable: true, align: 'center'}]
+
+product_category_sub_type=[{name:'PROD_CATGRY_SUB_TYPE_ID', index:'PROD_CATGRY_SUB_TYPE_ID', editable: true, hidden: 
+
+true},{name:'PROD_CATGRY_SUB_TYPE_NAME', index:'PROD_CATGRY_SUB_TYPE_NAME', editrules:{required:true},editable: true, 
+
+align: 'center'},{name:'PROD_CATGRY_NAME', index:'PROD_CATGRY_NAME', edittype: 'select', editrules:
+
+{required:true},editable: true, align: 'center'}]
+
+
+
+url_type_master=[{name:'URL_TYPE_ID', index:'URL_TYPE_ID', editable: true, hidden: true},{name:'URL_TYPE_NAME', 
+
+index:'URL_TYPE_NAME', editrules:{required:true}, editable: true, align: 'center'}]
+
+cabin_class=[{name:'CABIN_CLASS_ID', index:'CABIN_CLASS_ID', editable: true, hidden: true},{name:'CABIN_CLASS_NAME', 
+
+index:'CABIN_CLASS_NAME', editrules:{required:true}, editable: true, align: 'center'}]
+
+traveler_program_master=[{name:'TRAVELER_PROGRAM_ID', index:'TRAVELER_PROGRAM_ID', editable: true, hidden: true},
+
+{name:'TRAVELER_PROGRAM_NAME', index:'TRAVELER_PROGRAM_NAME', editrules:{required:true}, editable: true, align: 'center'}]
+
+airline_type=[{name:'AIRLINE_TYPE_ID', index:'AIRLINE_TYPE_ID', editable: true, hidden: true},{name:'AIRLINE_TYPE_NAME', 
+
+index:'AIRLINE_TYPE_NAME', editrules:{required:true}, editable: true, align: 'center'}]
+
+status_master=[{name:'STATUS_ID', index:'STATUS_ID', editable: true, hidden: true},{name:'STATUS_VALUE', 
+
+index:'STATUS_VALUE', editrules:{required:true}, editable: true, align: 'center'},{name:'STATUS_FOR', index:'STATUS_FOR', 
+
+editrules:{required:true}, editable: true, align: 'center'}]
+
+file_name_master=[{name:'FILE_NAME_ID', index:'FILE_NAME_ID', editable: true, hidden: true},{name:'FILE_NAME', 
+
+index:'FILE_NAME', editrules:{required:true}, editable: true, align: 'center'},{name:'FILE_DESC', index:'FILE_DESC', 
+
+editrules:{required:true}, editable: true, align: 'center'}]
+
+file_category_master=[{name:'FILE_CATEGORY_ID', index:'FILE_CATEGORY_ID', editable: true, hidden: true},
+
+{name:'FILE_CATEGORY_NAME', index:'FILE_CATEGORY_NAME', editrules:{required:true}, editable: true, align: 'center'},
+
+{name:'FILE_CATEGORY_DESC', index:'FILE_CATEGORY_DESC', editrules:{required:true}, editable: true, align: 'center'}]
+
+
+group_of_companies_master=[{name:'GROUP_OF_COMPANIES_ID', index:'GROUP_OF_COMPANIES_ID', editable: true, hidden: true},
+
+{name:'GROUP_OF_COMPANIES_NAME', index:'GROUP_OF_COMPANIES_NAME', align: 'center', editrules:{required:true}, editable: 
+
+true}] 
+
+group_company_master=[{name:'GROUP_COMPANY_ID', index:'GROUP_COMPANY_ID', editable: true, hidden: true},
+
+{name:'GROUP_COMPANY_NAME', index:'GROUP_COMPANY_NAME', align: 'center', editrules:{required:true}, editable: true},
+
+{name:'GROUP_OF_COMPANIES_NAME', index:'GROUP_OF_COMPANIES_NAME', align: 'center', edittype: 'select', editrules:
+
+{required:true}, editable: true}]
+
+company_master=[{name:'COMPANY_ID', index:'COMPANY_ID', editable: true, hidden: true},{name:'COMPANY_NAME', 
+
+index:'COMPANY_NAME', align: 'center', editrules:{required:true}, editable: true},{name:'GROUP_COMPANY_NAME', 
+
+index:'GROUP_COMPANY_NAME', align: 'center', edittype: 'select', editrules:{required:true}, editable: true},
+
+{name:'GROUP_OF_COMPANIES_NAME', index:'GROUP_OF_COMPANIES_NAME', align: 'center', edittype: 'select', editrules:
+
+{required:true}, editable: true}]
+
+sbu_master=[{name:'SBU_ID', index:'SBU_ID', editable: true, hidden: true},{name:'SBU_NAME', index:'SBU_NAME', align: 
+
+'center', editrules:{required:true}, editable: true},{name:'COMPANY_NAME', index:'COMPANY_NAME', align: 'center', 
+
+edittype: 'select', editrules:{required:true}, editable: true},{name:'GROUP_COMPANY_NAME', index:'GROUP_COMPANY_NAME', 
+
+align: 'center', edittype: 'select', editrules:{required:true}, editable: true},{name:'GROUP_OF_COMPANIES_NAME', 
+
+index:'GROUP_OF_COMPANIES_NAME', align: 'center', edittype: 'select', editrules:{required:true}, editable: true}]
+
+bu_master=[{name:'BU_ID', index:'BU_ID', editable: true, hidden: true},{name:'BU_NAME', index:'BU_NAME', align: 'center', 
+
+editrules:{required:true}, editable: true},{name:'SBU_NAME', index:'SBU_NAME', align: 'center', editrules:{required:true}, 
+
+edittype: 'select', editable: true},{name:'COMPANY_NAME', index:'COMPANY_NAME', align: 'center', edittype: 'select', 
+
+editrules:{required:true}, editable: true},{name:'GROUP_COMPANY_NAME', index:'GROUP_COMPANY_NAME', align: 'center', 
+
+edittype: 'select', editrules:{required:true}, editable: true},{name:'GROUP_OF_COMPANIES_NAME', 
+
+index:'GROUP_OF_COMPANIES_NAME', align: 'center', edittype: 'select', editrules:{required:true}, editable: true}]
+
+
+market_master=[{name:'MARKET_ID', index:'MARKET_ID', editable: true, hidden: true},{name:'MARKET_NAME', 
+
+index:'MARKET_NAME', editrules:{required:true}, editable: true, align: 'center'},{name:'MARKET_REMARK', 
+
+index:'MARKET_REMARK', editrules:{required:true}, editable: true, align: 'center'}]
+
+company_market_master=[{name:'COMPANY_MARKET_ID', index:'COMPANY_MARKET_ID', editable: true, hidden: true},
+
+{name:'COMPANY_NAME', index:'COMPANY_NAME', editrules:{required:true}, editable: true, align: 'center'},
+
+{name:'MARKET_NAME', index:'MARKET_NAME', editrules:{required:true}, editable: true, align: 'center'}]
+
+
+
+
+city_master=[{name:'CITY_ID', index:'CITY_ID', editable: true, hidden: true},{name:'CITY_NAME', index:'CITY_NAME', 
+
+editrules:{required:true}, editable: true, align: 'center'},{name:'STATE_NAME', index:'STATE_NAME', editrules:
+
+{required:true}, editable: true, align: 'center', edittype: 'select'},{name:'COUNTRY_NAME', index:'COUNTRY_NAME', 
+
+editrules:{required:true}, editable: true, align: 'center', edittype: 'select'},{name:'CONTINENT_NAME', 
+
+index:'CONTINENT_NAME', editrules:{required:true}, editable: true, align: 'center', edittype: 'select'}]
+
+airport_city_master=[{name:'AIRPORT_CITY_ID', index:'AIRPORT_CITY_ID', editable: true, hidden: true},{name:'AIRPORT_CITY', 
+
+index:'AIRPORT_CITY', editrules:{required:true}, editable: true, align: 'center'},{name:'CITY_NAME', index:'CITY_NAME', 
+
+editrules:{required:true}, editable: true, align: 'center', edittype: 'select'}]
+
+state_master=[{name:'STATE_ID', index:'STATE_ID', editable: true, hidden: true},{name:'STATE_NAME', index:'STATE_NAME', 
+
+editrules:{required:true}, editable: true, align: 'center'},{name:'COUNTRY_NAME', index:'COUNTRY_NAME', editrules:
+
+{required:true}, editable: true, align: 'center', edittype: 'select'},{name:'CONTINENT_NAME', index:'CONTINENT_NAME', 
+
+editrules:{required:true}, editable: true, align: 'center', edittype: 'select'}]
+
+country_master=[{name:'COUNTRY_ID', index:'COUNTRY_ID', editable: true, hidden: true},{name:'COUNTRY_NAME', 
+
+index:'COUNTRY_NAME', editrules:{required:true}, editable: true, align: 'center'},{name:'CONTINENT_NAME', 
+
+index:'CONTINENT_NAME', editrules:{required:true}, editable: true, align: 'center', edittype: 'select'}]
+
+continent_master=[{name:'CONTINENT_ID', index:'CONTINENT_ID', editable: true, hidden: true},{name:'CONTINENT_NAME', 
+
+index:'CONTINENT_NAME', editrules:{required:true}, editable: true, align: 'center'}]
+
+#ACCOMMODATION
+
+area_master=[{name:'AREA_ID', index:'AREA_ID', editable: true, hidden: true},{name:'AREA_NAME', index:'AREA_NAME', 
+
+editrules:{required:true}, editable: true, align: 'center'},{name:'CITY_NAME', index:'CITY_NAME', editrules:
+
+{required:true}, editable: true, align: 'center', edittype: 'select'},{name:'STATE_NAME', index:'STATE_NAME', editrules:
+
+{required:true}, editable: true, align: 'center', edittype: 'select'},{name:'COUNTRY_NAME', index:'COUNTRY_NAME', 
+
+editrules:{required:true}, editable: true, align: 'center', edittype: 'select'},{name:'CONTINENT_NAME', 
+
+index:'CONTINENT_NAME', editrules:{required:true}, editable: true, align: 'center', edittype: 'select'}]
+
+location_master=[{name:'LOCATION_ID', index:'LOCATION_ID', editable: true, hidden: true},{name:'LOCATION_NAME', 
+
+index:'LOCATION_NAME', editrules:{required:true}, editable: true, align: 'center'},{name:'AREA_NAME', index:'AREA_NAME', 
+
+editrules:{required:true}, editable: true, align: 'center', edittype: 'select'},{name:'CITY_NAME', index:'CITY_NAME', 
+
+editrules:{required:true}, editable: true, align: 'center', edittype: 'select'},{name:'STATE_NAME', index:'STATE_NAME', 
+
+editrules:{required:true}, editable: true, align: 'center', edittype: 'select'},{name:'COUNTRY_NAME', 
+
+index:'COUNTRY_NAME', editrules:{required:true}, editable: true, align: 'center', edittype: 'select'},
+
+{name:'CONTINENT_NAME', index:'CONTINENT_NAME', editrules:{required:true}, editable: true, align: 'center', edittype: 
+
+'select'}]
+
+amenity_master=[{name:'AMENITY_ID', index:'AMENITY_ID', editable: true, hidden: true},{name:'AMENITY_TYPE_NAME', 
+
+index:'AMENITY_TYPE_NAME', editrules:{required:true}, editable: true, align: 'center'}]
+
+chain_master=[{name:'CHAIN_ID', index:'CHAIN_ID', editable: true, hidden: true},{name:'CHAIN_NAME', index:'CHAIN_NAME', 
+
+editrules:{required:true}, editable: true, align: 'center'}]
+
+brand_master=[{name:'BRAND_ID', index:'BRAND_ID', editable: true, hidden: true},{name:'BRAND_NAME', index:'BRAND_NAME', 
+
+editrules:{required:true}, editable: true, align: 'center'},{name:'CHAIN_NAME', index:'CHAIN_NAME', editrules:
+
+{required:true}, editable: true, align: 'center', edittype: 'select'}]
+
+rating_master=[{name:'HOTEL_RATING_ID', index:'HOTEL_RATING_ID', editable: true, hidden: true},{name:'HOTEL_RATING', 
+
+index:'HOTEL_RATING', editrules:{required:true}, editable: true, align: 'center'}]
+
+interest_master=[{name:'INTEREST_MASTER_ID', index:'INTEREST_MASTER_ID', editable: true, hidden: true},
+
+{name:'INTEREST_VALUE', index:'INTEREST_VALUE', editrules:{required:true}, editable: true, align: 'center'}]
+
+affiliation_master=[{name:'AFFILIATION_ID', index:'AFFILIATION_ID', editable: true, hidden: true},
+
+{name:'AFFILIATION_NAME', index:'AFFILIATION_NAME', editrules:{required:true}, editable: true, align: 'center'}]
+
+ancillary_type=[{name:'ANCILLARY_TYPE_ID', index:'ANCILLARY_TYPE_ID', editable: true, hidden: true},
+
+{name:'ANCILLARY_TYPE_NAME', index:'ANCILLARY_TYPE_NAME', editrules:{required:true}, editable: true, align: 'center'}]
+
+ancillary_master=[{name:'ANCILLARY_ID', index:'ANCILLARY_ID', editable: true, hidden: true},{name:'ANCILLARY_NAME', 
+
+index:'ANCILLARY_NAME', editrules:{required:true}, editable: true, align: 'center'},{name:'ANCILLARY_TYPE_NAME', 
+
+index:'ANCILLARY_TYPE_NAME', editrules:{required:true}, editable: true, align: 'center', edittype: 'select'}]
+
+room_category=[{name:'ROOM_CATEGORY_ID', index:'ROOM_CATEGORY_ID', editable: true, hidden: true},
+
+{name:'ROOM_CATEGORY_NAME', index:'ROOM_CATEGORY_NAME', editrules:{required:true}, editable: true, align: 'center'}]
+
+room_type=[{name:'ROOM_TYPE_ID', index:'ROOM_TYPE_ID', editable: true, hidden: true},{name:'ROOM_TYPE_NAME', 
+
+index:'ROOM_TYPE_NAME', editrules:{required:true}, editable: true, align: 'center'}]
+
+
+==========================================================================
+gridColNames.properties
+
+#Table Names                        GridColumnNames
+
+#AIR
+product_category=['PRODUCT CATEGORY ID','PRODUCT CATEGORY NAME']
+product_category_sub_type=['PRODUCT CATEGORY SUBTYPE ID','PRODUCT CATEGORY SUBTYPE NAME','PRODUCT CATEGORY NAME']
+url_type_master=['URL TYPE ID','URL TYPE NAME']
+cabin_class=['CABIN CLASS ID','CABIN CLASS NAME']
+traveler_program_master=['TRAVELER PROGRAM ID','TARVELER PROGRAM NAME']
+airline_type=['AIRLINE TYPE ID','AIRLINE TYPE NAME']
+status_master=['STATUS ID','STATUS VALUE','STATUS FOR']
+
+group_of_companies_master=['GROUP OF COMPANIES ID','GROUP OF COMPANIES NAME']
+group_company_master=['GROUP COMPANY ID','GROUP COMPANY NAME','GROUP OF COMPANIES NAME']
+company_master=['COMPANY ID','COMPANY NAME','GROUP COMPANY NAME','GROUP OF COMPANIES NAME']
+sbu_master=['SBU ID','SBU NAME','COMPANY NAME','GROUP COMPANY NAME','GROUP OF COMPANIES NAME']
+bu_master=['BU ID','BU NAME','SBU NAME','COMPANY NAME','GROUP COMPANY NAME','GROUP OF COMPANIES NAME']
+
+file_name_master=['FILE ID','FILE NAME','FILE DESCRIPTION']
+file_category_master=['FILE CATEGORY ID','FILE CATEGORY NAME','FILE CATEGORY DESC']
+
+market_master=['MARKET ID','MARKET NAME','MARKET REMARK']
+company_market_master=['COMPANY MARKET ID','COMPANY NAME','MARKET NAME']
+
+city_master=['CITY ID','CITY NAME','STATE NAME','COUNTRY NAME','CONTINENT NAME']
+airport_city_master=['AIRPORT CITY ID','AIRPORT CITY','CITY NAME']
+state_master=['STATE ID','STATE NAME','COUNTRY NAME','CONTINENT NAME']
+country_master=['COUNTRY ID','COUNTRY NAME','CONTINENT NAME']
+continent_master=['CONTINENT ID','CONTINENT NAME']
+
+#ACCOMODATION
+
+area_master=['AREA ID','AREA NAME','CITY NAME','STATE NAME','COUNTRY NAME','CONTINENT NAME']
+location_master=['LOCATION ID','LOCATION NAME','AREA NAME','CITY NAME','STATE NAME','COUNTRY NAME','CONTINENT NAME']
+amenity_master=['AMENITY ID','AMENITY TYPE NAME']
+chain_master=['CHAIN ID','CHAIN NAME']
+brand_master=['BRAND ID','BRAND NAME','CHAIN NAME']
+rating_master=['HOTEL RATING ID','HOTEL RATING']
+interest_master=['INTEREST MASTER ID','INTEREST VALUE']
+affiliation_master=['AFFILIATION ID','AFFILIATION NAME']
+ancillary_type=['ANCILLARY TYPE ID','ANCILLARY TYPE NAME']
+ancillary_master=['ANCILLARY ID','ANCILLARY NAME','ANCILLARY TYPE']
+room_category=['ROOM CATEGORY ID','ROOM CATEGORY NAME']
+room_type=['ROOM TYPE ID','ROOM TYPE NAME']
+
+==============================================================================
+logback.xml
+
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+	<appender name="fileAppender" class="ch.qos.logback.core.FileAppender">
+		<file>D:/myLogMaster.log</file>
+		<append>true</append>
+		<encoder>
+			<pattern>%d [%thread] %-5level %logger{35} - %msg%n</pattern>
+		</encoder>
+	</appender>
+	<root level="TRACE">
+		<appender-ref ref="fileAppender" />
+	</root>
+
+	<appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+		<encoder>
+			<pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n
+			</pattern>
+		</encoder>
+	</appender>
+	<root level="TRACE">
+		<appender-ref ref="STDOUT" />
+	</root>
+
+	<appender name="FILE" class="ch.qos.logback.core.FileAppender">
+		<encoder class="ch.qos.logback.core.encoder.LayoutWrappingEncoder">
+			<layout class="ch.qos.logback.classic.html.HTMLLayout">
+				<pattern>%relative%thread%mdc%level%logger%msg</pattern>
+			</layout>
+		</encoder>
+		<file>D:/masterLog.html</file>
+	</appender>
+
+	<root level="DEBUG">
+		<appender-ref ref="FILE" />
+	</root>
+
+	<!--for Beagle view -->
+	<consolePlugin />
+</configuration>
+==========================================================================
+test:
+
+package com.cnk.travelerp.masters.test;
+
+import org.junit.runner.RunWith;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+
+@RunWith(SpringJUnit4ClassRunner.class)
+@ContextConfiguration(locations={"classpath:masters-servlet.xml"})
+@ActiveProfiles("dev")
+public abstract class AbstractConfigurationTest {
+
+}
+===============================================================================
+/**
+ * 
+ */
+package com.cnk.travelerp.masters.test;
+
+import static org.junit.Assert.assertNotNull;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+
+import com.cnk.travelerpibe.master.services.IMasterService;
+
+/**
+ * @author sivaiah.polamreddy
+ * 
+ * @Description This is Controller TestCase.
+ *
+ */
+public class MasterControllerTest extends AbstractConfigurationTest {
+	
+	@Autowired
+	private IMasterService masterService;
+	
+	
+	@Before
+	public void setUp(){
+		System.out.println("setup");	
+	}
+	@Test
+	public void testGetAllResponse() throws Exception{
+		String ss=masterService.fetchAllMastersJdbc("country_master");
+		System.out.println("hai  " +ss);
+		assertNotNull(ss);
+		}
+	@Test
+	public void testSave() throws Exception{
+		String inputdata="[{\"CABIN_CLASS_NAME\":\"Corporate\"},{\"CABIN_CLASS_NAME\":\"Special\"}]";
+		masterService.saveMasterJDBC(inputdata, "cabin_class");
+		}
+	
+	@After
+	public void tearDown(){
+		System.out.println("tearDown");
+	}
+
+
+}
+==============================================================================
+masters-servlet.xml
+
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans" 
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:p="http://www.springframework.org/schema/p"        
+       xmlns:context="http://www.springframework.org/schema/context"
+        xmlns:mvc="http://www.springframework.org/schema/mvc"
+    xsi:schemaLocation="http://www.springframework.org/schema/beans 
+       http://www.springframework.org/schema/beans/spring-beans-2.5.xsd
+    http://www.springframework.org/schema/context 
+       http://www.springframework.org/schema/context/spring-context-2.5.xsd
+        http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc.xsd">
+   
+   <context:annotation-config />    
+   <context:component-scan
+        base-package="com.cnk.travelerpibe" />
+         
+   <mvc:annotation-driven />
+   
+   <!-- <mvc:resources mapping="/resources/**" location="/resources/"/>--> 
+   <mvc:resources mapping="/css/**" location="/css/"/>
+   <mvc:resources mapping="/images/**" location="/images/"/>
+   <mvc:resources mapping="/script/**" location="/script/"/>
+   
+  <!--  <mvc:resources mapping="/static/**" location="/static/" />  -->
+   
+   <import resource="classpath*:masterApplicationContext.xml"/>          
+   
+  <!--  <bean id="viewResolver"
+	    class="org.springframework.web.servlet.view.UrlBasedViewResolver">
+	    <property name="viewClass">
+	        <value>
+	            org.springframework.web.servlet.view.tiles2.TilesView
+	        </value>
+	    </property>
+	</bean>
+	<bean id="tilesConfigurer"
+	    class="org.springframework.web.servlet.view.tiles2.TilesConfigurer">
+	    <property name="definitions">
+	        <list>
+	            <value>/WEB-INF/tiles.xml</value>
+	        </list>
+	    </property>
+	</bean> -->
+	<!-- Application Message Bundle -->
+	<bean id="messageSource"
+		class="org.springframework.context.support.ReloadableResourceBundleMessageSource">
+		<property name="basename" value="classpath:messages" />
+		<property name="defaultEncoding" value="UTF-8"/>
+	</bean>
+	
+	<bean id="jacksonMessageConverter" 
+
+class="org.springframework.http.converter.json.MappingJacksonHttpMessageConverter"></bean>
+<bean class="org.springframework.web.servlet.mvc.annotation.AnnotationMethodHandlerAdapter">
+<property name="messageConverters">
+  <list>
+    <ref bean="jacksonMessageConverter"/>
+  </list>
+</property>
+</bean>
+</beans>
+=========================================================================
+<?xml version="1.0"?>
+<project
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd"
+	xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>com.cnk.travelerpibe</groupId>
+		<artifactId>productsetup</artifactId>
+		<version>1.0-SNAPSHOT</version>
+	</parent>
+	<groupId>com.cnk.travelerpibe</groupId>
+	<artifactId>cnk-ibe-masters-web</artifactId>
+	<version>1.0-SNAPSHOT</version>
+	<packaging>war</packaging>
+	<name>cnk-ibe-masters-web Maven Webapp</name>
+	<url>http://maven.apache.org</url>
+	
+	<properties>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<sonar.language>java</sonar.language>
+	</properties>
+	
+	<dependencies>
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-webmvc</artifactId>
+			<version>3.1.2.RELEASE</version>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-web</artifactId>
+			<version>3.1.2.RELEASE</version>
+		</dependency>
+		<dependency>
+			<groupId>jstl</groupId>
+			<artifactId>jstl</artifactId>
+			<version>1.2</version>
+		</dependency>
+		<dependency>
+			<groupId>${project.groupId}</groupId>
+			<artifactId>cnk-ibe-masters-service</artifactId>
+			<version>${project.parent.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>displaytag</groupId>
+			<artifactId>displaytag</artifactId>
+			<version>1.2</version>
+			<exclusions>
+				<exclusion>
+					<groupId>org.slf4j</groupId>
+					<artifactId>jcl104-over-slf4j</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>org.slf4j</groupId>
+					<artifactId>slf4j-log4j12</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+		<!-- <dependency>
+			<groupId>displaytag</groupId>
+			<artifactId>displaytag-portlet</artifactId>
+			<version>1.2</version>
+		</dependency>
+		<dependency>
+			<groupId>displaytag</groupId>
+			<artifactId>displaytag-export-poi</artifactId>
+			<version>1.2</version>
+		</dependency> -->
+		<dependency>
+			<groupId>javax.servlet</groupId>
+			<artifactId>servlet-api</artifactId>
+			<version>2.5</version>
+		</dependency>
+		<dependency>
+			<groupId>javax.servlet</groupId>
+			<artifactId>jsp-api</artifactId>
+			<version>2.0</version>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.tiles</groupId>
+			<artifactId>tiles-core</artifactId>
+			<version>2.2.2</version>
+			<exclusions>
+				<exclusion>
+					<groupId>org.slf4j</groupId>
+					<artifactId>jcl-over-slf4j</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.tiles</groupId>
+			<artifactId>tiles-jsp</artifactId>
+			<version>2.2.2</version>
+			<exclusions>
+				<exclusion>
+					<groupId>org.slf4j</groupId>
+					<artifactId>jcl-over-slf4j</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.tiles</groupId>
+			<artifactId>tiles-api</artifactId>
+			<version>2.2.2</version>
+			<exclusions>
+				<exclusion>
+					<groupId>org.slf4j</groupId>
+					<artifactId>jcl-over-slf4j</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.tiles</groupId>
+			<artifactId>tiles-servlet</artifactId>
+			<version>2.2.2</version>
+			<exclusions>
+				<exclusion>
+					<groupId>org.slf4j</groupId>
+					<artifactId>jcl-over-slf4j</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.tiles</groupId>
+			<artifactId>tiles-template</artifactId>
+			<version>2.2.2</version>
+			<exclusions>
+				<exclusion>
+					<groupId>org.slf4j</groupId>
+					<artifactId>jcl-over-slf4j</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+		
+
+		<dependency>
+			<groupId>org.codehaus.jackson</groupId>
+			<artifactId>jackson-core-asl</artifactId>
+			<version>1.9.9</version>
+		</dependency>
+		<dependency>
+			<groupId>org.codehaus.jackson</groupId>
+			<artifactId>jackson-mapper-asl</artifactId>
+			<version>1.9.9</version>
+		</dependency>
+
+	</dependencies>
+	<build>
+		<finalName>cnk-ibe-masters-web</finalName>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-war-plugin</artifactId>
+				<configuration>
+					<webResources>
+						<resource>
+							<directory>${build.sourceDirectory}</directory>
+							<targetPath>sources</targetPath>
+						</resource>
+					</webResources>
+				</configuration>
+			</plugin>
+
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>sonar-maven-plugin</artifactId>
+				<version>2.0</version>
+			</plugin>
+
+		</plugins>
+
+	</build>
+</project>
+============================================================================
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>com.cnk.travelerpibe</groupId>
+		<artifactId>travelerpibe-parent</artifactId>
+		<version>1.0-SNAPSHOT</version>
+
+		<relativePath>../parent/pom.xml</relativePath>
+	</parent>
+
+	<groupId>com.cnk.travelerpibe</groupId>
+	<artifactId>productsetup</artifactId>
+
+	<packaging>pom</packaging>
+
+	<name>TravelERP MasterSetup</name>
+	<description>
+    CNK Travel ERP Master Setup Project
+  </description>
+
+	<properties>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<sonar.language>java</sonar.language>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<slf4j.version>1.7.5</slf4j.version>
+		<logback.version>1.0.13</logback.version>
+	</properties>
+
+	<dependencies>
+		<dependency>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+			<version>4.8.1</version>
+			<scope>test</scope>
+		</dependency>
+
+
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-context</artifactId>
+			<version>3.1.2.RELEASE</version>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-core</artifactId>
+			<version>3.1.2.RELEASE</version>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-orm</artifactId>
+			<version>3.1.2.RELEASE</version>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-tx</artifactId>
+			<version>3.1.2.RELEASE</version>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-jdbc</artifactId>
+			<version>3.1.2.RELEASE</version>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-aop</artifactId>
+			<version>3.1.2.RELEASE</version>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-beans</artifactId>
+			<version>3.1.2.RELEASE</version>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-test</artifactId>
+			<version>3.1.2.RELEASE</version>
+		</dependency>
+		<dependency>
+			<groupId>cglib</groupId>
+			<artifactId>cglib</artifactId>
+			<version>2.2.2</version>
+		</dependency>
+		<dependency>
+			<groupId>log4j</groupId>
+			<artifactId>log4j</artifactId>
+			<version>1.2.16</version>
+		</dependency>
+
+		<dependency>
+			<groupId>dom4j</groupId>
+			<artifactId>dom4j</artifactId>
+			<version>1.6.1</version>
+			<exclusions>
+				<exclusion>
+					<groupId>xml-apis</groupId>
+					<artifactId>xml-apis</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+
+		<dependency>
+			<groupId>commons-logging</groupId>
+			<artifactId>commons-logging</artifactId>
+			<version>1.1.1</version>
+		</dependency>
+
+		<dependency>
+			<groupId>commons-collections</groupId>
+			<artifactId>commons-collections</artifactId>
+			<version>3.2.1</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.apache.commons</groupId>
+			<artifactId>commons-lang3</artifactId>
+			<version>3.1</version>
+		</dependency>
+
+		<dependency>
+			<groupId>antlr</groupId>
+			<artifactId>antlr</artifactId>
+			<version>2.7.7</version>
+		</dependency>
+		<!-- Hibernate library dependecy end -->
+		<dependency>
+			<groupId>mysql</groupId>
+			<artifactId>mysql-connector-java</artifactId>
+			<version>5.1.6</version>
+		</dependency>
+		<dependency>
+			<groupId>com.oracle</groupId>
+			<artifactId>ojdbc6</artifactId>
+			<version>11.2.0</version>
+		</dependency>
+		<!-- Spring security dependency start -->
+		<dependency>
+			<groupId>org.springframework.security</groupId>
+			<artifactId>spring-security-core</artifactId>
+			<version>3.1.2.RELEASE</version>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.security</groupId>
+			<artifactId>spring-security-config</artifactId>
+			<version>3.1.2.RELEASE</version>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.security</groupId>
+			<artifactId>spring-security-web</artifactId>
+			<version>3.1.2.RELEASE</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.json</groupId>
+			<artifactId>json</artifactId>
+			<version>20090211</version>
+		</dependency>
+
+		<!-- Gson: Java to Json conversion -->
+		<dependency>
+			<groupId>com.google.code.gson</groupId>
+			<artifactId>gson</artifactId>
+			<version>2.2.2</version>
+			<scope>compile</scope>
+		</dependency>
+
+		<!--Mockito test -->
+		<dependency>
+			<groupId>org.mockito</groupId>
+			<artifactId>mockito-all</artifactId>
+			<version>1.9.5</version>
+		</dependency>
+
+
+		<!-- Logback -->
+		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-api</artifactId>
+			<version>${slf4j.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>ch.qos.logback</groupId>
+			<artifactId>logback-classic</artifactId>
+			<version>${logback.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>ch.qos.logback</groupId>
+			<artifactId>logback-core</artifactId>
+			<version>${logback.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>ch.qos.logback</groupId>
+			<artifactId>logback-access</artifactId>
+			<version>${logback.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>com.tangosol.net</groupId>
+			<artifactId>coherence</artifactId>
+			<version>3.7</version>
+		</dependency>
+		<!-- <dependency>
+			<groupId>com.tangosol</groupId>
+			<artifactId>coherence</artifactId>
+			<version>3.7.0</version>
+		</dependency> -->
+
+	</dependencies>
+	<!-- below lines not required if using nexus. -->
+	<!-- <repositories> <repository> <id>jboss-public-repository-group</id> 
+		<name>JBoss Public Repository Group</name> 
+
+<url>http://repository.jboss.org/nexus/content/groups/public/</url> 
+		<layout>default</layout> <releases> <enabled>true</enabled> <updatePolicy>never</updatePolicy> 
+		</releases> <snapshots> <enabled>true</enabled> <updatePolicy>daily</updatePolicy> 
+		</snapshots> </repository> </repositories> -->
+
+
+
+	<build>
+		<pluginManagement>
+			<plugins>
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-compiler-plugin</artifactId>
+					<!-- Remove me as soon as all of droolsjbpm requires at least Java 6 -->
+					<configuration>
+						<source>1.7</source>
+						<target>1.7</target>
+					</configuration>
+				</plugin>
+
+				<plugin>
+					<groupId>org.codehaus.mojo</groupId>
+					<artifactId>sonar-maven-plugin</artifactId>
+					<version>2.0</version>
+				</plugin>
+
+			</plugins>
+		</pluginManagement>
+	</build>
+
+	<!-- <modules> <module>cnk-productsetup-api</module> </modules> -->
+
+	<modules>
+		<!-- <module>cnk-ibe-masters-core</module> -->
+		<module>cnk-ibe-masters-service</module>
+		<module>cnk-ibe-masters-web</module>
+		<module>cnk-ibe-masters-persisthelper</module>
+	</modules>
+</project>
+=================================================================================
+GridUser.jsp
+
+<%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c"%>
+<%@ taglib uri="http://www.springframework.org/tags/form" prefix="form"%>
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+<link rel="stylesheet" type="text/css" media="screen"
+	href="css/jquery/ui-lightness/jquery-ui-1.8.6.custom.css" />
+<link rel="stylesheet" type="text/css" media="screen"
+	href="css/jqgrid/ui.jqgrid.css" />
+
+<script type="text/javascript" src="script/jquery/jquery-1.4.4.min.js"></script>
+<script type="text/javascript">
+	var jq = jQuery.noConflict();
+</script>
+<script type="text/javascript"
+	src="script/jquery/jquery-ui-1.8.6.custom.min.js"></script>
+<script type="text/javascript" src="script/jqgrid/grid.locale-en.js"></script>
+<script type="text/javascript" src="script/jqgrid/jquery.jqGrid.min.js"></script>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+</head>
+
+<body>
+
+	<input type="hidden" id="test" />
+	<script type="text/javascript">
+	jq( function(){
+		var masterName="${tableName}";
+		//alert("master Name :"+masterName);
+		if(masterName != ""){
+			search2(masterName);
+		}
+	});
+	</script>
+	
+	<script type="text/javascript">
+		function gridLoad(mastername) {
+			
+			//var ss=jq("#CONTINENT_NAME:first-child").attr("id");
+			var seel=jq("#filterGrid").find("select");
+			var selected="[";
+			//alert("value "+seel[0].value +"id "+seel[0].id +"text "+seel[0].text);
+			//alert("length is"+seel.length);
+			for(var j=0 ; j < seel.length ; j++){
+				
+				selected +="{"+"\"id\""+":"+"\""+seel[j].id+"\""+","+"\"value\""+":"+"\"" +seel[j].value
+
++"\""+"},";
+				//alert("selected "+selected);
+				
+			}
+			selected =selected.substring(0,selected.length-1)+"]";
+			//selected=selected+"]";
+			
+			//alert(selected);
+			var jsonlist={"mp":"MP","ap":"AP"};
+			var gridColName='STATENAME';
+			 
+			var myGrid = jQuery("#grid");
+			
+			//var dependentCol;
+			//var dependentData;
+			//var master;
+			$.ajax({
+						type : "GET",
+						url : '${tableName}',
+						data : "value="+selected,
+						dataType : "json",
+						success : function(result) {
+
+							colD = result.gridModel;
+							colN = result.colNames;
+							colM = result.colModel;
+							colT = result.tableName;
+							rows = result.rows;
+							//search
+							//dependentCol=colM;
+							//dependentData=rows;
+							//master="${tableName}";
+							total = result.total;
+							if (jQuery.isEmptyObject(colM)) {
+								$('#jqgrid')
+										.append(
+												'<h1 
+
+align=center><br><br><font size=3 color=red>Please add <font color = Maroon><u>'
+														+ colN
+														+ 
+
+'</u></font> by selecting Master Reference! </font></br></h1>')
+										.hide().fadeIn(2000);
+							}
+							colM = eval('(' + colM + ')');
+							colN = eval('(' + colN + ')');
+							rows = eval('(' + rows + ')');
+							jq("#grid").jqGrid('GridUnload'); 
+							jq("#grid")
+									.jqGrid(
+											{
+
+												//	
+
+url:'${tableName}',
+												datatype : 'local',
+												mtype : 'GET',
+												colNames : colN,
+												colModel : colM,
+												postData : {},
+												rowNum : 5,
+												rowList : [ 5, 10, 15 ],
+												height : "auto",
+												autowidth : true,
+												rownumbers : true,
+												pager : '#pager',
+												sortname : 'id',
+												viewrecords : true,
+												sortorder : "asc",
+												caption : colT,
+												emptyrecords : "No Records 
+
+found please add record",
+												loadonce : false,
+
+												loadComplete : function() 
+
+{
+													
+													//for loading 
+
+dependent masterlist in add,edit time
+													$.ajax({
+														type : 
+
+"GET",
+														url : 
+
+"loadDepMasterList",
+														data : 
+
+"masterName="+mastername,
+														dataType : 
+
+"",
+														success : 
+
+function(result) {
+															
+
+//alert(result);
+															
+
+var r1=eval(result);
+															 
+
+$.each(r1,function(i){
+																
+																
+
+ 		var data="";
+																
+
+ 		var r2=eval(r1[i].value);
+																
+
+ 		$.each(r2,function(j){
+																
+
+ 			data=r2[j];
+																
+
+ 			//alert(r2[j]);
+																
+
+ 		});
+																
+
+ 	// alert(r1[i].feildName+" value "+data);
+																
+
+	jq("#grid").setColProp(r1[i].feildName, { editoptions: {value:data } });
+																
+															
+
+});  
+															
+															
+
+//jq("#grid").setColProp(gridColName, { editoptions: { value: jsonlist} });
+														}
+													});
+													
+													
+												},
+												jsonReader : {
+													root : "rows",
+													page : "page",
+													total : "total",
+													records : 
+
+"records",
+													repeatitems : 
+
+false,
+													cell : "cell",
+													id : "id"
+
+												},
+												
+
+											});
+							
+							  
+							for ( var i = 0; i < rows.length; i++)
+								jq("#grid").addRowData(i, rows[i]);
+							jq("#grid").setGridParam().trigger("reloadGrid");
+							
+							jq("#grid").jqGrid(
+									'navGrid',
+									'#pager',
+									{
+										edit : false,
+										add : false,
+										del : false,
+										search : true
+									},
+									{},
+									{},
+									{},
+									{
+										sopt : [ 'eq', 'ne', 'lt', 'gt', 'cn',
+												'bw', 'ew' ],
+										closeOnEscape : true,
+										multipleSearch : true,
+										multipleGroup : true,
+										closeAfterSearch : true
+									});
+
+							jq("#grid").navButtonAdd('#pager', {
+								caption : "Add",
+								buttonicon : "ui-icon-plus",
+								onClickButton : addRow,
+								position : "last",
+								title : "",
+								cursor : "pointer",
+
+							});
+
+							jq("#grid").navButtonAdd('#pager', {
+								caption : "Edit",
+								buttonicon : "ui-icon-pencil",
+								onClickButton : editRow,
+								position : "last",
+								title : "",
+								cursor : "pointer",
+								id : "edit_"
+							});
+
+							/* jq("#grid").navButtonAdd('#pager', {
+								caption : "Search",
+								buttonicon : "ui-icon-pencil",
+								onClickButton : editRow,
+								position : "last",
+								title : "", 
+								cursor : "pointer",
+								id: "search_" 
+								}); */
+
+							jq("#grid").navButtonAdd('#pager', {
+								caption : "Del",
+								buttonicon : "ui-icon-trash",
+								onClickButton : delRow,
+								position : "last",
+								title : "",
+								cursor : "pointer",
+								id : "del_"
+							});
+
+							if (rows.length == 0) {
+								$("#edit_").addClass('ui-state-disabled');
+								$("#search_" + myGrid[0].id).addClass(
+										'ui-state-disabled');
+								$("#refresh_" + myGrid[0].id).addClass(
+										'ui-state-disabled');
+
+							}
+							//alert(dependentCol);
+							//search(master);
+							//search2(master);
+							
+						}
+				
+					});
+			
+
+		};
+	</script>
+
+
+	<script type="text/javascript">
+		function addRow() {
+			var jsondata;
+
+			// Get the currently selected row
+			jq("#grid")
+					.jqGrid(
+							'editGridRow',
+							'new',
+							{ //url: "add?tableName="+'${tableName}',    	
+								//url : "Add_" + '${tableName}?name='+jsondata,
+
+								url : "Add_" + '${tableName}',
+								editData : {},
+								recreateForm : false,
+								beforeShowForm : function(form) {
+
+								},
+								closeAfterAdd : true,
+								reloadAfterSubmit : true,
+
+								onclickSubmit : function(options, rowid) {
+									var frm = $('#FrmGrid_grid');
+									jsondata = JSON.stringify(frm
+											.serializeArray());
+									jq("#test").val(jsondata);
+									options.url += "?name=" + jq("#test").val();
+									return {}; // you can return additional data which 
+
+will be sent to the server
+								},
+
+								afterSubmit : function(response, postdata) {
+									var result = eval('('
+											+ response.responseText + ')');
+
+									var errors = "";
+									if (result.success == false) {
+										for ( var i = 0; i < 
+
+result.message.length; i++) {
+											errors += result.message[i]
+													+ "<br/>";
+
+										}
+
+									} else {
+										jq("#dialog")
+												.text(
+														'Entry has 
+
+been added successfully');
+										jq("#dialog").dialog({
+
+											title : 'Success',
+											modal : true,
+											buttons : {
+												"Ok" : function() {
+													jq(this).dialog
+
+("close");
+													location.reload();
+												}
+											}
+										});
+
+									}
+
+									// only used for adding new records
+									var new_id = null;
+									return [ result.success, errors, new_id ];
+
+								}
+
+							});
+
+		}
+
+		function editRow() {
+			// Get the currently selected row
+
+			var row = jq("#grid").jqGrid('getGridParam', 'selrow');
+
+			if (row != null)
+				jq("#grid")
+						.jqGrid(
+								'editGridRow',
+								row,
+								{
+									url : "Edit_" + '${tableName}',
+									editData : {},
+									recreateForm : true,
+									beforeShowForm : function(form) {
+									},
+									closeAfterEdit : true,
+									reloadAfterSubmit : true,
+									onclickSubmit : function(options, rowid) {
+										var frm = $('#FrmGrid_grid');
+										jsondata = JSON.stringify(frm
+												.serializeArray());
+										jq("#test").val(jsondata);
+										options.url += "?name="
+												+ jq("#test").val();
+										return {}; // you can return additional 
+
+data which will be sent to the server
+									},
+									afterSubmit : function(response, postdata) {
+										var result = eval('('
+												+ response.responseText + 
+
+')');
+										var errors = "";
+
+										if (result.success == false) {
+											for ( var i = 0; i < 
+
+result.message.length; i++) {
+												errors += result.message
+
+[i]
+														+ "<br/>";
+											}
+										} else {
+											jq("#dialog")
+													.text(
+															
+
+'Entry has been edited successfully');
+											jq("#dialog")
+													.dialog(
+															{
+																
+
+title : 'Success',
+																
+
+modal : true,
+																
+
+buttons : {
+																
+
+	"Ok" : function() {
+																
+
+		jq(this)
+																
+
+				.dialog(
+																
+
+						"close");
+																
+
+		location
+																
+
+				.reload();
+																
+
+	}
+																
+
+}
+															
+
+});
+										}
+
+										return [ result.success, errors, null ];
+									}
+								});
+			else
+				jq("#dialogSelectRow").dialog();
+		}
+
+		function delRow() {
+			// Get the currently selected row
+			var row = jq("#grid").jqGrid('getGridParam', 'selrow');
+
+			if (row != null)
+				jq("#grid")
+						.jqGrid(
+								'editGridRow',
+								row,
+								{
+									url : "Del_" + '${tableName}',
+									editData : {},
+									recreateForm : true,
+									beforeShowForm : function(form) {
+									},
+									closeAfterEdit : true,
+									reloadAfterSubmit : true,
+									onclickSubmit : function(options, rowid) {
+										var frm = $('#FrmGrid_grid');
+										jsondata = JSON.stringify(frm
+												.serializeArray());
+										jq("#test").val(jsondata);
+										options.url += "?name="
+												+ jq("#test").val();
+										return {}; // you can return additional 
+
+data which will be sent to the server
+									},
+									afterSubmit : function(response, postdata) {
+										var result = eval('('
+												+ response.responseText + 
+
+')');
+										var errors = "";
+
+										if (result.success == false) {
+											for ( var i = 0; i < 
+
+result.message.length; i++) {
+												errors += result.message
+
+[i]
+														+ "<br/>";
+											}
+										} else {
+											jq("#dialog")
+													.text(
+															
+
+'Entry has been deleted successfully');
+											jq("#dialog")
+													.dialog(
+															{
+																
+
+title : 'Success',
+																
+
+modal : true,
+																
+
+buttons : {
+																
+
+	"Ok" : function() {
+																
+
+		jq(this)
+																
+
+				.dialog(
+																
+
+						"close");
+																
+
+		location
+																
+
+				.reload();
+																
+
+	}
+																
+
+}
+															
+
+});
+										}
+
+										return [ result.success, errors, null ];
+									}
+								});
+			else
+				jq("#dialogSelectRow").dialog();
+
+		}
+	</script>
+
+	<!-- filter grid -->
+	<script type="text/javascript">
+		//serch
+		function search(masterName) {
+			//alert(masterName);
+			//alert(colnames);
+			//alert(data);
+			
+			//var json = JSON.stringify(eval("(" + colnames + ")"));
+			//alert(json);
+			$.ajax({
+				type : "GET",
+				url : "serachColumns",
+				data : "masterName="+masterName,
+				dataType : "",
+				success : function(result) {
+					//alert(result);
+					$("#filterGrid").html(result);
+				}
+			});
+		}
+		
+		function search2(masterName){
+			var html1="";
+			$.ajax({
+				type : "GET",
+				url : "serachColumns",
+				data : "masterName="+masterName,
+				dataType : "",
+				success : function(result) {
+					//alert("result is"+result);
+				
+					var data1=JSON.parse(result);
+					var data2=data1.dependencies;
+					
+					//alert("data is "+data1.dependencies);
+					var column2="";
+					var column1="";
+					var displayName="";
+					var dh="";
+					var childcol="";
+					var childcol2="";
+					for(var i in data2)
+					{
+						if(i < (data2.length)-1){
+						var temp=(parseInt(i)+1);
+						//alert("i value"+temp);
+							dh=data2[temp].name;
+							childcol=data2[temp].column1;
+							//alert("childcol: "+childcol);
+							childcol2=data2[temp].column2;
+							//alert("childcol2: "+childcol2);
+							//alert(dh);
+						}
+					if((i==0)){
+						var master = data2[i].name;
+						
+						column2 = data2[i].column2;
+						column1 = data2[i].column1;
+						displayName = data2[i].display;
+						html1 += '<tr style="width: 298px;">';
+						html1 +='<td style="width: 590px;>'+'<lable style="width: 40px; margin-
+
+left: 29px; padding-left: 0px;">'+displayName+'</lable>'+'</td> '+'<td style="width: 298px;"><select id="'+column2+'" 
+
+style="width: 115px; height: 18px; padding: 0px; border-width: 1px; margin: 2px 0px 6px 37px;" onfocus=fun2("'+master
+
++'","'+column2+'","'+column1+'") onchange=fun3(this.value,"'+dh+'","'+childcol+'","'+column2+'","'+childcol2+'")>';
+						html1 +='<option></option>';
+						html1 +='</select></td></tr>';
+						}
+						 else
+							{
+							var master = data2[i].name;
+							var column2 = data2[i].column2;
+							var column1 = data2[i].column1;
+							var displayName =data2[i].display;
+							html1 += '<tr style="width: 298px;">';
+							html1 +='<td style="width: 590px;>'+'<lable style="width: 40px; 
+
+margin-left: 29px; padding-left: 0px;">'+displayName+'</lable>'+'</td> '+'<td style="width: 298px;"><select 
+
+id="'+column2+'" style="width: 115px; height: 18px; padding: 0px; border-width: 1px; margin: 2px 0px 6px 37px;" 
+
+onchange=fun3(this.value,"'+dh+'","'+childcol+'","'+column2+'","'+childcol2+'")>';
+							html1 +='<option></option>';
+							html1 +='</select></td></tr>';
+							
+							} 
+						
+					}
+					
+					
+					html1 +='<tr"><td>'+'<button id="cancel" name="Cancel" style="margin-left: 
+
+93px;">Cancel</button></td>'+'<td><button id="reset" name="Reset" style="margin-left: 
+
+5px;">Reset</button></td>'+'<td><button id="search" name="Search" style="" onclick=gridLoad("'+masterName+'")
+
+>Search</button></td>';
+					html1 +='</tr>';
+					
+					if(data2.length==0){
+						//alert("inside independent master");
+						gridLoad(masterName);
+					}
+					else{
+					
+					$("#filterGrid").html(html1);
+					}
+					
+				}
+			});
+		}
+		
+		
+		
+		function fun2(name,col2,col1){
+			//alert("fun2");
+		var id=col1;
+		//alert("name:"+name+"col1:"+col1+"col2:"+col2);
+			$.ajax({
+				type : "GET",
+				url : "serchResult",
+				data: "master="+name+"&col1="+col1+"&col2="+col2,
+				success : function(result) {
+					
+					//alert(result);
+					var r1=eval(result);
+					$('#'+col2).find('option').remove();
+					   $('#'+col2).append($("<option></option>")
+		              .attr("value","")
+		              .text("--Select--"));
+					  $.each(r1,function(i){
+
+						 $('#'+col2).append($("<option></option>")
+					              .attr("value",r1[i].key)
+					              .text(r1[i].value)); 
+						
+					});  
+				}
+			});
+		}
+		
+		function fun3(value,name,childfeild,parentId,childfeild2){
+			//alert("this.id "+value);
+			//alert("childfeild"+childfeild);
+			//alert("parentId"+parentId);
+			//alert("childfeild2"+childfeild2);
+			
+			//var data=$(this).siblings(":select");
+			//alrt("data Value is::"+data);
+			//alert("fun3"+name);
+			$.ajax({
+				type : "GET",
+				 url : "searchfilter",
+				data: "value="+value+"&masterName="+name+"&childfeild="+childfeild+"&parentId="+parentId
+
++"&childfeild2="+childfeild2,
+				success : function(result) {
+					
+					//alert(result);
+					var r1=eval(result);
+					$('#'+childfeild2).find('option').remove();
+					    /* $('#'+childfeild2).append($("<option></option>")
+		              .attr("value","")
+		              .text("--Select--")); */
+					  $.each(r1,function(i){
+
+						 $('#'+childfeild2).append($("<option></option>")
+					              .attr("value",r1[i].key)
+					              .text(r1[i].value)); 
+				}); 
+				}
+			
+			});
+		}
+		
+	</script>
+
+
+	<form:form id="contact" action="gridDetails" method="GET"
+		commandName="contactBean">
+		<fieldset style="margin-top: 35px;">
+			<table style="border-width: 0px; margin-top: 0px; margin-bottom: 0px;">
+				<tr><td>                       </td>
+					<td style="width: 868px;">Select Reference Master :
+					<form:select path="tables">
+							<form:option value="" label="--- Select ---" />
+							<form:options items="${tableDetailsMap}" />
+						</form:select>
+						<input type="submit" id="table" value='GO ' /></td>
+				</tr>
+				
+			</table>
+		</fieldset>
+	</form:form>
+
+<div id="filter" style="margin-top: 50px; border-left-width: 72px; margin-left: 425px; margin-right: 483px; border-right-
+
+width: 20px;">
+		<table id="filterGrid" align="center">
+		</table>
+		
+	</div>
+	<div id="jqgrid" style="margin-top: -80px;">
+		<table id="grid">
+		</table>
+		<div id="pager" style="height: 10%; width: 100%"></div>
+	</div>
+
+	<div id="dialog" title="Feature not supported" style="display: none">
+		<p>That feature is not supported.</p>
+	</div>
+
+	<div id="dialogSelectRow" title="Warning" style="display: none">
+		<p>Please select row</p>
+	</div>
+	
+	
+
+</body>
+
+</html>
+============================================================================
+<?xml version="1.0" encoding="UTF-8"?>
+<web-app xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns="http://java.sun.com/xml/ns/javaee" xmlns:web="http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd"
+	xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd"
+	version="2.5">
+	<display-name>Masters</display-name>
+	<context-param>
+		<param-name>contextConfigLocation</param-name>
+		<param-value>/WEB-INF/masters-servlet.xml</param-value>
+	</context-param>
+	<listener>
+		<listener-class>org.springframework.web.context.ContextLoaderListener</listener-class>
+	</listener>
+	<filter>
+		<filter-name>springSecurityFilterChain</filter-name>
+		<filter-class>org.springframework.web.filter.DelegatingFilterProxy</filter-class>
+	</filter>
+	<filter-mapping>
+		<filter-name>springSecurityFilterChain</filter-name>
+		<url-pattern>/*</url-pattern>
+	</filter-mapping>
+	<servlet>
+		<servlet-name>masters</servlet-name>
+		<servlet-class>org.springframework.web.servlet.DispatcherServlet</servlet-class>
+		<load-on-startup>1</load-on-startup>
+	</servlet>
+	<servlet-mapping>
+		<servlet-name>masters</servlet-name>
+		<url-pattern>/</url-pattern>
+	</servlet-mapping>
+	<welcome-file-list>
+		<welcome-file>index.jsp</welcome-file>
+	</welcome-file-list>
+	<servlet>
+		<description></description>
+		<display-name>CacheFilterServlet</display-name>
+		<servlet-name>CacheFilterServlet</servlet-name>
+		<servlet-class>com.cnk.travelerpibe.master.web.CacheFilterServlet</servlet-class>
+		<load-on-startup>0</load-on-startup>
+	</servlet>
+	<servlet-mapping>
+		<servlet-name>CacheFilterServlet</servlet-name>
+		<url-pattern>/CacheFilterServlet</url-pattern>
+	</servlet-mapping>
+</web-app>
+===========================================================================
+<?xml version="1.0" encoding="UTF-8"?>
+<weblogic-web-app xmlns="http://xmlns.oracle.com/weblogic/weblogic-web-app"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd 
+
+http://xmlns.oracle.com/weblogic/weblogic-web-app http://xmlns.oracle.com/weblogic/weblogic-web-app/1.0/weblogic-web-
+
+app.xsd">
+
+
+	<container-descriptor>
+		<prefer-web-inf-classes>true</prefer-web-inf-classes>
+	</container-descriptor>
+	<context-root>cnk-ibe-masters-web</context-root>
+</weblogic-web-app>
+=============================================================================
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE tiles-definitions PUBLIC
+       "-//Apache Software Foundation//DTD Tiles Configuration 2.0//EN"
+       "http://tiles.apache.org/dtds/tiles-config_2_0.dtd">
+<tiles-definitions>
+	<definition name="base.definition" template="/pages/layout.jsp">
+		<put-attribute name="header" value="/pages/header.jsp" />
+		<put-attribute name="menu" value="/pages/masterMenu.jsp" />
+		<put-attribute name="body" value="" />
+		<put-attribute name="footer" value="/pages/footer.jsp" />
+	</definition>
+	<definition name="home" extends="base.definition">
+		<put-attribute name="title" value="Common Master" />
+		<put-attribute name="menu" value="" />
+		<put-attribute name="body" value="/pages/home.jsp" />
+	</definition>
+	<definition name="masterMenu" extends="base.definition">
+		<put-attribute name="title" value="Common Master" />
+		<put-attribute name="menu" value="" />
+		<put-attribute name="body" value="/pages/masterMenu.jsp" />
+	</definition>
+
+	<definition name="commonMaster" extends="base.definition">
+		<put-attribute name="title" value="Common Master" />
+		<put-attribute name="body" value="/pages/commonMaster.jsp" />
+	</definition>
+
+	<definition name="login" extends="base.definition">
+		<put-attribute name="title" value="Common Master" />
+		<put-attribute name="menu" value="" />
+		<put-attribute name="body" value="/pages/login.jsp" />
+	</definition>
+
+	<definition name="GridUser" extends="base.definition">
+		<put-attribute name="title" value="Grid User" />
+		<put-attribute name="body" value="/pages/GridUser.jsp" />
+	</definition>
+	<definition name="showMaster" extends="base.definition">
+		<put-attribute name="title" value="Grid User" />
+		<put-attribute name="body" value="/pages/showMaster.jsp" />
+	</definition>
+
+	
+</tiles-definitions>
+============================================================================
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans" 
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:p="http://www.springframework.org/schema/p"        
+       xmlns:context="http://www.springframework.org/schema/context"
+        xmlns:mvc="http://www.springframework.org/schema/mvc"
+    xsi:schemaLocation="http://www.springframework.org/schema/beans 
+       http://www.springframework.org/schema/beans/spring-beans-2.5.xsd
+    http://www.springframework.org/schema/context 
+       http://www.springframework.org/schema/context/spring-context-2.5.xsd
+        http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc.xsd">
+   
+   <context:annotation-config />    
+   <context:component-scan
+        base-package="com.cnk.travelerpibe" />
+         
+   <mvc:annotation-driven />
+   
+   <!-- <mvc:resources mapping="/resources/**" location="/resources/"/>--> 
+   <mvc:resources mapping="/css/**" location="/css/"/>
+   <mvc:resources mapping="/images/**" location="/images/"/>
+   <mvc:resources mapping="/script/**" location="/script/"/>
+   
+  <!--  <mvc:resources mapping="/static/**" location="/static/" />  -->
+   
+   <import resource="classpath*:masterApplicationContext.xml"/>          
+   
+   <bean id="viewResolver"
+	    class="org.springframework.web.servlet.view.UrlBasedViewResolver">
+	    <property name="viewClass">
+	        <value>
+	            org.springframework.web.servlet.view.tiles2.TilesView
+	        </value>
+	    </property>
+	</bean>
+	<bean id="tilesConfigurer"
+	    class="org.springframework.web.servlet.view.tiles2.TilesConfigurer">
+	    <property name="definitions">
+	        <list>
+	            <value>/WEB-INF/tiles.xml</value>
+	        </list>
+	    </property>
+	</bean>
+	<!-- Application Message Bundle -->
+	<bean id="messageSource"
+		class="org.springframework.context.support.ReloadableResourceBundleMessageSource">
+		<property name="basename" value="classpath:messages" />
+		<property name="defaultEncoding" value="UTF-8"/>
+	</bean>
+	
+	<bean id="jacksonMessageConverter" 
+
+class="org.springframework.http.converter.json.MappingJacksonHttpMessageConverter"></bean>
+<bean class="org.springframework.web.servlet.mvc.annotation.AnnotationMethodHandlerAdapter">
+<property name="messageConverters">
+  <list>
+    <ref bean="jacksonMessageConverter"/>
+  </list>
+</property>
+</bean>
+<bean id="dataSource" class="org.springframework.jdbc.datasource.DriverManagerDataSource">
+		<property name="driverClassName" value="oracle.jdbc.driver.OracleDriver" />
+		<property name="url" value="jdbc:oracle:thin:@10.21.12.129:1521:XE" />
+		<property name="username" value="siva_master" />
+		<property name="password" value="siva_master" />
+</bean>
+</beans>
+===========================================================================
+# TableName                                          DBMapping Names
+
+product_category={\"name\":\"product_category\",\"targetObect\":\"product_category\",\"targetType\":\"DB\",\"path\":\"\",
+
+\"attributes\":[{\"name\":\"ProductCateId\",\"targetName\":\"PROD_CATGRY_ID\",\"dataType\":\"INT\",\"orderNo\":0,
+
+\"defaultValue\":\"\",\"key\":true,\"required\":true,\"keyColSeq\":0,\"keySeq\":true,\"updateable\":false},{\"name\":
+
+\"ProductCateName\",\"targetName\":\"PROD_CATGRY_NAME",\"dataType\":\"VARCHAR\",\"orderNo\":0,\"defaultValue\":\"\",\"key
+
+\":false,\"required\":true,\"keyColSeq\":0,\"updateable\":true}],\"references\":[{\"name\":\"\",\"targetObject\":\"\",
+
+\"targetAttribute\":\"\",\"targetDispAttribute\":\"\",\"aliasName\":\"\"}]}
+
+product_category_sub_type={\"name\":\"product_category_sub_type\",\"targetObect\":\"product_category_sub_type\",
+
+\"targetType\":\"DB\",\"path\":\"\",\"attributes\":[{\"name\":\"ProductCateSubId\",\"targetName\":
+
+\"PROD_CATGRY_SUB_TYPE_ID\",\"dataType\":\"INT\",\"orderNo\":0,\"defaultValue\":\"\",\"key\":true,\"required\":true,
+
+\"keyColSeq\":0,\"keySeq\":true,\"updateable\":false},{\"name\":\"ProductCateSubName\",\"targetName\":
+
+\"PROD_CATGRY_SUB_TYPE_NAME\",\"dataType\":\"VARCHAR\",\"orderNo\":0,\"defaultValue\":\"\",\"key\":false,\"required
+
+\":true,\"keyColSeq\":0,\"updateable\":true},{\"name\":\"ProductCateId\",\"targetName\":\"PROD_CATGRY_ID\",\"dataType\":
+
+\"VARCHAR\",\"orderNo\":0,\"defaultValue\":\"\",\"key\":false,\"required\":true,\"keyColSeq\":0,\"updateable\":false}],
+
+\"references\":[{\"name\":\"ProductCateId\",\"targetObject\":\"product_category\",\"targetAttribute\":\"PROD_CATGRY_ID\",
+
+\"targetDispAttribute\":\"PROD_CATGRY_NAME\",\"aliasName\":\"PROD_CATGRY_NAME\"}]}
+
+url_type_master={\"name\":\"url_type_master\",\"targetObect\":\"url_type_master\",\"targetType\":\"DB\",\"path\":\"\",
+
+\"attributes\":[{\"name\":\"UrlTpeId\",\"targetName\":\"URL_TYPE_ID\",\"dataType\":\"INT\",\"orderNo\":0,\"defaultValue
+
+\":\"\",\"key\":true,\"required\":true,\"keyColSeq\":0,\"keySeq\":true,\"updateable\":false},{\"name\":\"UrlTypeName\",
+
+\"targetName\":\"URL_TYPE_NAME\",\"dataType\":\"VARCHAR\",\"orderNo\":0,\"defaultValue\":\"\",\"key\":false,\"required
+
+\":true,\"keyColSeq\":0,\"updateable\":true}],\"references\":[{\"name\":\"\",\"targetObject\":\"\",\"targetAttribute\":
+
+\"\",\"targetDispAttribute\":\"\",\"aliasName\":\"\"}]}
+
+cabin_class={\"name\":\"cabin_class\",\"targetObect\":\"cabin_class\",\"targetType\":\"DB\",\"path\":\"\",\"attributes\":
+
+[{\"name\":\"CabinClassId\",\"targetName\":\"CABIN_CLASS_ID\",\"dataType\":\"INT\",\"orderNo\":0,\"defaultValue\":\"\",
+
+\"key\":true,\"required\":true,\"keyColSeq\":0,\"keySeq\":true,\"updateable\":false},{\"name\":\"CabinClassName\",
+
+\"targetName\":\"CABIN_CLASS_NAME\",\"dataType\":\"VARCHAR\",\"orderNo\":0,\"defaultValue\":\"\",\"key\":false,\"required
+
+\":true,\"keyColSeq\":0,\"updateable\":true}],\"references\":[{\"name\":\"\",\"targetObject\":\"\",\"targetAttribute\":
+
+\"\",\"targetDispAttribute\":\"\",\"aliasName\":\"\"}]}
+
+traveler_program_master={\"name\":\"traveler_program_master\",\"targetObect\":\"traveler_program_master\",\"targetType\":
+
+\"DB\",\"path\":\"\",\"attributes\":[{\"name\":\"TravelerProgramId\",\"targetName\":\"TRAVELER_PROGRAM_ID\",\"dataType\":
+
+\"INT\",\"orderNo\":0,\"defaultValue\":\"\",\"key\":true,\"required\":true,\"keyColSeq\":0,\"keySeq\":true,\"updateable
+
+\":false},{\"name\":\"TravelerProgramName\",\"targetName\":\"TRAVELER_PROGRAM_NAME\",\"dataType\":\"VARCHAR\",\"orderNo
+
+\":0,\"defaultValue\":\"\",\"key\":false,\"required\":true,\"keyColSeq\":0,\"updateable\":true}],\"references\":[{\"name
+
+\":\"\",\"targetObject\":\"\",\"targetAttribute\":\"\",\"targetDispAttribute\":\"\",\"aliasName\":\"\"}]}
+
+airline_type={\"name\":\"airline_type\",\"targetObect\":\"airline_type\",\"targetType\":\"DB\",\"path\":\"\",\"attributes
+
+\":[{\"name\":\"AirLineTypeId\",\"targetName\":\"AIRLINE_TYPE_ID\",\"dataType\":\"INT\",\"orderNo\":0,\"defaultValue\":
+
+\"\",\"key\":true,\"required\":true,\"keyColSeq\":0,\"keySeq\":true,\"updateable\":false},{\"name\":\"AirLineTypeName\",
+
+\"targetName\":\"AIRLINE_TYPE_NAME\",\"dataType\":\"VARCHAR\",\"orderNo\":0,\"defaultValue\":\"\",\"key\":false,
+
+\"required\":true,\"keyColSeq\":0,\"updateable\":true}],\"references\":[{\"name\":\"\",\"targetObject\":\"\",
+
+\"targetAttribute\":\"\",\"targetDispAttribute\":\"\",\"aliasName\":\"\"}]}
+
+status_master={\"name\":\"status_master\",\"targetObect\":\"status_master\",\"targetType\":\"DB\",\"path\":\"\",
+
+\"attributes\":[{\"name\":\"StatusId\",\"targetName\":\"STATUS_ID\",\"dataType\":\"INT\",\"orderNo\":0,\"defaultValue\":
+
+\"\",\"key\":true,\"required\":true,\"keyColSeq\":0,\"keySeq\":true,\"updateable\":false},{\"name\":\"StatusValue\",
+
+\"targetName\":\"STATUS_VALUE\",\"dataType\":\"VARCHAR\",\"orderNo\":0,\"defaultValue\":\"\",\"key\":false,\"required
+
+\":true,\"keyColSeq\":0,\"updateable\":true},{\"name\":\"StatusFor\",\"targetName\":\"STATUS_FOR\",\"dataType\":\"VARCHAR
+
+\",\"orderNo\":0,\"defaultValue\":\"\",\"key\":false,\"required\":true,\"keyColSeq\":0,\"updateable\":true}],\"references
+
+\":[{\"name\":\"\",\"targetObject\":\"\",\"targetAttribute\":\"\",\"targetDispAttribute\":\"\",\"aliasName\":\"\"}]}
+
+group_of_companies_master={\"name\":\"group_of_companies_master\",\"targetObect\":\"group_of_companies_master\",
+
+\"targetType\":\"DB\",\"path\":\"\",\"attributes\":[{\"name\":\"GroupOfCompnayId\",\"targetName\":\"GROUP_OF_COMPANIES_ID
+
+\",\"dataType\":\"INT\",\"orderNo\":0,\"defaultValue\":\"\",\"key\":true,\"required\":true,\"keyColSeq\":0,\"keySeq
+
+\":true,\"updateable\":false},{\"name\":\"GroupOfCompanyName\",\"targetName\":\"GROUP_OF_COMPANIES_NAME\",\"dataType\":
+
+\"VARCHAR\",\"orderNo\":0,\"defaultValue\":\"\",\"key\":false,\"required\":true,\"keyColSeq\":0,\"updateable\":true}],
+
+\"references\":[{\"name\":\"\",\"targetObject\":\"\",\"targetAttribute\":\"\",\"targetDispAttribute\":\"\",\"aliasName\":
+
+\"\"}]}
+
+group_company_master={\"name\":\"group_company_master\",\"targetObect\":\"group_company_master\",\"targetType\":\"DB\",
+
+\"path\":\"\",\"attributes\":[{\"name\":\"GroupCompanyId\",\"targetName\":\"GROUP_COMPANY_ID\",\"dataType\":\"INT\",
+
+\"orderNo\":0,\"defaultValue\":\"\",\"key\":true,\"required\":true,\"keyColSeq\":0,\"keySeq\":true,\"updateable\":false},
+
+{\"name\":\"GroupCompanyName\",\"targetName\":\"GROUP_COMPANY_NAME\",\"dataType\":\"VARCHAR\",\"orderNo\":0,
+
+\"defaultValue\":\"\",\"key\":false,\"required\":true,\"keyColSeq\":0,\"updateable\":true},{\"name\":\"GroupOfCompnayId
+
+\",\"targetName\":\"GROUP_OF_COMPANIES_ID\",\"dataType\":\"VARCHAR\",\"orderNo\":0,\"defaultValue\":\"\",\"key\":false,
+
+\"required\":true,\"keyColSeq\":0,\"updateable\":false}],\"references\":[{\"name\":\"GroupOfCompnayId\",\"targetObject\":
+
+\"group_of_companies_master\",\"targetAttribute\":\"GROUP_OF_COMPANIES_ID\",\"targetDispAttribute\":
+
+\"GROUP_OF_COMPANIES_NAME\",\"aliasName\":\"GROUP_OF_COMPANIES_NAME\"}]}
+
+company_master={\"name\":\"company_master\",\"targetObect\":\"company_master\",\"targetType\":\"DB\",\"path\":\"\",
+
+\"attributes\":[{\"name\":\"CompanyId\",\"targetName\":\"COMPANY_ID\",\"dataType\":\"INT\",\"orderNo\":0,\"defaultValue
+
+\":\"\",\"key\":true,\"required\":true,\"keyColSeq\":0,\"keySeq\":true,\"updateable\":false},{\"name\":\"CompanyName\",
+
+\"targetName\":\"COMPANY_NAME\",\"dataType\":\"VARCHAR\",\"orderNo\":0,\"defaultValue\":\"\",\"key\":false,\"required
+
+\":true,\"keyColSeq\":0,\"updateable\":true},{\"name\":\"GroupCompanyId\",\"targetName\":\"GROUP_COMPANY_ID\",\"dataType
+
+\":\"VARCHAR\",\"orderNo\":0,\"defaultValue\":\"\",\"key\":false,\"required\":true,\"keyColSeq\":0,\"updateable\":false},
+
+{\"name\":\"GroupOfCompnayId\",\"targetName\":\"GROUP_OF_COMPANIES_ID\",\"dataType\":\"VARCHAR\",\"orderNo\":0,
+
+\"defaultValue\":\"\",\"key\":false,\"required\":true,\"keyColSeq\":0,\"updateable\":false}],\"references\":[{\"name\":
+
+\"GroupCompanyId\",\"targetObject\":\"group_company_master\",\"targetAttribute\":\"GROUP_COMPANY_ID\",
+
+\"targetDispAttribute\":\"GROUP_COMPANY_NAME\",\"aliasName\":\"GROUP_COMPANY_NAME\"},{\"name\":\"GroupOfCompnayId\",
+
+\"targetObject\":\"group_of_companies_master\",\"targetAttribute\":\"GROUP_OF_COMPANIES_ID\",\"targetDispAttribute\":
+
+\"GROUP_OF_COMPANIES_NAME\",\"aliasName\":\"GROUP_OF_COMPANIES_NAME\"}]}
+
+sbu_master={\"name\":\"sbu_master\",\"targetObect\":\"sbu_master\",\"targetType\":\"DB\",\"path\":\"\",\"attributes\":
+
+[{\"name\":\"SBUId\",\"targetName\":\"SBU_ID\",\"dataType\":\"INT\",\"orderNo\":0,\"defaultValue\":\"\",\"key\":true,
+
+\"required\":true,\"keyColSeq\":0,\"keySeq\":true,\"updateable\":false},{\"name\":\"SBUName\",\"targetName\":\"SBU_NAME
+
+\",\"dataType\":\"VARCHAR\",\"orderNo\":0,\"defaultValue\":\"\",\"key\":false,\"required\":true,\"keyColSeq\":0,
+
+\"updateable\":true},{\"name\":\"CompanyId\",\"targetName\":\"COMPANY_ID\",\"dataType\":\"INT\",\"orderNo\":0,
+
+\"defaultValue\":\"\",\"key\":false,\"required\":true,\"keyColSeq\":0,\"updateable\":true},{\"name\":\"GroupCompanyId\",
+
+\"targetName\":\"GROUP_COMPANY_ID\",\"dataType\":\"VARCHAR\",\"orderNo\":0,\"defaultValue\":\"\",\"key\":false,\"required
+
+\":true,\"keyColSeq\":0,\"updateable\":false},{\"name\":\"GroupOfCompnayId\",\"targetName\":\"GROUP_OF_COMPANIES_ID\",
+
+\"dataType\":\"VARCHAR\",\"orderNo\":0,\"defaultValue\":\"\",\"key\":false,\"required\":true,\"keyColSeq\":0,\"updateable
+
+\":false}],\"references\":[{\"name\":\"CompanyId\",\"targetObject\":\"company_master\",\"targetAttribute\":\"COMPANY_ID
+
+\",\"targetDispAttribute\":\"COMPANY_NAME\",\"aliasName\":\"COMPANY_NAME\"},{\"name\":\"GroupCompanyId\",\"targetObject
+
+\":\"group_company_master\",\"targetAttribute\":\"GROUP_COMPANY_ID\",\"targetDispAttribute\":\"GROUP_COMPANY_NAME\",
+
+\"aliasName\":\"GROUP_COMPANY_NAME\"},{\"name\":\"GroupOfCompnayId\",\"targetObject\":\"group_of_companies_master\",
+
+\"targetAttribute\":\"GROUP_OF_COMPANIES_ID\",\"targetDispAttribute\":\"GROUP_OF_COMPANIES_NAME\",\"aliasName\":
+
+\"GROUP_OF_COMPANIES_NAME\"}]}
+
+bu_master={\"name\":\"bu_master\",\"targetObect\":\"bu_master\",\"targetType\":\"DB\",\"path\":\"\",\"attributes\":
+
+[{\"name\":\"BUId\",\"targetName\":\"BU_ID\",\"dataType\":\"INT\",\"orderNo\":0,\"defaultValue\":\"\",\"key\":true,
+
+\"required\":true,\"keyColSeq\":0,\"keySeq\":true,\"updateable\":false},{\"name\":\"BUName\",\"targetName\":\"BU_NAME\",
+
+\"dataType\":\"VARCHAR\",\"orderNo\":0,\"defaultValue\":\"\",\"key\":false,\"required\":true,\"keyColSeq\":0,\"updateable
+
+\":true},{\"name\":\"SBUId\",\"targetName\":\"SBU_ID\",\"dataType\":\"INT\",\"orderNo\":0,\"defaultValue\":\"\",\"key
+
+\":false,\"required\":true,\"keyColSeq\":0,\"updateable\":true},{\"name\":\"CompanyId\",\"targetName\":\"COMPANY_ID\",
+
+\"dataType\":\"INT\",\"orderNo\":0,\"defaultValue\":\"\",\"key\":false,\"required\":true,\"keyColSeq\":0,\"updateable
+
+\":true},{\"name\":\"GroupCompanyId\",\"targetName\":\"GROUP_COMPANY_ID\",\"dataType\":\"VARCHAR\",\"orderNo\":0,
+
+\"defaultValue\":\"\",\"key\":false,\"required\":true,\"keyColSeq\":0,\"updateable\":false},{\"name\":\"GroupOfCompnayId
+
+\",\"targetName\":\"GROUP_OF_COMPANIES_ID\",\"dataType\":\"VARCHAR\",\"orderNo\":0,\"defaultValue\":\"\",\"key\":false,
+
+\"required\":true,\"keyColSeq\":0,\"updateable\":false}],\"references\":[{\"name\":\"SBUId\",\"targetObject\":
+
+\"sbu_master\",\"targetAttribute\":\"SBU_ID\",\"targetDispAttribute\":\"SBU_NAME\",\"aliasName\":\"SBU_NAME\"},{\"name\":
+
+\"CompanyId\",\"targetObject\":\"company_master\",\"targetAttribute\":\"COMPANY_ID\",\"targetDispAttribute\":
+
+\"COMPANY_NAME\",\"aliasName\":\"COMPANY_NAME\"},{\"name\":\"GroupCompanyId\",\"targetObject\":\"group_company_master\",
+
+\"targetAttribute\":\"GROUP_COMPANY_ID\",\"targetDispAttribute\":\"GROUP_COMPANY_NAME\",\"aliasName\":
+
+\"GROUP_COMPANY_NAME\"},{\"name\":\"GroupOfCompnayId\",\"targetObject\":\"group_of_companies_master\",\"targetAttribute
+
+\":\"GROUP_OF_COMPANIES_ID\",\"targetDispAttribute\":\"GROUP_OF_COMPANIES_NAME\",\"aliasName\":\"GROUP_OF_COMPANIES_NAME
+
+\"}]}
+
+file_name_master={\"name\":\"file_name_master\",\"targetObect\":\"file_name_master\",\"targetType\":\"DB\",\"path\":\"\",
+
+\"attributes\":[{\"name\":\"FileNameId\",\"targetName\":\"FILE_NAME_ID\",\"dataType\":\"INT\",\"orderNo\":0,
+
+\"defaultValue\":\"\",\"key\":true,\"required\":true,\"keyColSeq\":0,\"keySeq\":true,\"updateable\":false},{\"name\":
+
+\"FileName\",\"targetName\":\"FILE_NAME\",\"dataType\":\"VARCHAR\",\"orderNo\":0,\"defaultValue\":\"\",\"key\":false,
+
+\"required\":true,\"keyColSeq\":0,\"updateable\":true},{\"name\":\"FileDesc\",\"targetName\":\"FILE_DESC\",\"dataType\":
+
+\"VARCHAR\",\"orderNo\":0,\"defaultValue\":\"\",\"key\":false,\"required\":true,\"keyColSeq\":0,\"updateable\":true}],
+
+\"references\":[{\"name\":\"\",\"targetObject\":\"\",\"targetAttribute\":\"\",\"targetDispAttribute\":\"\",\"aliasName\":
+
+\"\"}]}
+
+file_category_master={\"name\":\"file_category_master\",\"targetObect\":\"file_category_master\",\"targetType\":\"DB\",
+
+\"path\":\"\",\"attributes\":[{\"name\":\"FileCategoryId\",\"targetName\":\"FILE_CATEGORY_ID\",\"dataType\":\"INT\",
+
+\"orderNo\":0,\"defaultValue\":\"\",\"key\":true,\"required\":true,\"keyColSeq\":0,\"keySeq\":true,\"updateable\":false},
+
+{\"name\":\"FileCategoryName\",\"targetName\":\"FILE_CATEGORY_NAME\",\"dataType\":\"VARCHAR\",\"orderNo\":0,
+
+\"defaultValue\":\"\",\"key\":false,\"required\":true,\"keyColSeq\":0,\"updateable\":true},{\"name\":\"FileCategoryDesc
+
+\",\"targetName\":\"FILE_CATEGORY_DESC\",\"dataType\":\"VARCHAR\",\"orderNo\":0,\"defaultValue\":\"\",\"key\":false,
+
+\"required\":true,\"keyColSeq\":0,\"updateable\":true}],\"references\":[{\"name\":\"\",\"targetObject\":\"\",
+
+\"targetAttribute\":\"\",\"targetDispAttribute\":\"\",\"aliasName\":\"\"}]}
+
+market_master={\"name\":\"market_master\",\"targetObect\":\"market_master\",\"targetType\":\"DB\",\"path\":\"\",
+
+\"attributes\":[{\"name\":\"MARKET_ID\",\"targetName\":\"MARKET_ID\",\"dataType\":\"INT\",\"orderNo\":0,\"defaultValue\":
+
+\"\",\"key\":true,\"required\":true,\"keyColSeq\":0,\"keySeq\":true,\"updateable\":false},{\"name\":\"MARKET_NAME\",
+
+\"targetName\":\"MARKET_NAME\",\"dataType\":\"VARCHAR\",\"orderNo\":0,\"defaultValue\":\"\",\"key\":false,\"required
+
+\":true,\"keyColSeq\":0,\"updateable\":true},{\"name\":\"MARKET_REMARK\",\"targetName\":\"MARKET_REMARK\",\"dataType\":
+
+\"VARCHAR\",\"orderNo\":0,\"defaultValue\":\"\",\"key\":false,\"required\":true,\"keyColSeq\":0,\"updateable\":true}],
+
+\"references\":[{\"name\":\"\",\"targetObject\":\"\",\"targetAttribute\":\"\",\"targetDispAttribute\":\"\",\"aliasName\":
+
+\"\"}]}
+
+city_master={\"name\":\"city_master\",\"targetObect\":\"city_master\",\"targetType\":\"DB\",\"path\":\"\",\"attributes\":
+
+[{\"name\":\"CityId\",\"targetName\":\"CITY_ID\",\"dataType\":\"INT\",\"orderNo\":0,\"defaultValue\":\"\",\"key\":true,
+
+\"required\":true,\"keyColSeq\":0,\"keySeq\":true,\"updateable\":false},{\"name\":\"CityName\",\"targetName\":\"CITY_NAME
+
+\",\"dataType\":\"VARCHAR\",\"orderNo\":0,\"defaultValue\":\"\",\"key\":false,\"required\":true,\"keyColSeq\":0,
+
+\"updateable\":true},{\"name\":\"StateId\",\"targetName\":\"STATE_ID\",\"dataType\":\"VARCHAR\",\"orderNo\":0,
+
+\"defaultValue\":\"\",\"key\":false,\"required\":true,\"keyColSeq\":0,\"updateable\":false},{\"name\":\"CountryId\",
+
+\"targetName\":\"COUNTRY_ID\",\"dataType\":\"VARCHAR\",\"orderNo\":0,\"defaultValue\":\"\",\"key\":false,\"required
+
+\":true,\"keyColSeq\":0,\"updateable\":false},{\"name\":\"ContinentId\",\"targetName\":\"CONTINENT_ID\",\"dataType\":
+
+\"VARCHAR\",\"orderNo\":0,\"defaultValue\":\"\",\"key\":false,\"required\":true,\"keyColSeq\":0,\"updateable\":false}],
+
+\"references\":[{\"name\":\"StateId\",\"targetObject\":\"state_master\",\"targetAttribute\":\"STATE_ID\",
+
+\"targetDispAttribute\":\"STATE_NAME\",\"aliasName\":\"STATE_NAME\"},{\"name\":\"CountryId\",\"targetObject\":
+
+\"country_master\",\"targetAttribute\":\"COUNTRY_ID\",\"targetDispAttribute\":\"COUNTRY_NAME\",\"aliasName\":
+
+\"COUNTRY_NAME\"},{\"name\":\"ContinentId\",\"targetObject\":\"continent_master\",\"targetAttribute\":\"CONTINENT_ID\",
+
+\"targetDispAttribute\":\"CONTINENT_NAME\",\"aliasName\":\"CONTINENT_NAME\"}]}
+
+airport_city_master={\"name\":\"airport_city_master\",\"targetObect\":\"airport_city_master\",\"targetType\":\"DB\",
+
+\"path\":\"\",\"attributes\":[{\"name\":\"AirportCityId\",\"targetName\":\"AIRPORT_CITY_ID\",\"dataType\":\"INT\",
+
+\"orderNo\":0,\"defaultValue\":\"\",\"key\":true,\"required\":true,\"keyColSeq\":0,\"keySeq\":true,\"updateable\":false},
+
+{\"name\":\"AirportCity\",\"targetName\":\"AIRPORT_CITY\",\"dataType\":\"VARCHAR\",\"orderNo\":0,\"defaultValue\":\"\",
+
+\"key\":false,\"required\":true,\"keyColSeq\":0,\"updateable\":true},{\"name\":\"CityId\",\"targetName\":\"CITY_ID\",
+
+\"dataType\":\"INT\",\"orderNo\":0,\"defaultValue\":\"\",\"key\":false,\"required\":true,\"keyColSeq\":0,\"updateable
+
+\":true}],\"references\":[{\"name\":\"CityId\",\"targetObject\":\"city_master\",\"targetAttribute\":\"CITY_ID\",
+
+\"targetDispAttribute\":\"CITY_NAME\",\"aliasName\":\"CITY_NAME\"}]}
+
+state_master={\"name\":\"state_master\",\"targetObect\":\"state_master\",\"targetType\":\"DB\",\"path\":\"\",\"attributes
+
+\":[{\"name\":\"StateId\",\"targetName\":\"STATE_ID\",\"dataType\":\"INT\",\"orderNo\":0,\"defaultValue\":\"\",\"key
+
+\":true,\"required\":true,\"keyColSeq\":0,\"keySeq\":true,\"updateable\":false},{\"name\":\"StateName\",\"targetName\":
+
+\"STATE_NAME\",\"dataType\":\"VARCHAR\",\"orderNo\":0,\"defaultValue\":\"\",\"key\":false,\"required\":true,\"keyColSeq
+
+\":0,\"updateable\":true},{\"name\":\"CountryId\",\"targetName\":\"COUNTRY_ID\",\"dataType\":\"VARCHAR\",\"orderNo\":0,
+
+\"defaultValue\":\"\",\"key\":false,\"required\":true,\"keyColSeq\":0,\"updateable\":false},{\"name\":\"ContinentId\",
+
+\"targetName\":\"CONTINENT_ID\",\"dataType\":\"VARCHAR\",\"orderNo\":0,\"defaultValue\":\"\",\"key\":false,\"required
+
+\":true,\"keyColSeq\":0,\"updateable\":false}],\"references\":[{\"name\":\"CountryId\",\"targetObject\":\"country_master
+
+\",\"targetAttribute\":\"COUNTRY_ID\",\"targetDispAttribute\":\"COUNTRY_NAME\",\"aliasName\":\"COUNTRY_NAME\"},{\"name\":
+
+\"ContinentId\",\"targetObject\":\"continent_master\",\"targetAttribute\":\"CONTINENT_ID\",\"targetDispAttribute\":
+
+\"CONTINENT_NAME\",\"aliasName\":\"CONTINENT_NAME\"}]}
+
+country_master={\"name\":\"country_master\",\"targetObect\":\"country_master\",\"targetType\":\"DB\",\"path\":\"\",
+
+\"attributes\":[{\"name\":\"CountryId\",\"targetName\":\"COUNTRY_ID\",\"dataType\":\"INT\",\"orderNo\":0,\"defaultValue
+
+\":\"\",\"key\":true,\"required\":true,\"keyColSeq\":0,\"keySeq\":true,\"updateable\":false},{\"name\":\"CountryName\",
+
+\"targetName\":\"COUNTRY_NAME\",\"dataType\":\"VARCHAR\",\"orderNo\":0,\"defaultValue\":\"\",\"key\":false,\"required
+
+\":true,\"keyColSeq\":0,\"updateable\":true},{\"name\":\"ContinentId\",\"targetName\":\"CONTINENT_ID\",\"dataType\":
+
+\"VARCHAR\",\"orderNo\":0,\"defaultValue\":\"\",\"key\":false,\"required\":true,\"keyColSeq\":0,\"updateable\":false}],
+
+\"references\":[{\"name\":\"ContinentId\",\"targetObject\":\"continent_master\",\"targetAttribute\":\"CONTINENT_ID\",
+
+\"targetDispAttribute\":\"CONTINENT_NAME\",\"aliasName\":\"CONTINENT_NAME\"}]}
+
+continent_master={\"name\":\"continent_master\",\"targetObect\":\"continent_master\",\"targetType\":\"DB\",\"path\":\"\",
+
+\"attributes\":[{\"name\":\"ContinentId\",\"targetName\":\"CONTINENT_ID\",\"dataType\":\"INT\",\"orderNo\":0,
+
+\"defaultValue\":\"\",\"key\":true,\"required\":true,\"keyColSeq\":0,\"keySeq\":true,\"updateable\":false},{\"name\":
+
+\"ContinentName\",\"targetName\":\"CONTINENT_NAME\",\"dataType\":\"VARCHAR\",\"orderNo\":0,\"defaultValue\":\"\",\"key
+
+\":false,\"required\":true,\"keyColSeq\":0,\"updateable\":true}],\"references\":[{\"name\":\"\",\"targetObject\":\"\",
+
+\"targetAttribute\":\"\",\"targetDispAttribute\":\"\",\"aliasName\":\"\"}]}
+
+company_market_master={\"name\":\"company_market_master\",\"targetObect\":\"company_market_master\",\"targetType\":\"DB
+
+\",\"path\":\"\",\"attributes\":[{\"name\":\"COMPANY_MARKET_ID\",\"targetName\":\"COMPANY_MARKET_ID\",\"dataType\":\"INT
+
+\",\"orderNo\":0,\"defaultValue\":\"\",\"key\":true,\"required\":true,\"keyColSeq\":0,\"keySeq\":true,\"updateable
+
+\":false},{\"name\":\"COMPANY_NAME\",\"targetName\":\"COMPANY_NAME\",\"dataType\":\"VARCHAR\",\"orderNo\":0,
+
+\"defaultValue\":\"\",\"key\":false,\"required\":true,\"keyColSeq\":0,\"updateable\":true},{\"name\":\"MARKET_NAME\",
+
+\"targetName\":\"MARKET_NAME\",\"dataType\":\"VARCHAR\",\"orderNo\":0,\"defaultValue\":\"\",\"key\":false,\"required
+
+\":true,\"keyColSeq\":0,\"updateable\":true}]}
+
+
+#ACCOMMODATION
+
+area_master={\"name\":\"area_master\",\"targetObect\":\"area_master\",\"targetType\":\"DB\",\"path\":\"\",\"attributes\":
+
+[{\"name\":\"AreaId\",\"targetName\":\"AREA_ID\",\"dataType\":\"INT\",\"orderNo\":0,\"defaultValue\":\"\",\"key\":true,
+
+\"required\":true,\"keyColSeq\":0,\"keySeq\":true,\"updateable\":false},{\"name\":\"AreaName\",\"targetName\":\"AREA_NAME
+
+\",\"dataType\":\"VARCHAR\",\"orderNo\":0,\"defaultValue\":\"\",\"key\":false,\"required\":true,\"keyColSeq\":0,
+
+\"updateable\":true},{\"name\":\"CityId\",\"targetName\":\"CITY_ID\",\"dataType\":\"INT\",\"orderNo\":0,\"defaultValue\":
+
+\"\",\"key\":false,\"required\":true,\"keyColSeq\":0,\"updateable\":true},{\"name\":\"StateId\",\"targetName\":\"STATE_ID
+
+\",\"dataType\":\"INT\",\"orderNo\":0,\"defaultValue\":\"\",\"key\":false,\"required\":true,\"keyColSeq\":0,\"updateable
+
+\":true},{\"name\":\"CountryId\",\"targetName\":\"COUNTRY_ID\",\"dataType\":\"VARCHAR\",\"orderNo\":0,\"defaultValue\":
+
+\"\",\"key\":false,\"required\":true,\"keyColSeq\":0,\"updateable\":false},{\"name\":\"ContinentId\",\"targetName\":
+
+\"CONTINENT_ID\",\"dataType\":\"VARCHAR\",\"orderNo\":0,\"defaultValue\":\"\",\"key\":false,\"required\":true,\"keyColSeq
+
+\":0,\"updateable\":false}],\"references\":[{\"name\":\"CityId\",\"targetObject\":\"city_master\",\"targetAttribute\":
+
+\"CITY_ID\",\"targetDispAttribute\":\"CITY_NAME\",\"aliasName\":\"CITY_NAME\"},{\"name\":\"StateId\",\"targetObject\":
+
+\"state_master\",\"targetAttribute\":\"STATE_ID\",\"targetDispAttribute\":\"STATE_NAME\",\"aliasName\":\"STATE_NAME\"},
+
+{\"name\":\"CountryId\",\"targetObject\":\"country_master\",\"targetAttribute\":\"COUNTRY_ID\",\"targetDispAttribute\":
+
+\"COUNTRY_NAME\",\"aliasName\":\"COUNTRY_NAME\"},{\"name\":\"ContinentId\",\"targetObject\":\"continent_master\",
+
+\"targetAttribute\":\"CONTINENT_ID\",\"targetDispAttribute\":\"CONTINENT_NAME\",\"aliasName\":\"CONTINENT_NAME\"}]}
+
+location_master={\"name\":\"location_master\",\"targetObect\":\"location_master\",\"targetType\":\"DB\",\"path\":\"\",
+
+\"attributes\":[{\"name\":\"LocationId\",\"targetName\":\"LOCATION_ID\",\"dataType\":\"INT\",\"orderNo\":0,\"defaultValue
+
+\":\"\",\"key\":true,\"required\":true,\"keyColSeq\":0,\"keySeq\":true,\"updateable\":false},{\"name\":\"LocationName\",
+
+\"targetName\":\"LOCATION_NAME\",\"dataType\":\"VARCHAR\",\"orderNo\":0,\"defaultValue\":\"\",\"key\":false,\"required
+
+\":true,\"keyColSeq\":0,\"updateable\":true},{\"name\":\"AreaId\",\"targetName\":\"AREA_ID\",\"dataType\":\"INT\",
+
+\"orderNo\":0,\"defaultValue\":\"\",\"key\":false,\"required\":true,\"keyColSeq\":0,\"updateable\":true},{\"name\":
+
+\"CityId\",\"targetName\":\"CITY_ID\",\"dataType\":\"INT\",\"orderNo\":0,\"defaultValue\":\"\",\"key\":false,\"required
+
+\":true,\"keyColSeq\":0,\"updateable\":true},{\"name\":\"StateId\",\"targetName\":\"STATE_ID\",\"dataType\":\"INT\",
+
+\"orderNo\":0,\"defaultValue\":\"\",\"key\":false,\"required\":true,\"keyColSeq\":0,\"updateable\":true},{\"name\":
+
+\"CountryId\",\"targetName\":\"COUNTRY_ID\",\"dataType\":\"VARCHAR\",\"orderNo\":0,\"defaultValue\":\"\",\"key\":false,
+
+\"required\":true,\"keyColSeq\":0,\"updateable\":false},{\"name\":\"ContinentId\",\"targetName\":\"CONTINENT_ID\",
+
+\"dataType\":\"VARCHAR\",\"orderNo\":0,\"defaultValue\":\"\",\"key\":false,\"required\":true,\"keyColSeq\":0,\"updateable
+
+\":false}],\"references\":[{\"name\":\"AreaId\",\"targetObject\":\"area_master\",\"targetAttribute\":\"AREA_ID\",
+
+\"targetDispAttribute\":\"AREA_NAME\",\"aliasName\":\"AREA_NAME\"},{\"name\":\"CityId\",\"targetObject\":\"city_master\",
+
+\"targetAttribute\":\"CITY_ID\",\"targetDispAttribute\":\"CITY_NAME\",\"aliasName\":\"CITY_NAME\"},{\"name\":\"StateId\",
+
+\"targetObject\":\"state_master\",\"targetAttribute\":\"STATE_ID\",\"targetDispAttribute\":\"STATE_NAME\",\"aliasName\":
+
+\"STATE_NAME\"},{\"name\":\"CountryId\",\"targetObject\":\"country_master\",\"targetAttribute\":\"COUNTRY_ID\",
+
+\"targetDispAttribute\":\"COUNTRY_NAME\",\"aliasName\":\"COUNTRY_NAME\"},{\"name\":\"ContinentId\",\"targetObject\":
+
+\"continent_master\",\"targetAttribute\":\"CONTINENT_ID\",\"targetDispAttribute\":\"CONTINENT_NAME\",\"aliasName\":
+
+\"CONTINENT_NAME\"}]}
+
+amenity_master={\"name\":\"amenity_master\",\"targetObect\":\"amenity_master\",\"targetType\":\"DB\",\"path\":\"\",
+
+\"attributes\":[{\"name\":\"AmenityId\",\"targetName\":\"AMENITY_ID\",\"dataType\":\"INT\",\"orderNo\":0,\"defaultValue
+
+\":\"\",\"key\":true,\"required\":true,\"keyColSeq\":0,\"keySeq\":true,\"updateable\":false},{\"name\":\"AmenityTypeName
+
+\",\"targetName\":\"AMENITY_TYPE_NAME\",\"dataType\":\"VARCHAR\",\"orderNo\":0,\"defaultValue\":\"\",\"key\":false,
+
+\"required\":true,\"keyColSeq\":0,\"updateable\":true}],\"references\":[{\"name\":\"\",\"targetObject\":\"\",
+
+\"targetAttribute\":\"\",\"targetDispAttribute\":\"\",\"aliasName\":\"\"}]}
+
+chain_master={\"name\":\"chain_master\",\"targetObect\":\"chain_master\",\"targetType\":\"DB\",\"path\":\"\",\"attributes
+
+\":[{\"name\":\"ChainId\",\"targetName\":\"CHAIN_ID\",\"dataType\":\"INT\",\"orderNo\":0,\"defaultValue\":\"\",\"key
+
+\":true,\"required\":true,\"keyColSeq\":0,\"keySeq\":true,\"updateable\":false},{\"name\":\"ChainName\",\"targetName\":
+
+\"CHAIN_NAME\",\"dataType\":\"VARCHAR\",\"orderNo\":0,\"defaultValue\":\"\",\"key\":false,\"required\":true,\"keyColSeq
+
+\":0,\"updateable\":true}],\"references\":[{\"name\":\"\",\"targetObject\":\"\",\"targetAttribute\":\"\",
+
+\"targetDispAttribute\":\"\",\"aliasName\":\"\"}]}
+
+brand_master={\"name\":\"brand_master\",\"targetObect\":\"brand_master\",\"targetType\":\"DB\",\"path\":\"\",\"attributes
+
+\":[{\"name\":\"BrandId\",\"targetName\":\"BRAND_ID\",\"dataType\":\"INT\",\"orderNo\":0,\"defaultValue\":\"\",\"key
+
+\":true,\"required\":true,\"keyColSeq\":0,\"keySeq\":true,\"updateable\":false},{\"name\":\"BrandName\",\"targetName\":
+
+\"BRAND_NAME\",\"dataType\":\"VARCHAR\",\"orderNo\":0,\"defaultValue\":\"\",\"key\":false,\"required\":true,\"keyColSeq
+
+\":0,\"updateable\":true},{\"name\":\"ChainId\",\"targetName\":\"CHAIN_ID\",\"dataType\":\"VARCHAR\",\"orderNo\":0,
+
+\"defaultValue\":\"\",\"key\":false,\"required\":true,\"keyColSeq\":0,\"updateable\":false}],\"references\":[{\"name\":
+
+\"ChainId\",\"targetObject\":\"chain_master\",\"targetAttribute\":\"CHAIN_ID\",\"targetDispAttribute\":\"CHAIN_NAME\",
+
+\"aliasName\":\"CHAIN_NAME\"}]}
+
+rating_master={\"name\":\"rating_master\",\"targetObect\":\"rating_master\",\"targetType\":\"DB\",\"path\":\"\",
+
+\"attributes\":[{\"name\":\"HotelRatingId\",\"targetName\":\"HOTEL_RATING_ID\",\"dataType\":\"INT\",\"orderNo\":0,
+
+\"defaultValue\":\"\",\"key\":true,\"required\":true,\"keyColSeq\":0,\"keySeq\":true,\"updateable\":false},{\"name\":
+
+\"HotelRatting\",\"targetName\":\"HOTEL_RATING\",\"dataType\":\"VARCHAR\",\"orderNo\":0,\"defaultValue\":\"\",\"key
+
+\":false,\"required\":true,\"keyColSeq\":0,\"updateable\":true}],\"references\":[{\"name\":\"\",\"targetObject\":\"\",
+
+\"targetAttribute\":\"\",\"targetDispAttribute\":\"\",\"aliasName\":\"\"}]}
+
+interest_master={\"name\":\"interest_master\",\"targetObect\":\"interest_master\",\"targetType\":\"DB\",\"path\":\"\",
+
+\"attributes\":[{\"name\":\"InterestId\",\"targetName\":\"INTEREST_MASTER_ID\",\"dataType\":\"INT\",\"orderNo\":0,
+
+\"defaultValue\":\"\",\"key\":true,\"required\":true,\"keyColSeq\":0,\"keySeq\":true,\"updateable\":false},{\"name\":
+
+\"InterestValue\",\"targetName\":\"INTEREST_VALUE\",\"dataType\":\"VARCHAR\",\"orderNo\":0,\"defaultValue\":\"\",\"key
+
+\":false,\"required\":true,\"keyColSeq\":0,\"updateable\":true}],\"references\":[{\"name\":\"\",\"targetObject\":\"\",
+
+\"targetAttribute\":\"\",\"targetDispAttribute\":\"\",\"aliasName\":\"\"}]}
+
+affiliation_master={\"name\":\"affiliation_master\",\"targetObect\":\"affiliation_master\",\"targetType\":\"DB\",\"path
+
+\":\"\",\"attributes\":[{\"name\":\"AffiliationId\",\"targetName\":\"AFFILIATION_ID\",\"dataType\":\"INT\",\"orderNo\":0,
+
+\"defaultValue\":\"\",\"key\":true,\"required\":true,\"keyColSeq\":0,\"keySeq\":true,\"updateable\":false},{\"name\":
+
+\"AffiliationName\",\"targetName\":\"AFFILIATION_NAME\",\"dataType\":\"VARCHAR\",\"orderNo\":0,\"defaultValue\":\"\",
+
+\"key\":false,\"required\":true,\"keyColSeq\":0,\"updateable\":true}],\"references\":[{\"name\":\"\",\"targetObject\":
+
+\"\",\"targetAttribute\":\"\",\"targetDispAttribute\":\"\",\"aliasName\":\"\"}]}
+
+ancillary_type={\"name\":\"ancillary_type\",\"targetObect\":\"ancillary_type\",\"targetType\":\"DB\",\"path\":\"\",
+
+\"attributes\":[{\"name\":\"AncillaryTypeId\",\"targetName\":\"ANCILLARY_TYPE_ID\",\"dataType\":\"INT\",\"orderNo\":0,
+
+\"defaultValue\":\"\",\"key\":true,\"required\":true,\"keyColSeq\":0,\"keySeq\":true,\"updateable\":false},{\"name\":
+
+\"AncillaryTypeName\",\"targetName\":\"ANCILLARY_TYPE_NAME\",\"dataType\":\"VARCHAR\",\"orderNo\":0,\"defaultValue\":
+
+\"\",\"key\":false,\"required\":true,\"keyColSeq\":0,\"updateable\":true}],\"references\":[{\"name\":\"\",\"targetObject
+
+\":\"\",\"targetAttribute\":\"\",\"targetDispAttribute\":\"\",\"aliasName\":\"\"}]}
+
+ancillary_master={\"name\":\"ancillary_master\",\"targetObect\":\"ancillary_master\",\"targetType\":\"DB\",\"path\":\"\",
+
+\"attributes\":[{\"name\":\"AncillaryId\",\"targetName\":\"ANCILLARY_ID\",\"dataType\":\"INT\",\"orderNo\":0,
+
+\"defaultValue\":\"\",\"key\":true,\"required\":true,\"keyColSeq\":0,\"keySeq\":true,\"updateable\":false},{\"name\":
+
+\"AncillaryName\",\"targetName\":\"ANCILLARY_NAME\",\"dataType\":\"VARCHAR\",\"orderNo\":0,\"defaultValue\":\"\",\"key
+
+\":false,\"required\":true,\"keyColSeq\":0,\"updateable\":true},{\"name\":\"AncillaryTypeId\",\"targetName\":
+
+\"ANCILLARY_TYPE_ID\",\"dataType\":\"VARCHAR\",\"orderNo\":0,\"defaultValue\":\"\",\"key\":false,\"required\":true,
+
+\"keyColSeq\":0,\"updateable\":false}],\"references\":[{\"name\":\"AncillaryTypeId\",\"targetObject\":\"ancillary_type\",
+
+\"targetAttribute\":\"ANCILLARY_TYPE_ID\",\"targetDispAttribute\":\"ANCILLARY_TYPE_NAME\",\"aliasName\":
+
+\"ANCILLARY_TYPE_NAME\"}]}
+
+room_category={\"name\":\"room_category\",\"targetObect\":\"room_category\",\"targetType\":\"DB\",\"path\":\"\",
+
+\"attributes\":[{\"name\":\"RoomCategoryId\",\"targetName\":\"ROOM_CATEGORY_ID\",\"dataType\":\"INT\",\"orderNo\":0,
+
+\"defaultValue\":\"\",\"key\":true,\"required\":true,\"keyColSeq\":0,\"keySeq\":true,\"updateable\":false},{\"name\":
+
+\"RoomCategoryName\",\"targetName\":\"ROOM_CATEGORY_NAME\",\"dataType\":\"VARCHAR\",\"orderNo\":0,\"defaultValue\":\"\",
+
+\"key\":false,\"required\":true,\"keyColSeq\":0,\"updateable\":true}],\"references\":[{\"name\":\"\",\"targetObject\":
+
+\"\",\"targetAttribute\":\"\",\"targetDispAttribute\":\"\",\"aliasName\":\"\"}]}
+
+room_type={\"name\":\"room_type\",\"targetObect\":\"room_type\",\"targetType\":\"DB\",\"path\":\"\",\"attributes\":
+
+[{\"name\":\"RoomTypeId\",\"targetName\":\"ROOM_TYPE_ID\",\"dataType\":\"INT\",\"orderNo\":0,\"defaultValue\":\"\",\"key
+
+\":true,\"required\":true,\"keyColSeq\":0,\"keySeq\":true,\"updateable\":false},{\"name\":\"RoomTypeName\",\"targetName
+
+\":\"ROOM_TYPE_NAME\",\"dataType\":\"VARCHAR\",\"orderNo\":0,\"defaultValue\":\"\",\"key\":false,\"required\":true,
+
+\"keyColSeq\":0,\"updateable\":true}],\"references\":[{\"name\":\"\",\"targetObject\":\"\",\"targetAttribute\":\"\",
+
+\"targetDispAttribute\":\"\",\"aliasName\":\"\"}]}
+============================================================================
+/**
+ * 
+ */
+package com.cnk.travelerpibe.master.services.impl;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.codehaus.jackson.map.ObjectMapper;
+import org.codehaus.jackson.type.TypeReference;
+import org.json.JSONArray;
+import org.json.JSONObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.cnk.travelepribe.common.persistence.pattern.ICondition;
+import com.cnk.travelepribe.common.persistence.pattern.SimpleCondition;
+import com.cnk.travelerpibe.common.persistence.jdbc.JDBCConnectionProvider;
+import com.cnk.travelerpibe.common.persistence.model.EntityDBMappingModel;
+import com.cnk.travelerpibe.common.persistence.sql.DeleteSQLGenerator;
+import com.cnk.travelerpibe.common.persistence.sql.InsertSQLGenerator;
+import com.cnk.travelerpibe.common.persistence.sql.JDBCConnection;
+import com.cnk.travelerpibe.common.persistence.sql.PersistHelper;
+import com.cnk.travelerpibe.common.persistence.sql.SelectSQLGenerator;
+import com.cnk.travelerpibe.common.persistence.sql.Statement;
+import com.cnk.travelerpibe.common.persistence.sql.UpdateSQLGenerator;
+import com.cnk.travelerpibe.master.services.IMasterService;
+import com.cnk.travelerpibe.master.services.util.CommonServiceUtil;
+import com.google.gson.Gson;
+
+/**
+ * @author sivaiah.polamreddy
+ * 
+ * @Description This is Common Service for all reference masters in search, add,
+ *              edit, and delete operations
+ */
+@Service("masterService")
+@Transactional
+public class MasterServiceImpl implements IMasterService {
+
+	private static final Logger LOGGER = LoggerFactory
+			.getLogger(MasterServiceImpl.class);
+
+	static ObjectMapper objectMapper;
+
+	@Override
+	public String fetchAllMastersJdbc(String tableName) throws Exception {
+		List<Map<String, String>> retRecord = fetchAllMasters(tableName);
+		String json = new Gson().toJson(retRecord);
+		return json;
+	}
+
+	@Override
+	public List<Map<String, String>> fetchAllMasters(String tableName)
+			throws Exception {
+		JDBCConnectionProvider.getInstance().allocateConnection(
+				JDBCConnection.connection);
+		//String jsonModeldata = CommonServiceUtil.getJsonModelData(tableName);
+		String jsonModeldata = fetchEntityMetaDataFromDB(tableName);
+		objectMapper = new ObjectMapper();
+		EntityDBMappingModel em = objectMapper.readValue(jsonModeldata,
+				EntityDBMappingModel.class);
+		PersistHelper persistHelper = PersistHelper.getInstance();
+		SelectSQLGenerator selSqlGen = SelectSQLGenerator.getInstance();
+		Statement statement = selSqlGen.generateJoinSelect(em);
+		LOGGER.debug("Join select statement :" + statement);
+		List<Map<String, String>> retRecord = persistHelper.executeQuery(
+				statement, null);
+
+		return retRecord;
+	}
+
+	@Override
+	public void saveMasterJDBC(String string, String tableName)
+			throws Exception {
+
+		JDBCConnectionProvider.getInstance().allocateConnection(
+				JDBCConnection.connection);
+		string = "[" + string + "]";
+		objectMapper = new ObjectMapper();
+		EntityDBMappingModel em = objectMapper.readValue(
+				CommonServiceUtil.getJsonModelData(tableName),
+				EntityDBMappingModel.class);
+		List<Map<String, String>> list = objectMapper.readValue(string,
+				new TypeReference<ArrayList<LinkedHashMap<String, String>>>() {
+				});
+
+		PersistHelper persistHelper = PersistHelper.getInstance();
+		Map<PersistHelper.SQLStatements, Statement> statements = new HashMap<>();
+		InsertSQLGenerator insSqlGen = InsertSQLGenerator.getInstance();
+		Statement statement = insSqlGen.generate(em);
+		statements.put(PersistHelper.SQLStatements.Insert, statement);
+		LOGGER.debug("insert statement :" + statement);
+
+		persistHelper.persist(statements, list);
+
+	}
+
+	@Override
+	public void updateMasterJDBC(String string, String tableName)
+			throws Exception {
+		JDBCConnectionProvider.getInstance().allocateConnection(
+				JDBCConnection.connection);
+
+		string = "[" + string + "]";
+		objectMapper = new ObjectMapper();
+		EntityDBMappingModel em = objectMapper.readValue(
+				CommonServiceUtil.getJsonModelData(tableName),
+				EntityDBMappingModel.class);
+		List<Map<String, String>> list = objectMapper.readValue(string,
+				new TypeReference<ArrayList<LinkedHashMap<String, String>>>() {
+				});
+		PersistHelper persistHelper = PersistHelper.getInstance();
+		Map<PersistHelper.SQLStatements, Statement> statements = new HashMap<>();
+		UpdateSQLGenerator updateSqlGen = UpdateSQLGenerator.getInstance();
+		Statement statement = updateSqlGen.generate(em);
+		statements.put(PersistHelper.SQLStatements.Update, statement);
+		LOGGER.debug("update statement :" + statement);
+
+		persistHelper.executeUpdate(statement, list.get(0));
+
+	}
+
+	@Override
+	public void deleteMasterJDBC(String string, String tableName)
+			throws Exception {
+		JDBCConnectionProvider.getInstance().allocateConnection(
+				JDBCConnection.connection);
+		string = "[" + string + "]";
+		objectMapper = new ObjectMapper();
+		EntityDBMappingModel em = objectMapper.readValue(
+				CommonServiceUtil.getJsonModelData(tableName),
+				EntityDBMappingModel.class);
+		List<Map<String, String>> list = objectMapper.readValue(string,
+				new TypeReference<ArrayList<LinkedHashMap<String, String>>>() {
+				});
+
+		PersistHelper persistHelper = PersistHelper.getInstance();
+
+		Map<PersistHelper.SQLStatements, Statement> statements = new HashMap<>();
+		DeleteSQLGenerator deleteSqlGen = DeleteSQLGenerator.getInstance();
+		Statement statement = deleteSqlGen.generate(em);
+		statements.put(PersistHelper.SQLStatements.Delete, statement);
+		LOGGER.debug("delete statement :" + statement);
+
+		persistHelper.executeUpdate(statement, list.get(0));
+	}
+
+	String jasonTabModel = "{\"name\":\"tab\",\"targetObect\":\"tab\",\"targetType\":\"DB\",\"path\":\"\",
+
+\"attributes\":[{\"name\":\"tname\",\"targetName\":\"tname\",\"dataType\":\"VARCHAR\",\"orderNo\":0,\"defaultValue\":
+
+\"\",\"key\":false,\"required\":false,\"keyColSeq\":0,\"updateable\":true}]}";
+
+	@Override
+	public List<Map<String, String>> listTables() throws Exception {
+
+		JDBCConnectionProvider.getInstance().allocateConnection(
+				JDBCConnection.connection);
+		objectMapper = new ObjectMapper();
+		EntityDBMappingModel em = objectMapper.readValue(jasonTabModel,
+				EntityDBMappingModel.class);
+		PersistHelper persistHelper = PersistHelper.getInstance();
+		SelectSQLGenerator selSqlGen = SelectSQLGenerator.getInstance();
+		Statement statement = selSqlGen.generate(em);
+
+		LOGGER.debug("select all tables names :" + statement);
+		List<Map<String, String>> retRecord = persistHelper.executeQuery(
+				statement, null);
+
+		return retRecord;
+	}
+
+	public String fetchAllMastersJdbc(String tableName, String value,
+			String colname) throws Exception {
+
+		JDBCConnectionProvider.getInstance().allocateConnection(
+				JDBCConnection.connection);
+		//String jsonModeldata = CommonServiceUtil.getJsonModelData(tableName);
+		String jsonModeldata = fetchEntityMetaDataFromDB(tableName);
+		objectMapper = new ObjectMapper();
+		EntityDBMappingModel em = objectMapper.readValue(jsonModeldata,
+				EntityDBMappingModel.class);
+
+		PersistHelper persistHelper = PersistHelper.getInstance();
+		SelectSQLGenerator selSqlGen = SelectSQLGenerator.getInstance();
+
+		Statement statement = selSqlGen.generateJoinSelect(em, Arrays
+				.asList(new ICondition[] { new SimpleCondition(colname, "=",
+						value) }));
+		LOGGER.debug("Join statement with condition :" + statement);
+
+		List<Map<String, String>> retRecord = persistHelper.executeQuery(
+				statement, null);
+		String json = new Gson().toJson(retRecord);
+		LOGGER.debug("retRecord----" + json);
+
+		return json;
+	}
+
+	public String fetchAllMastersJdbc(String tableName, String search)
+			throws Exception {
+
+		List<ICondition> ic = new ArrayList<ICondition>();
+		JSONArray hj = new JSONArray(search);
+		String sel = null;
+		for (int i = 0; i < hj.length(); i++) {
+			JSONObject gf = new JSONObject(hj.getString(i));
+			ic.add(new SimpleCondition(gf.getString("id"), "=", gf
+					.getString("value")));
+			sel = gf.getString("value");
+		}
+
+		JDBCConnectionProvider.getInstance().allocateConnection(
+				JDBCConnection.connection);
+		//String jsonModeldata = CommonServiceUtil.getJsonModelData(tableName);
+		String jsonModeldata = fetchEntityMetaDataFromDB(tableName);
+		objectMapper = new ObjectMapper();
+		EntityDBMappingModel em = objectMapper.readValue(jsonModeldata,
+				EntityDBMappingModel.class);
+
+		PersistHelper persistHelper = PersistHelper.getInstance();
+		SelectSQLGenerator selSqlGen = SelectSQLGenerator.getInstance();
+
+		Statement statement = null;
+		if (!sel.equalsIgnoreCase("")) {
+			statement = selSqlGen.generateJoinSelect(em, ic);
+		} else {
+			statement = selSqlGen.generateJoinSelect(em);
+		}
+
+		List<Map<String, String>> retRecord = persistHelper.executeQuery(
+				statement, null);
+		String json = new Gson().toJson(retRecord);
+
+		return json;
+	}
+	
+	public String fetchEntityMetaDataFromDB(String tableName) throws Exception{
+		
+		String meta="{\"name\":\"entity_data\",\"targetObect\":\"entity_data\",\"targetType\":\"DB\",\"path\":
+
+\"\",\"attributes\":[{\"name\":\"ENTITY_NAME\",\"targetName\":\"ENTITY_NAME\",\"dataType\":\"VARCHAR\",\"orderNo\":0,
+
+\"defaultValue\":\"\",\"key\":true,\"required\":false,\"keyColSeq\":0,\"updateable\":true},{\"name\":\"ENTITY_METADATA\",
+
+\"targetName\":\"ENTITY_METADATA\",\"dataType\":\"CLOB\",\"orderNo\":0,\"defaultValue\":\"\",\"key\":false,\"required
+
+\":false,\"keyColSeq\":0,\"updateable\":true}],\"references\":[{\"name\":\"\",\"targetObject\":\"\",\"targetAttribute\":
+
+\"\",\"targetDispAttribute\":\"\",\"aliasName\":\"\"}]}";
+
+		
+		JDBCConnectionProvider.getInstance().allocateConnection(
+				JDBCConnection.connection);
+		String jsonModeldata = meta;
+
+		objectMapper = new ObjectMapper();
+		EntityDBMappingModel em = objectMapper.readValue(jsonModeldata,EntityDBMappingModel.class);
+
+		PersistHelper persistHelper = PersistHelper.getInstance();
+		SelectSQLGenerator selSqlGen = SelectSQLGenerator.getInstance();
+
+		Statement statement = selSqlGen.generateJoinSelect(em, Arrays
+				.asList(new ICondition[] { new SimpleCondition("ENTITY_NAME", "=",
+						tableName) }));
+		LOGGER.debug("Join statement with condition :" + statement);
+
+		List<Map<String, String>> retRecord = persistHelper.executeQuery(
+				statement, null);
+		String data = null ;
+		
+		for (Map<String, String> rec : retRecord) {
+			data=rec.get("ENTITY_METADATA");
+		}
+		
+
+		return data;
+	}
+
+}
+============================================================================
+/**
+ * 
+ */
+package com.cnk.travelerpibe.master.services.util;
+
+import java.util.Properties;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.cnk.travelerpibe.common.persistence.io.ClassPathResource;
+import com.cnk.travelerpibe.common.persistence.io.Resource;
+
+/**
+ * @author sivaiah.polamreddy
+ * 
+ * @Description This is util class for all masters getting JSONDBMapping String from properties file  
+ */
+public class CommonServiceUtil { 
+	
+	private static final Logger LOGGER = LoggerFactory
+			.getLogger(CommonServiceUtil.class);
+
+	public static String getJsonModelData(String tablename) {
+
+		String jsonModeldata = null;
+		
+		try {
+			Resource resource = new ClassPathResource("JsonDBMapping.properties");
+			Properties properties = new Properties();
+			properties.load(resource.getInputStream());
+			jsonModeldata=properties.getProperty(tablename);
+			LOGGER.debug("JsonDBMapping ColNames: "+jsonModeldata);
+		} catch (Exception e) {
+			LOGGER.error("error",e);
+		}
+		return jsonModeldata;
+	}
+
+}
+

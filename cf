@@ -1,0 +1,165 @@
+package com.cnk.travelerpibe.master.web.util;
+
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+
+import com.tangosol.net.CacheFactory;
+import com.tangosol.net.NamedCache;
+import com.tangosol.util.Filter;
+import com.tangosol.util.filter.AndFilter;
+import com.tangosol.util.filter.EqualsFilter;
+
+public class CachingUtl {
+
+	private static String CACHE_NAME = "VirtualCache";
+	private static String TABLE_NAME = "TABLE_NAME";
+	
+	
+	public static List<Map<String,String>> retrieveCachedObject(String tableName,Map<String,String> conditions){
+		NamedCache cache = CacheFactory.getCache( CACHE_NAME );
+		
+		
+		Filter filter =new EqualsFilter(new HashMapValueExtractor( TABLE_NAME),tableName);
+		for(String key: conditions.keySet()){
+			filter = new AndFilter(filter, new EqualsFilter(new HashMapValueExtractor(key),conditions.get(key))); 
+		}
+		Set<?> filters = cache.keySet(filter);
+		
+		@SuppressWarnings("unchecked")
+		Iterator<Map<String,String>> it =cache.getAll(filters).values().iterator();
+		List<Map<String,String>> retObject = new ArrayList<>();
+		while( it.hasNext() ){
+			retObject.add(it.next());
+		}
+		return retObject;
+	}
+	
+}
+
+
+package com.cnk.travelerpibe.master.web.util;
+
+import java.io.Serializable;
+import java.util.Map;
+
+import com.tangosol.util.ValueExtractor;
+
+class HashMapValueExtractor 
+implements  ValueExtractor, Serializable {
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 8494798845806835373L;
+	String key;
+	HashMapValueExtractor(String key){
+		this.key = key;
+	}
+
+	@Override
+	public Object extract(Object arg0) {
+		
+		//System.out.println("In HashMapValueExtractor.extract() ");
+		if (arg0 instanceof Map<?, ?>){
+			@SuppressWarnings({ "unchecked", "rawtypes" })
+			Map<String,String> cachedObject = (Map)arg0;
+			String val = cachedObject.get(key);
+			return val;
+		}
+		
+		return null;
+	}
+	
+}
+
+package com.cnk.travelerpibe.master.web;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import javax.servlet.ServletConfig;
+import javax.servlet.ServletContext;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
+
+import org.springframework.web.context.WebApplicationContext;
+import org.springframework.web.context.support.WebApplicationContextUtils;
+
+import com.cnk.travelerpibe.master.services.IMasterService;
+import com.tangosol.net.CacheFactory;
+import com.tangosol.net.NamedCache;
+
+public class CacheFilterServlet extends HttpServlet {
+
+	private static final long serialVersionUID = 1L;
+	private static String CACHE_NAME = "VirtualCache";
+	private static String SERVICE_NAME = "masterService";
+	private static String TABLE_NAME = "TABLE_NAME";
+
+	private static Map<String, String> tables = new HashMap<>();
+	static {
+		tables.put("city_master", "CITY_ID");
+		tables.put("state_master", "STATE_ID");
+		tables.put("country_master", "COUNTRY_ID");
+		tables.put("continent_master", "CONTINENT_ID");
+		tables.put("product_category", "PROD_CATGRY_ID");
+		tables.put("status_master", "STATUS_ID");
+		tables.put("product_category_sub_type", "PROD_CATGRY_SUB_TYPE_ID");
+		tables.put("url_type_master", "URL_TYPE_ID");
+		tables.put("cabin_class", "CABIN_CLASS_ID");
+		tables.put("traveler_program_master", "TRAVELER_PROGRAM_ID");
+		tables.put("airline_type", "AIRLINE_TYPE_ID");
+		tables.put("group_of_companies_master", "GROUP_OF_COMPANIES_ID");
+		tables.put("group_company_master", "GROUP_COMPANY_ID");
+		tables.put("company_master", "COMPANY_ID");
+		tables.put("sbu_master", "SBU_ID");
+		tables.put("bu_master", "BU_ID");
+		tables.put("airport_city_master", "AIRPORT_CITY_ID");
+		tables.put("market_master", "MARKET_ID");
+		tables.put("file_name_master", "FILE_NAME_ID");
+
+	}
+
+	public CacheFilterServlet() {
+		super();
+	}
+
+	@Override
+	public void init(ServletConfig config) throws ServletException {
+
+		super.init(config);
+		CacheFactory.ensureCluster();
+		ServletContext servletContext = this.getServletContext();
+
+		WebApplicationContext wac = WebApplicationContextUtils
+				.getRequiredWebApplicationContext(servletContext);
+
+		IMasterService masterService = (IMasterService) wac
+				.getBean(SERVICE_NAME);
+		NamedCache cache = CacheFactory.getCache(CACHE_NAME);
+
+		for (String tableName : tables.keySet()) {
+			List<Map<String, String>> masterData = null;
+			try {
+				masterData = masterService.fetchAllMasters(tableName);
+			} catch (Exception e) {
+				// errror log.
+			}
+			if (masterData == null) {
+				continue;
+			}
+
+			for (Map<String, String> rec : masterData) {
+				rec.put(TABLE_NAME, tableName);
+				cache.put(tableName + "-" + rec.get(tables.get(tableName)), rec);
+			}
+
+		}
+
+	}
+
+}

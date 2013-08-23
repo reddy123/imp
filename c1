@@ -1,0 +1,254 @@
+
+https://blogs.oracle.com/felcey/
+
+
+
+What is Coherence and why would you used it?
+
+Oracle Coherence stores data in-memory so access to it is very fast. Therefore, you would commonly use Coherence to provide fast access to data. Typically this is necessary in applications where performance and latency are key.
+
+
+How does it work?
+
+Oracle Coherence is a small Java programme that stores data in lookup tables, key/value pairs, or a Map of Java objects in memory (or a cache in Coherence terminology). Well I can do that myself I can hear you say, why do I need Coherence. Well if you do it yourself and crate a lookup table in your own Java program what happens if the Java program crashes?, all your data in-memory is lost. You could persist the data to disk or a database as soon as it changes, but then that would degrade performance. Another problem is what happens when you need to store more data than the Java program has access to (i.e. in its heap)?. Well you could increase the amount memory the Java program has available, but if you are running on a 32 Bit Operating System (OS) this will be limited to 2 GB and even if you are on a 64 Bit OS this can cause problems. Java programs which use large amounts of memory can suffer from un-predictable pauses, anything upwards from 1-2 seconds depending on the amount of memory used. This happens when the Java Virtual Machine (JVM) tidies up all the un-used data (or performs a full Garbage Collection (GC)). For applications that need to provide a consistent level of service, e.g. a customer facing web application, this is often unacceptable.
+
+Oracle Coherence address both of these problems. When lots of Coherence Java programs (or cache servers) are started on one or more connected computers they 'glue' themselves together (to form a cluster) using mulit-cast (or a specified IP of addresses). The look-up table, or cache, can then be spread or partitioned across all the Coherence Java programs (nodes) in the cluster. More nodes can be started to increase the size of the cache ,you just have to start more nodes and they will automatically join the cluster – no re-start  is required. Since a cache can be built from lots of nodes with a relatively small memory footprint processing outages, when the JVM is performing memory housekeeping chores (GC's), is also greatly reduced as you can run lots of JVM’s with a small memory footprint and the effect of any particular JVM GC is also diluted across the whole cluster.
+
+To address the problem of loosing data, if a node or server running a number of nodes crashes, Coherence can keep backup copies of data on different nodes and servers. All changes to the primary copy of a value are synchronously made to the backup, to make sure they are always the same, and if either are lost a new primary or backup is created from the remaining value. Furthermore, Coherence will automatically re-organise the partitioned data in a cache if a failure occurs to ensure that it is re-balanced across the cluster and any in-flight client transactions or queries will still complete successfully.
+
+So simplistically Coherence is just a in-memory lookup table. The clever thing that Coherence does is enable the lookup table to grow and be resilient.
+How do I use it?
+
+Well that's enough background information. To use Coherence you only need the Java runtime (1.4+). You can download the Oracle JRockit Java runtime and Coherence from the Oracle Technology Network.
+
+    Coherence can be downloaded from here. To install Coherence you just unzip it - that's it!.
+    Oracle JRockit JVM can be downloaded from here (if you do not already have Java installed)
+
+In addition to being able to put data in a lookup table and look it up Coherence also supports queries, aggregations, transactions, events and other features. Here we will just concentrate on putting data in a cache and looking it up - to keep things quick and simple.
+
+Coherence works in a sort of client-server mode. I say sort of because a client will make a direct request to the node in the cluster which has the data it wants, rather than go through a central server node or lookup service. This also means that Coherence has no 'single point of failure' or 'single point of bottleneck'. Every node in a cluster is effectively equal and is just responsible for its own data.
+So what does a Coherence client look like?
+
+Well the object we are going to cache looks like this:
+
+    package com.oracle.coherence.demo;
+
+    import java.io.Serializable;
+
+    import java.util.Date;
+
+    /**
+    * Order class representing an order for a shares
+    */
+    public class Order
+      implements Serializable
+    {
+      private String symbol;
+      private int quantity;
+      private double amount;
+      private Date timeStamp;
+
+      /**
+       * Default constructor
+       */
+      public Order()
+      {
+      }
+
+      /**
+       * Constructor
+       * @param symbol the Order symbol, e.g. ORCL
+       * @param quantity the number of shares
+       * @param amount the amount of the shares to buy at
+       * @param timeStamp a time stamp
+       */
+      public Order(String symbol, int quantity, double amount, Date timeStamp)
+      {
+        this.symbol = symbol;
+        this.quantity = quantity;
+        this.amount = amount;
+        this.timeStamp = timeStamp;
+      }
+
+      /**
+       * Gets the symbol
+       * @return the symbol
+       */
+      public String getSymbol()
+      {
+        return symbol;
+      }
+
+      /**
+       * Sets the new symbol
+       * @param symbol the new symbol value
+       */
+      public void setSymbol(String symbol)
+      {
+        this.symbol = symbol;
+      }
+
+      /**
+       * Gets the quantity
+       * @return the quantity
+       */
+      public int getQuantity()
+      {
+        return quantity;
+      }
+
+      /**
+       * Sets the new quantity
+       * @param quantity the new quantity
+       */
+      public void setQuantity(int quantity)
+      {
+        this.quantity = quantity;
+      }
+
+      /**
+       * Gets the amount
+       * @return the amount
+       */
+      public double getAmount()
+      {
+        return amount;
+      }
+
+      /**
+       * Sets the amount
+       * @param amount the new amount
+       */
+      public void setAmount(double amount)
+      {
+        this.amount = amount;
+      }
+
+      /**
+       * Gets the time stamp
+       * @return the time stamp
+       */
+      public Date getTimeStamp()
+      {
+        return timeStamp;
+      }
+
+      /**
+       * Sets the new time stamp
+       * @param timeStamp the new time stamp
+       */
+      public void setTimeStamp(Date timeStamp)
+      {
+        this.timeStamp = timeStamp;
+      }
+    }
+
+The Coherence client application looks like this:
+
+    package com.oracle.coherence.demo;
+
+    import com.tangosol.net.CacheFactory;
+    import com.tangosol.net.NamedCache;
+
+    import java.util.Date;
+    import java.util.Iterator;
+    import java.util.Set;
+
+    /**
+    * Simple Coherence cache client example
+    */
+    public class SimpleCoherenceClient
+    {
+      /**
+       * Main method
+       * @param args not used
+       */
+      public static void main(String[] args)
+      {
+        // Get a handle/reference to a cache by name - which does not have to exist
+        NamedCache namedCache = CacheFactory.getCache("test");
+
+        // Create an object value to put in the cache
+        Order value = new Order("ORCL", 400, 19.4, new Date());
+
+        // Create a key for the object
+        Integer key = new Integer(0);
+
+        // Put an item into the cache
+        namedCache.put(key, value);
+
+        // Retrieve the object based upon its key
+        Order order = (Order) namedCache.get(key);
+
+        System.out.println("------------------------------------------------------");
+        System.out.println("Retrieved order: " + "symbol=" +
+                           order.getSymbol() + ", amount=" +
+                           order.getAmount() + ", quantity=" +
+                           order.getQuantity() + ", timestamp=" +
+                           order.getTimeStamp());
+        System.out.println("------------------------------------------------------");
+
+        // Shutdown client connection to cache
+        CacheFactory.shutdown();
+      }
+    }
+
+As you can see the client code to add and retrieve an object from a Coherence cache is trivial. The above example can be downloaded from here, with all the files ready to run it. Look at the readme.txt file for instructions.
+
+When you run a Coherence client all you need to do is include the Coherence Jar files in the CLASSPATH and either include the XML configuration file in the CLASSPATH or indicate its location through a system property. That's it. Through multi-cast it will locate the cluster on the default TCP port. Using a specific IP address etc. for clustering is simply a matter of overriding default configuration file settings.
+
+So how fast is Coherence?
+
+Well that depends on how much data you need to access, what your network is like, how fast your hardware is etc, but it is usually run on commodity hardware (blades and GBit Ethernet). For more information on performance and scalability see the results of our internal test here.
+
+How much data can Coherence store?
+
+Some Coherence customers have caches with 100's of GB of data and 100's of nodes. Others only cache a few GB of data.
+
+Can I save cache entries to a database?
+
+Yes. Coherence provides the facility to persist cache data to any database (using JPA, Hibernate or Toplink) synchronously or asynchronously. Its also very easy to plug-in persistence to everything from a file system to a Mainframe.
+
+I use .NET of C++ not Java. Can I still use Coherence?
+
+Coherence also comes with native .NET and C++ client libraries. When using these technologies, .NET or C++ objects are created to map onto Java objects and Coherence then transforms the .NET or C++ objects to and from the Java objects when the clients communicate with the Java cache servers.
+
+
+What do we mean by a Coherence Cluster?
+
+It’s a set of configuration parameters that control the operational and run-time settings for clustering, communication, and data management services. These are defined in the Coherence operational override file and include such things as:
+
+    Multi-cast or unicast addresses for locating cluster members
+    Cluster identity information
+    Management settings
+    Networking parameters
+    Security information
+    Logging information
+    Service configuration parameters
+
+These settings are used by Coherence services to communicate with other nodes, to determine cluster membership, for logging and other operational parameters and are similar to the Domain configuration used by Weblogic Server. They also apply to the entire Coherence cluster node, which usually means the whole JVM. Although a cluster node will usually equate to a JVM, it is possible to have more than one node per JVM by loading the Coherence libraries multiple times in different isolated class loaders, e.g. a "child first" class loader. However, this is only usually done within the contaxt of an application server or a test framework.
+The coherence.jar file contains a default operational override file – tangosol-coherence-override.xml – that will be used if another is not detected in the CLASSPATH before the coherence.jar library is loaded. In actual fact there are 3 versions of this file;
+
+    tangosol-coherence-override-eval.xml
+    tangosol-coherence-override-dev.xml
+    tangosol-coherence-override-prod.xml
+
+Which is selected will depend on the mode that Coherence is running in (the default is Developer mode) and can be set using the system property -Dtangosol.coherence.mode=prod.
+
+Note: Its important to ensure that the production mode is selected for production usage, as in production mode certain communication timeouts etc will be extended so that Coherence will wait longer for services to recover – amongst other things.
+
+
+What is a Coherence Service?
+A Coherence service is a thread (and sometimes pool of worker threads) that has a specific function. This can be:
+
+    Connectivity Services
+        Clustering Service – manage cluster membership communications. There is exactly one of these services per JVM (or within a class-loader). This service tracks which other nodes are in the cluster, node failures etc.
+        Proxy Services – manage external connections into the cluster from “extend” clients
+    Processing Services
+        Invocation Service – executes processing requests/tasks on the node in the cluster it is running on.
+    Data Services
+        Distributed Cache Service – manages cache data for caches created from the scheme its defined in
+        Replicated Cache Service – provides synchronous replication cache services, where all managed cache data exists on every cluster node 
+
+This document will focus on Distributed Cache Services that manage distributed caches defined from a distributed schema definition. 
+

@@ -1,0 +1,28 @@
+
+set MW_HOME=D:\Weblogic\wls1211_dev
+set JAVA_HOME=D:\jdk1.7.0_05
+
+D:\Weblogic\wls1211_dev\wlserver\server\bin
+
+nmConnect('ssouser','ssouser123','10.21.12.86','5566','mydomain','C:\home\myhome\domain','plain')
+nmVersion()
+nmStart('servername')
+nmServerstatus()
+nmKill('servername')
+nmDisconnect() 
+
+
+
+D:\Impartent Data D'not Delete\coherence_3.7\lib\coherence.jar;D:\Weblogic\wls1211_dev\modules\features\weblogic.server.modules.coherence.integration_12.1.1.0.jar;D:\Weblogic\wls1211_dev\modules\features\weblogic.server.modules.coherence.server_12.1.1.0.jar;D:\Impartent Data D'not Delete\coherence_3.7\lib\coherence-web.jar
+
+
+
+-Dtangosol.coherence.clusteraddress=231.1.3.4 -Dtangosol.coherence.clusterport=7744
+
+
+-Dtangosol.coherence.cacheconfig=session-cache-config.xml 
+-Dtangosol.coherence.distributed.localstorage=true 
+-Dtangosol.coherence.session.localstorage=true 
+-Dtangosol.coherence.cluster=CoherenceCluster 
+-Dtangosol.coherence.clusteraddress=231.1.3.4 
+-Dtangosol.coherence.clusterport=7744

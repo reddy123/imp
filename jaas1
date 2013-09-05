@@ -1,0 +1,861 @@
+
+Building wlfullclient.jar:
+
+Use the following steps to create a wlfullclient.jar file for a JDK 1.6 client application:
+
+    Change directories to the server/lib directory.
+
+    cd WL_HOME/server/lib
+
+    Use the following command to create wlfullclient.jar in the server/lib directory:
+
+    java -jar wljarbuilder.jar
+
+    You can now copy and bundle the wlfullclient.jar with client applications.
+    Add the wlfullclient.jar to the client application’s classpath.
+
+
+
+
+
+/**
+ * 
+ */
+package com.cnk.travelerp.jaas.authenticatiojn.client;
+
+import javax.security.auth.Subject;
+import javax.security.auth.login.LoginContext;
+import javax.security.auth.login.LoginException;
+
+import com.cnk.travelerp.jaas.authenticatiojn.service.RdbmsLoginModule;
+import com.cnk.travelerp.jaas.authenticatiojn.service.SampleCallbackHandler;
+import com.cnk.travelerp.jaas.authenticatiojn.service.TestCallbackHandler;
+
+/**
+ * @author sivaiah.polamreddy
+ * 
+ */
+public class JaasAuthenticationTest {
+	public static void main(String[] args) {
+		System.setProperty("java.security.auth.login.config", "sample_jaas.config");
+		//System.setProperty("java.security.auth.login.config", "rdbmslogin.config");
+		String name = "authuser";
+		String password = "authuser1";
+		String url="t3://10.21.12.86:7001?";
+
+		
+		try {
+			LoginContext lc = new LoginContext("Sample", new SampleCallbackHandler(name, password,url));
+			//LoginContext lc = new LoginContext("Example", new TestCallbackHandler(name, password));
+			lc.login();
+			
+			Subject subject=lc.getSubject();
+			System.out.println(subject);
+			
+		} catch (LoginException e) {
+			e.printStackTrace();
+		}
+	}
+}
+
+
+
+package com.cnk.travelerp.jaas.authenticatiojn.service;
+
+import java.io.*;
+
+import javax.security.auth.callback.Callback;
+import javax.security.auth.callback.CallbackHandler;
+import javax.security.auth.callback.UnsupportedCallbackException;
+import javax.security.auth.callback.TextOutputCallback;
+import javax.security.auth.callback.PasswordCallback;
+import javax.security.auth.callback.TextInputCallback;
+import javax.security.auth.callback.NameCallback;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import weblogic.security.auth.callback.URLCallback;
+
+public class SampleCallbackHandler implements CallbackHandler {
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(SampleCallbackHandler.class);
+
+	private String username = null;
+	private String password = null;
+	private String url = null;
+
+	public SampleCallbackHandler() {
+	}
+
+	public SampleCallbackHandler(String pUsername, String pPassword, String pUrl) {
+		username = pUsername;
+		password = pPassword;
+		url = pUrl;
+	}
+
+	public void handle(Callback[] callbacks) throws IOException,
+			UnsupportedCallbackException {
+		System.out.println("handle method calling");
+		for (int i = 0; i < callbacks.length; i++) {
+			if (callbacks[i] instanceof TextOutputCallback) {
+				// Display the message according to the specified type
+				TextOutputCallback toc = (TextOutputCallback) callbacks[i];
+				switch (toc.getMessageType()) {
+				case TextOutputCallback.INFORMATION:
+					LOGGER.debug(toc.getMessage());
+					break;
+				case TextOutputCallback.ERROR:
+					LOGGER.error("ERROR: " + toc.getMessage());
+					break;
+				case TextOutputCallback.WARNING:
+					LOGGER.warn("WARNING: " + toc.getMessage());
+					break;
+				default:
+					throw new IOException("Unsupported message type: "
+							+ toc.getMessageType());
+				}
+			} else if (callbacks[i] instanceof NameCallback) {
+				// If username not supplied on cmd line, prompt the user
+				// for the username.
+				NameCallback nc = (NameCallback) callbacks[i];
+				if (username.isEmpty()) {
+					System.err.print(nc.getPrompt());
+					System.err.flush();
+					nc.setName((new BufferedReader(new InputStreamReader(
+							System.in))).readLine());
+				} else {
+					LOGGER.debug("username: " + username);
+					nc.setName(username);
+				}
+			} else if (callbacks[i] instanceof URLCallback) {
+				// If url not supplied on cmd line, prompt the user for the
+				// url.
+				// This example requires the url.
+				URLCallback uc = (URLCallback) callbacks[i];
+				if (url.isEmpty()) {
+					System.err.print(uc.getPrompt());
+					System.err.flush();
+					uc.setURL((new BufferedReader(new InputStreamReader(
+							System.in))).readLine());
+				} else {
+					LOGGER.debug("URL: " + url);
+					uc.setURL(url);
+				}
+			} else if (callbacks[i] instanceof PasswordCallback) {
+				PasswordCallback pc = (PasswordCallback) callbacks[i];
+
+				// If password not supplied on cmd line, prompt the user
+				// for the password.
+				if (password.isEmpty()) {
+					System.err.print(pc.getPrompt());
+					System.err.flush();
+
+					// Note: JAAS specifies that the password is a char[]
+					// rather than a String.
+					String tmpPassword = (new BufferedReader(
+							new InputStreamReader(System.in))).readLine();
+					int passLen = tmpPassword.length();
+					char[] passwordArray = new char[passLen];
+					for (int passIdx = 0; passIdx < passLen; passIdx++)
+						passwordArray[passIdx] = tmpPassword.charAt(passIdx);
+					pc.setPassword(passwordArray);
+				} else {
+					String tPass = new String();
+					for (int p = 0; p < password.length(); p++)
+						tPass += "*";
+					LOGGER.debug("password: " + tPass);
+					pc.setPassword(password.toCharArray());
+				}
+			} else if (callbacks[i] instanceof TextInputCallback) {
+				// Prompt the user for the username
+				TextInputCallback callback = (TextInputCallback) callbacks[i];
+				System.err.print(callback.getPrompt());
+				System.err.flush();
+				callback.setText((new BufferedReader(new InputStreamReader(
+						System.in))).readLine());
+			} else {
+				throw new UnsupportedCallbackException(callbacks[i],
+						"Unrecognized Callback");
+			}
+		}
+	}
+}
+
+
+
+sample_jass.config:
+
+  /** Login Configuration for the JAAS Sample Application **/
+
+    Sample {
+       weblogic.security.auth.login.UsernamePasswordLoginModule required debug=true;
+    };
+    
+    
+
+
+    /**
+ * 
+ */
+package com.cnk.travelerp.jaas.authenticatiojn.service;
+
+import java.io.IOException;
+
+import javax.security.auth.callback.Callback;
+import javax.security.auth.callback.CallbackHandler;
+import javax.security.auth.callback.NameCallback;
+import javax.security.auth.callback.PasswordCallback;
+import javax.security.auth.callback.UnsupportedCallbackException;
+
+import weblogic.security.auth.callback.URLCallback;
+
+/**
+ * @author sivaiah.polamreddy
+ * 
+ */
+public class DemoCallbackHandler implements CallbackHandler {
+
+	String username;
+	String password;
+	String url;
+
+	public DemoCallbackHandler(String username, String password, String url) {
+		System.out.println("constuctor calling");
+		this.username = username;
+		this.password = password;
+		this.url = url;
+	}
+
+	
+	
+	 
+	@Override
+	public void handle(Callback[] callbacks) throws IOException,
+			UnsupportedCallbackException {
+
+		for (int i = 0; i < callbacks.length; i++) {
+			if (callbacks[i] instanceof NameCallback) {
+				NameCallback nc = (NameCallback) callbacks[i];
+				nc.setName(username);
+			} else if (callbacks[i] instanceof URLCallback) {
+				URLCallback uc = (URLCallback) callbacks[i];
+				uc.setURL(url);
+			} else if (callbacks[i] instanceof PasswordCallback) {
+				PasswordCallback pc = (PasswordCallback) callbacks[i];
+				pc.setPassword(password.toCharArray());
+			} else {
+				throw new UnsupportedCallbackException(callbacks[i],
+						"Unrecognized Callback");
+			}
+		}
+	}
+
+}
+
+
+
+/**
+ * 
+ */
+package com.cnk.travelerp.jaas.authenticatiojn.service;
+
+import java.io.IOException;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.Map;
+
+import javax.security.auth.Subject;
+import javax.security.auth.callback.Callback;
+import javax.security.auth.callback.CallbackHandler;
+import javax.security.auth.callback.NameCallback;
+import javax.security.auth.callback.PasswordCallback;
+import javax.security.auth.callback.UnsupportedCallbackException;
+import javax.security.auth.login.LoginException;
+import javax.security.auth.spi.LoginModule;
+
+/**
+ * @author sivaiah.polamreddy
+ * 
+ */
+public class RdbmsLoginModule implements LoginModule {
+
+	private Subject subject;
+	private CallbackHandler callbackHandler;
+	private Map sharedState;
+	private Map options;
+	private String url;
+	private String driverClass;
+	private boolean debug;
+	private String dbuser;
+	private String dbpass;
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see
+	 * javax.security.auth.spi.LoginModule#initialize(javax.security.auth.Subject
+	 * , javax.security.auth.callback.CallbackHandler, java.util.Map,
+	 * java.util.Map)
+	 */
+	
+	public RdbmsLoginModule(){
+		
+	}
+	
+	private boolean succeeded = false;
+
+	
+	public boolean abort() throws LoginException {
+		System.out.println("Login Module - abort called");
+		return false;
+	}
+
+	public boolean commit() throws LoginException {
+		System.out.println("Login Module - commit called");
+		return succeeded;
+	}
+	
+	@Override
+	public void initialize(Subject subject, CallbackHandler callbackHandler,
+			Map<String, ?> sharedState, Map<String, ?> options) {
+
+		this.subject = subject;
+		this.callbackHandler = callbackHandler;
+		this.sharedState = sharedState;
+		this.options = options;
+		url = (String) options.get("url");
+		driverClass = (String) options.get("driver");
+		debug = "true".equalsIgnoreCase((String) options.get("debug"));
+		dbuser = (String) options.get("dbuser");
+		dbpass = (String) options.get("dbpass");
+		
+		succeeded = false;
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see javax.security.auth.spi.LoginModule#login()
+	 */
+	@Override
+	public boolean login() throws LoginException {
+		boolean result = true ;
+		Callback[] callbacks =null;
+
+		if (callbackHandler == null)
+			throw new LoginException("no handler");
+		
+		NameCallback nameCb = new NameCallback("user: ");
+		PasswordCallback passCb = new PasswordCallback("password: ", true);
+		callbacks = new Callback[] { nameCb, passCb };
+		
+		try {
+			callbackHandler.handle(callbacks);
+		} catch (IOException | UnsupportedCallbackException e) {
+			e.printStackTrace();
+		}
+	
+		String username = nameCb.getName();
+		String password = new String(passCb.getPassword());
+		result = rdbmsValidate(username, password);
+		System.out.println("login  "+result);
+		succeeded = result;
+		return succeeded;
+
+	}
+
+	public boolean rdbmsValidate(String username, String password) throws LoginException {
+		Connection con = null;
+		ResultSet rs = null;
+		PreparedStatement stmt = null;
+
+		try {
+			con = getConnection();
+			stmt = con
+					.prepareStatement("select U_NAME, U_PASSWORD from users where U_NAME=? and U_PASSWORD=?");
+			stmt.setString(1, username);
+			stmt.setString(2, new String(password));
+
+			rs = stmt.executeQuery();
+
+			if (rs.next()) { // User exist with the given user name and
+				String uid = rs.getString("U_NAME");
+				String pass = rs.getString("U_PASSWORD");
+ 
+				System.out.println("userid : " + uid);
+				System.out.println("username : " + pass);		// password.
+				return true;
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		} finally {
+			try {
+				rs.close();
+			} catch (SQLException e) {
+			}
+			try {
+				stmt.close();
+			} catch (SQLException e) {
+			}
+			try {
+				con.close();
+			} catch (SQLException e) {
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * Returns JDBC connection
+	 * 
+	 * @return
+	 * @throws LoginException
+	 */
+	private Connection getConnection() throws LoginException{
+
+		String dBUser = dbuser;
+		String dBPassword = dbpass;
+		String dBUrl = url;
+		String dBDriver = driverClass;
+
+		Connection con = null;
+		try {
+			// loading driver
+			Class.forName(dBDriver).newInstance();
+			con = DriverManager.getConnection(dBUrl, dBUser, dBPassword);
+		} catch (Exception e) {
+			e.printStackTrace();
+		} finally {
+		}
+		return con;
+	}
+
+	
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see javax.security.auth.spi.LoginModule#logout()
+	 */
+	@Override
+	public boolean logout() throws LoginException {
+
+		return false;
+	}
+
+}
+
+
+/**
+ * 
+ */
+package com.cnk.travelerp.jaas.authenticatiojn.service;
+
+import java.io.IOException;
+
+import javax.security.auth.callback.Callback;
+import javax.security.auth.callback.CallbackHandler;
+import javax.security.auth.callback.NameCallback;
+import javax.security.auth.callback.PasswordCallback;
+import javax.security.auth.callback.UnsupportedCallbackException;
+
+/**
+ * @author sivaiah.polamreddy
+ * 
+ */
+public class TestCallbackHandler implements CallbackHandler {
+	String name;
+	String password;
+
+	public TestCallbackHandler(String name, String password) {
+		System.out.println("Callback Handler - constructor called");
+		this.name = name;
+		this.password = password;
+	}
+
+	public void handle(Callback[] callbacks) throws IOException,
+			UnsupportedCallbackException {
+		System.out.println("Callback Handler - handle called");
+		for (int i = 0; i < callbacks.length; i++) {
+			if (callbacks[i] instanceof NameCallback) {
+				NameCallback nameCallback = (NameCallback) callbacks[i];
+				nameCallback.setName(name);
+			} else if (callbacks[i] instanceof PasswordCallback) {
+				PasswordCallback passwordCallback = (PasswordCallback) callbacks[i];
+				passwordCallback.setPassword(password.toCharArray());
+			} else {
+				throw new UnsupportedCallbackException(callbacks[i],
+						"The submitted Callback is unsupported");
+			}
+		}
+	}
+}
+
+
+/**
+ * 
+ */
+package com.cnk.travelerp.jaas.authenticatiojn.service;
+
+import java.io.IOException;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.Map;
+
+import javax.security.auth.Subject;
+import javax.security.auth.callback.Callback;
+import javax.security.auth.callback.CallbackHandler;
+import javax.security.auth.callback.NameCallback;
+import javax.security.auth.callback.PasswordCallback;
+import javax.security.auth.callback.UnsupportedCallbackException;
+import javax.security.auth.login.FailedLoginException;
+import javax.security.auth.login.LoginException;
+import javax.security.auth.spi.LoginModule;
+
+/**
+ * @author sivaiah.polamreddy
+ * 
+ */
+public class TestLoginModule implements LoginModule{
+	private Subject subject;
+	private CallbackHandler callbackHandler;
+	private Map sharedState;
+	private Map options;
+	
+	private String url;
+	private String driverClass;
+	private boolean debug;
+	private String dbuser;
+	private String dbpass;
+
+	private boolean succeeded = false;
+
+	public TestLoginModule() {
+		System.out.println("Login Module - constructor called");
+	}
+
+	public boolean abort() throws LoginException {
+		System.out.println("Login Module - abort called");
+		return false;
+	}
+
+	public boolean commit() throws LoginException {
+		System.out.println("Login Module - commit called");
+		return succeeded;
+	}
+
+	public void initialize(Subject subject, CallbackHandler callbackHandler,
+			Map<String, ?> sharedState, Map<String, ?> options) {
+
+		System.out.println("Login Module - initialize called");
+		this.subject = subject;
+		this.callbackHandler = callbackHandler;
+		this.sharedState = sharedState;
+		this.options = options;
+		
+		url = (String) options.get("url");
+		driverClass = (String) options.get("driver");
+		debug = "true".equalsIgnoreCase((String) options.get("debug"));
+		dbuser = (String) options.get("dbuser");
+		dbpass = (String) options.get("dbpass");
+
+		System.out.println("testOption value: "
+				+ (String) options.get("testOption"));
+
+		succeeded = false;
+	}
+
+	public boolean login() throws LoginException {
+		System.out.println("Login Module - login called");
+		if (callbackHandler == null) {
+			throw new LoginException("Oops, callbackHandler is null");
+		}
+
+		Callback[] callbacks = new Callback[2];
+		callbacks[0] = new NameCallback("name:");
+		callbacks[1] = new PasswordCallback("password:", false);
+
+		try {
+			callbackHandler.handle(callbacks);
+		} catch (IOException e) {
+			throw new LoginException(
+					"Oops, IOException calling handle on callbackHandler");
+		} catch (UnsupportedCallbackException e) {
+			throw new LoginException(
+					"Oops, UnsupportedCallbackException calling handle on callbackHandler");
+		}
+
+		NameCallback nameCallback = (NameCallback) callbacks[0];
+		PasswordCallback passwordCallback = (PasswordCallback) callbacks[1];
+
+		String name = nameCallback.getName();
+		String password = new String(passwordCallback.getPassword());
+
+		if (rdbmsValidate(name, password)) {
+			System.out.println("Success! You get to log in!");
+			succeeded = true;
+			return succeeded;
+		} else {
+			System.out.println("Failure! You don't get to log in");
+			succeeded = false;
+			throw new FailedLoginException("Sorry! No login for you.");
+		}
+	}
+
+	public boolean logout() throws LoginException {
+		System.out.println("Login Module - logout called");
+		return true;
+	}
+	
+	public boolean rdbmsValidate(String username, String password) {
+		Connection con = null;
+		ResultSet rs = null;
+		PreparedStatement stmt = null;
+
+		try {
+			con = getConnection();
+			stmt = con
+					.prepareStatement("select U_NAME, U_PASSWORD from users where U_NAME=? and U_PASSWORD=?");
+			stmt.setString(1, username);
+			stmt.setString(2, new String(password));
+
+			rs = stmt.executeQuery();
+
+			if (rs.next()) { // User exist with the given user name and
+				String uid = rs.getString("U_NAME");
+				String pass = rs.getString("U_PASSWORD");
+ 
+				System.out.println("userid : " + uid);
+				System.out.println("username : " + pass);		// password.
+				return true;
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		} finally {
+			try {
+				rs.close();
+			} catch (SQLException e) {
+			}
+			try {
+				stmt.close();
+			} catch (SQLException e) {
+			}
+			try {
+				con.close();
+			} catch (SQLException e) {
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * Returns JDBC connection
+	 * 
+	 * @return
+	 * @throws LoginException
+	 */
+	private Connection getConnection(){
+
+		String dBUser = dbuser;
+		String dBPassword = dbpass;
+		String dBUrl = url;
+		String dBDriver = driverClass;
+
+		Connection con = null;
+		try {
+			// loading driver
+			Class.forName(dBDriver).newInstance();
+			con = DriverManager.getConnection(dBUrl, dBUser, dBPassword);
+		} catch (Exception e) {
+			e.printStackTrace();
+		} finally {
+		}
+		return con;
+	}
+
+}
+
+
+
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<groupId>com.cnk.travelerp</groupId>
+	<artifactId>jaasloginmodule</artifactId>
+	<version>0.0.1-SNAPSHOT</version>
+	<packaging>war</packaging>
+
+	<properties>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<sonar.language>java</sonar.language>
+		<slf4j.version>1.7.5</slf4j.version>
+		<logback.version>1.0.13</logback.version>
+	</properties>
+	<dependencies>
+		<dependency>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+			<version>4.8.1</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-context</artifactId>
+			<version>3.1.2.RELEASE</version>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-core</artifactId>
+			<version>3.1.2.RELEASE</version>
+		</dependency>
+		<!-- <dependency> <groupId>org.springframework</groupId> <artifactId>spring-orm</artifactId> 
+			<version>3.1.2.RELEASE</version> </dependency> <dependency> <groupId>org.springframework</groupId> 
+			<artifactId>spring-tx</artifactId> <version>3.1.2.RELEASE</version> </dependency> 
+			<dependency> <groupId>org.springframework</groupId> <artifactId>spring-jdbc</artifactId> 
+			<version>3.1.2.RELEASE</version> </dependency> <dependency> <groupId>org.springframework</groupId> 
+			<artifactId>spring-aop</artifactId> <version>3.1.2.RELEASE</version> </dependency> -->
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-beans</artifactId>
+			<version>3.1.2.RELEASE</version>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-test</artifactId>
+			<version>3.1.2.RELEASE</version>
+		</dependency>
+		<dependency>
+			<groupId>cglib</groupId>
+			<artifactId>cglib</artifactId>
+			<version>2.2.2</version>
+		</dependency>
+		<dependency>
+			<groupId>log4j</groupId>
+			<artifactId>log4j</artifactId>
+			<version>1.2.16</version>
+		</dependency>
+		<dependency>
+			<groupId>dom4j</groupId>
+			<artifactId>dom4j</artifactId>
+			<version>1.6.1</version>
+			<exclusions>
+				<exclusion>
+					<groupId>xml-apis</groupId>
+					<artifactId>xml-apis</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+		<dependency>
+			<groupId>commons-logging</groupId>
+			<artifactId>commons-logging</artifactId>
+			<version>1.1.1</version>
+		</dependency>
+		<dependency>
+			<groupId>commons-collections</groupId>
+			<artifactId>commons-collections</artifactId>
+			<version>3.2.1</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.commons</groupId>
+			<artifactId>commons-lang3</artifactId>
+			<version>3.1</version>
+		</dependency>
+		<dependency>
+			<groupId>antlr</groupId>
+			<artifactId>antlr</artifactId>
+			<version>2.7.7</version>
+		</dependency>
+		<!-- Logback -->
+		<dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-api</artifactId>
+			<version>${slf4j.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>ch.qos.logback</groupId>
+			<artifactId>logback-classic</artifactId>
+			<version>${logback.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>ch.qos.logback</groupId>
+			<artifactId>logback-core</artifactId>
+			<version>${logback.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>ch.qos.logback</groupId>
+			<artifactId>logback-access</artifactId>
+			<version>${logback.version}</version>
+		</dependency>
+		
+		<dependency>
+			<groupId>com.oracle</groupId>
+			<artifactId>ojdbc5</artifactId>
+			<version>11.2.0</version>
+		</dependency>
+		<dependency>
+			<groupId>com.bea</groupId>
+			<artifactId>logging</artifactId>
+			<version>2.0.0.0</version>
+		</dependency>
+		<dependency>
+			<groupId>com.bea</groupId>
+			<artifactId>wlfullclient</artifactId>
+			<version>12.1</version>
+		</dependency>
+	</dependencies>
+	<build>
+		<pluginManagement>
+			<plugins>
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-compiler-plugin</artifactId>
+					<configuration>
+						<source>1.7</source>
+						<target>1.7</target>
+					</configuration>
+				</plugin>
+				<plugin>
+					<groupId>org.codehaus.mojo</groupId>
+					<artifactId>sonar-maven-plugin</artifactId>
+					<version>2.0</version>
+				</plugin>
+			</plugins>
+		</pluginManagement>
+	</build>
+
+</project>
+
+rdbmslogin.config:
+
+Example {
+      com.cnk.travelerp.jaas.authenticatiojn.service.RdbmsLoginModule required  
+      driver="oracle.jdbc.driver.OracleDriver" 
+      url="jdbc:oracle:thin:@10.21.12.129:1521:XE" 
+      dbuser="siva_master" 
+      dbpass="siva_master" 
+      debug="true";
+   };
+
+jass.config:
+
+   /** Test Login Configuration **/
+
+Test {
+   com.cnk.travelerp.jaas.authenticatiojn.service.TestLoginModule required testOption=required;
+};
+
+
+
+reference:
+
+http://www.javaworld.com/jw-09-2002/jw-0913-jaas.html?page=6
+http://www.onjava.com/pub/a/onjava/excerpt/weblogic_chap17/index1.html?page=5
+http://www.javaranch.com/journal/2008/04/authentication-using-JAAS.html
+http://docs.oracle.com/cd/E17904_01/web.1111/e13718/atn.htm
+http://docs.oracle.com/cd/E12840_01/wls/docs103/client/jarbuilder.html#wp1078098

@@ -1,0 +1,1578 @@
+/**
+ * 
+ */
+package com.cnk.travelerp.common.caching.cacheStore;
+
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
+import org.springframework.jdbc.core.namedparam.SqlParameterSource;
+import com.tangosol.net.cache.CacheStore;
+import com.tangosol.util.Base;
+
+/**
+ * The Class DBCacheStore.
+ * 
+ * @author sivaiah.polamreddy
+ */
+public abstract class BaseCacheStore extends Base implements CacheStore {
+
+    public abstract Object getQueryForObject(Object key);
+
+    public abstract Object getQueryFroLoadAll();
+
+    public abstract Object getQueryForStore();
+
+    public abstract Object getQueryForStoreAll();
+
+    public abstract Object getQueryForEarse();
+
+    public abstract Object getQueryForEarseAll();
+
+    @Autowired
+    private NamedParameterJdbcTemplate namedParameterJdbcTemplate;
+
+    public void setNamedParameterJdbcTemplate(
+            NamedParameterJdbcTemplate namedParameterJdbcTemplate) {
+        this.namedParameterJdbcTemplate = namedParameterJdbcTemplate;
+    }
+
+    @Override
+    public Object load(Object oKey) {
+
+        String query = (String) getQueryForObject(oKey);
+        System.out.println("select query for cachedata: " + query);
+        SqlParameterSource namedParameters = new MapSqlParameterSource("key",
+                oKey);
+        namedParameterJdbcTemplate.queryForMap(query, namedParameters);
+        System.out.println("load() result "
+                + namedParameterJdbcTemplate
+                        .queryForMap(query, namedParameters));
+        return "";
+    }
+
+    @Override
+    public Map loadAll(Collection colKeys) {
+
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void erase(Object oKey) {
+
+    }
+
+    @Override
+    public void eraseAll(Collection colKeys) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void store(Object oKey, Object oValue) {
+
+        // String query = (String) getQueryForStore();
+        String query = "INSERT INTO CACHEDATA (value, id) VALUES (:data,:key)";
+        System.out.println("select query for cachedata: " + query);
+        Map<String, Object> param = new HashMap<>();
+        param.put("data", oValue);
+        param.put("key", oKey);
+        try {
+            namedParameterJdbcTemplate.update(query, param);
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+        }
+
+    }
+
+    @Override
+    public void storeAll(Map mapEntries) {
+        throw new UnsupportedOperationException();
+    }
+}
+
+
+/**
+ * 
+ */
+package com.cnk.travelerp.common.caching.cacheStore;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
+
+/**
+ * @author sivaiah.polamreddy
+ * 
+ */
+@Component("searchCacheStore")
+public class SearchCacheStore extends BaseCacheStore {
+
+    @Value("${searchLoadForObjectQuery}")
+    private String searchLoadForObjectQuery;
+
+    @Value("${insertCacheData}")
+    private String insertCacheData;
+
+    @Override
+    public Object getQueryForObject(Object key) {
+
+        return searchLoadForObjectQuery;
+    }
+
+    @Override
+    public Object getQueryFroLoadAll() {
+        return null;
+    }
+
+    @Override
+    public Object getQueryForStore() {
+        return insertCacheData;
+    }
+
+    @Override
+    public Object getQueryForStoreAll() {
+        return null;
+    }
+
+    @Override
+    public Object getQueryForEarse() {
+        return null;
+    }
+
+    @Override
+    public Object getQueryForEarseAll() {
+        return null;
+    }
+
+}
+/**
+ * 
+ */
+package com.cnk.travelerp.common.caching.cacheStore;
+
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataAccessException;
+import org.springframework.jdbc.core.PreparedStatementCallback;
+import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
+import org.springframework.jdbc.core.namedparam.SqlParameterSource;
+import org.springframework.stereotype.Component;
+import com.tangosol.net.cache.CacheStore;
+import com.tangosol.util.Base;
+
+// TODO: Auto-generated Javadoc
+/**
+ * The Class DBCacheStore.
+ * 
+ * @author sivaiah.polamreddy
+ */
+@Component
+public class DBCacheStore extends Base implements CacheStore {
+
+    /** The m_s table name. */
+    protected String m_sTableName;
+
+    public DBCacheStore() {
+
+    }
+
+    public DBCacheStore(String sTableName) {
+        m_sTableName = sTableName;
+
+    }
+
+    public String getTableName() {
+        return m_sTableName;
+    }
+
+    @Autowired
+    private NamedParameterJdbcTemplate namedParameterJdbcTemplate;
+
+    public void setNamedParameterJdbcTemplate(
+            NamedParameterJdbcTemplate namedParameterJdbcTemplate) {
+        this.namedParameterJdbcTemplate = namedParameterJdbcTemplate;
+    }
+
+    @Override
+    public Object load(Object oKey) {
+
+        System.out.println("load method calling tjug" + oKey);
+        String sSQL = "SELECT id, value FROM " + getTableName()
+                + " WHERE id = :key";
+        try {
+            SqlParameterSource namedParameters = new MapSqlParameterSource(
+                    "key", oKey);
+            namedParameterJdbcTemplate.queryForMap(sSQL, namedParameters);
+            System.out.println("load() result "
+                    + namedParameterJdbcTemplate.queryForMap(sSQL,
+                            namedParameters));
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    @Override
+    public Map loadAll(Collection colKeys) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void erase(Object oKey) {
+
+    }
+
+    @Override
+    public void eraseAll(Collection colKeys) {
+        throw new UnsupportedOperationException();
+    }
+
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    @Override
+    public void store(Object oKey, Object oValue) {
+        System.out.println("store method calling " + oKey + ":" + oValue);
+        String sTable = getTableName();
+        String sSQL;
+
+        if (load(oKey) != null) {
+
+            sSQL = "UPDATE " + sTable + " SET value = :data where id = :key";
+        }
+        else {
+
+            sSQL = "INSERT INTO " + sTable + " (value, id) VALUES (:data,:key)";
+        }
+        try {
+            Map<String, Object> param = new HashMap<>();
+            param.put("data", oValue);
+            param.put("key", oKey);
+            namedParameterJdbcTemplate.execute(sSQL, param,
+                    new PreparedStatementCallback() {
+
+                        @Override
+                        public Object
+                                doInPreparedStatement(PreparedStatement ps)
+                                        throws SQLException,
+                                        DataAccessException {
+
+                            return ps.executeUpdate();
+                        }
+
+                    });
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+        }
+
+    }
+
+    @Override
+    public void storeAll(Map mapEntries) {
+        throw new UnsupportedOperationException();
+    }
+
+}
+/**
+ * 
+ */
+package com.cnk.travelerp.common.caching.service;
+
+import com.tangosol.net.CacheFactory;
+import com.tangosol.net.NamedCache;
+
+// TODO: Auto-generated Javadoc
+/**
+ * The Class CacheService.
+ * 
+ * @author sivaiah.polamreddy
+ */
+
+public class CacheService implements ICacheService {
+
+    NamedCache cache = null;
+
+    public void setCache(NamedCache cache) {
+        this.cache = cache;
+    }
+
+    /**
+     * Instantiates a new cache service.
+     */
+    public CacheService() {
+        System.out.println("create cache object");
+        cache = CacheFactory.getCache("DBCache");
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see
+     * com.cnk.travelerp.common.caching.service.CacheService#put(java.lang.Object
+     * , java.lang.Object)
+     */
+    @Override
+    public Object addToCache(Object key, Object value) {
+
+        return cache.put(key, value);
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see
+     * com.cnk.travelerp.common.caching.service.CacheService#get(java.lang.Object
+     * )
+     */
+    @Override
+    public Object getFromCache(Object key) {
+        return cache.get(key);
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see
+     * com.cnk.travelerp.common.caching.service.CacheService#remove(java.lang
+     * .Object)
+     */
+    @Override
+    public Object deleteFromCache(Object key) {
+        return cache.remove(key);
+    }
+
+    @Override
+    public NamedCache getCache() {
+
+        return cache;
+    }
+}
+/**
+ * 
+ */
+package com.cnk.travelerp.common.caching.service;
+
+import com.tangosol.net.NamedCache;
+
+// TODO: Auto-generated Javadoc
+/**
+ * The Interface CacheService.
+ * 
+ * @author sivaiah.polamreddy
+ */
+public interface ICacheService {
+
+    /**
+     * Put.
+     * 
+     * @param object1
+     *            the object1
+     * @param object2
+     *            the object2
+     * @return the object
+     */
+    public Object addToCache(Object key, Object value);
+
+    /**
+     * Gets the.
+     * 
+     * @param object
+     *            the object
+     * @return the object
+     */
+    public Object getFromCache(Object key);
+
+    /**
+     * Removes the.
+     * 
+     * @param object
+     *            the object
+     * @return the object
+     */
+    public Object deleteFromCache(Object key);
+
+    /**
+     * Gets the cache.
+     * 
+     * @return the cache
+     */
+    public NamedCache getCache();
+}
+
+
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:p="http://www.springframework.org/schema/p"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:mvc="http://www.springframework.org/schema/mvc"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans 
+       http://www.springframework.org/schema/beans/spring-beans-2.5.xsd
+    http://www.springframework.org/schema/context 
+       http://www.springframework.org/schema/context/spring-context-2.5.xsd
+        http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc.xsd">
+
+
+	<!-- for annotation support -->
+	<context:annotation-config />
+	<!--@Autowire support -->
+	<context:component-scan base-package="com.cnk.travelerp.common" />
+
+	<!--configuring DriverManagerDataSource dataSource -->
+	<bean id="dataSource"
+		class="org.springframework.jdbc.datasource.DriverManagerDataSource">
+		<property name="driverClassName" value="oracle.jdbc.driver.OracleDriver" />
+		<property name="url" value="jdbc:oracle:thin:@10.21.12.129:1521:XE" />
+		<property name="username" value="siva_master" />
+		<property name="password" value="siva_master" />
+	</bean>
+
+	<!-- <bean id="cacheStore" class="com.cnk.travelerp.common.caching.cacheStore.DBCacheStore"> 
+		<property name="dataSource" ref="dataSource" /> </bean> -->
+
+	<bean id="cacheService" class="com.cnk.travelerp.common.caching.service.CacheService">
+	</bean>
+
+	<!-- <bean id="cacheFactory" class="com.tangosol.net.DefaultConfigurableCacheFactory">
+	</bean>
+	<bean
+		class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
+		<property name="targetClass" value="com.tangosol.net.CacheFactory" />
+		<property name="targetMethod" value="setConfigurableCacheFactory" />
+		<property name="arguments" ref="cacheFactory" />
+	</bean> -->
+
+	<!--configuring property file -->
+	<bean id="propertyConfigurer"
+		class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+
+		<property name="location" value="cacheQueries.properties">
+
+		</property>
+	</bean>
+	<!--configuring NamedParameterJdbcTemplate -->
+	<bean
+		class="org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate"
+		id="namedParameterJdbcTemplate">
+		<constructor-arg ref="dataSource"/>
+	</bean>
+
+</beans>
+
+
+
+<?xml version="1.0"?>
+<!DOCTYPE cache-config SYSTEM "cache-config.dtd">
+<cache-config>
+	<caching-scheme-mapping>
+		<!-- Caches with names that start with 'DBBacked' will be created as distributed-db-backed. -->
+		<cache-mapping>
+			<cache-name>DBCache</cache-name>
+			<scheme-name>distributed-db-DBCache</scheme-name>
+		</cache-mapping>
+	</caching-scheme-mapping>
+	<caching-schemes>
+		<!-- DB Backed Distributed caching scheme. -->
+		<distributed-scheme>
+			<scheme-name>distributed-db-DBCache</scheme-name>
+			<service-name>DistributedCache</service-name>
+			<backing-map-scheme>
+				<read-write-backing-map-scheme>
+					<internal-cache-scheme>
+						<!-- <local-scheme> <expiry-delay>1m</expiry-delay> </local-scheme> -->
+						<class-scheme>
+							<class-name>com.tangosol.util.ObservableHashMap</class-name>
+						</class-scheme>
+					</internal-cache-scheme>
+					<cachestore-scheme>
+						<class-scheme>
+                            <class-name>com.cnk.travelerp.common.caching.cacheStore.DBCacheStore</class-name>
+                            <init-params>
+                                <init-param>
+                                    <param-type>java.lang.String</param-type>
+                                    <param-value>CACHEDATA</param-value>
+                                </init-param>
+                            </init-params>
+                        </class-scheme>
+						<operation-bundling>
+							<bundle-config>
+								<operation-name>load</operation-name>
+								<preferred-size>10</preferred-size>
+								<delay-millis>1</delay-millis>
+								<thread-threshold>2</thread-threshold>
+								<auto-adjust>true</auto-adjust>
+							</bundle-config>
+						</operation-bundling>
+					</cachestore-scheme>
+					<read-only>false</read-only>
+					<!-- To make this a write-through cache just change the value below 
+						to 0 (zero) -->
+					<write-delay-seconds>0</write-delay-seconds>
+					<refresh-ahead-factor>0.5</refresh-ahead-factor>
+				</read-write-backing-map-scheme>
+			</backing-map-scheme>
+			<listener />
+			<autostart>true</autostart>
+		</distributed-scheme>
+	</caching-schemes>
+</cache-config>
+
+<?xml version="1.0" encoding="UTF-8"?>
+<coherence xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns="http://xmlns.oracle.com/coherence/coherence-operational-config"
+	xsi:schemaLocation="http://xmlns.oracle.com/coherence/coherence-operational-config coherence-operational-config.xsd">
+
+
+	<cluster-config>
+		<member-identity>
+			<cluster-name system-property="tangosol.coherence.cluster">CoherenceCluster
+			</cluster-name>
+		</member-identity>
+		<unicast-listener>
+		</unicast-listener>
+		<multicast-listener>
+			<address system-property="tangosol.coherence.clusteraddress">231.1.1.2</address>
+			<port system-property="tangosol.coherence.clusterport">4545</port>
+			<time-to-live system-property="tangosol.coherence.ttl">3</time-to-live>
+			<join-timeout-milliseconds>30000</join-timeout-milliseconds>
+			<multicast-threshold-percent>25</multicast-threshold-percent>
+		</multicast-listener>
+	</cluster-config>
+
+	<!-- <configurable-cache-factory-config>
+		<class-name>com.tangosol.net.DefaultConfigurableCacheFactory</class-name>
+		<init-params>
+			<init-param>
+				<param-type>java.lang.String</param-type>
+				<param-value>coherence-cache-config.xml</param-value>
+			</init-param>
+		</init-params>
+	</configurable-cache-factory-config> -->
+
+	<!-- <configurable-cache-factory-config> <class-name system-property="tangosol.coherence.cachefactory"> 
+		com.cnk.travelerp.common.caching.service.SpringAwareCacheFactory </class-name> 
+		<init-params> <init-param> <param-type>java.lang.String</param-type> <param-value 
+		system-property="tangosol.coherence.cacheconfig"> coherence-cache-config.xml 
+		</param-value> </init-param> <init-param id="1"> <param-type>java.lang.String</param-type> 
+		<param-value system-property="tangosol.coherence.springconfig"> application-context.xml 
+		</param-value> </init-param> </init-params> </configurable-cache-factory-config> -->
+</coherence>
+
+
+
+
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<groupId>com.cnk.travelerpibe.common</groupId>
+	<artifactId>cnk-common-caching</artifactId>
+	<version>0.0.1-SNAPSHOT</version>
+	<name>cnk-common-caching</name>
+	<description>this is caching component</description>
+
+	<properties>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<sonar.language>java</sonar.language>
+	</properties>
+
+	<dependencies>
+	
+	
+	   <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-core</artifactId>
+            <version>3.1.2.RELEASE</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-beans</artifactId>
+            <version>3.1.2.RELEASE</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-context</artifactId>
+            <version>3.1.2.RELEASE</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-jdbc</artifactId>
+            <version>3.1.2.RELEASE</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-test</artifactId>
+            <version>3.1.2.RELEASE</version>
+        </dependency>
+       
+	
+		<dependency>
+			<groupId>jstl</groupId>
+			<artifactId>jstl</artifactId>
+			<version>1.2</version>
+		</dependency>
+		<dependency>
+			<groupId>javax.servlet</groupId>
+			<artifactId>servlet-api</artifactId>
+			<version>2.5</version>
+		</dependency>
+		<dependency>
+			<groupId>javax.servlet</groupId>
+			<artifactId>jsp-api</artifactId>
+			<version>2.0</version>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.tangosol.net</groupId>
+			<artifactId>coherence</artifactId>
+			<version>3.7</version>
+		</dependency>
+		<dependency>
+			<groupId>org.tangosol.net</groupId>
+			<artifactId>coherence-web</artifactId>
+			<version>3.7</version>
+		</dependency>
+
+		<dependency>
+			<groupId>com.oracle</groupId>
+			<artifactId>ojdbc5</artifactId>
+			<version>11.2.0</version>
+		</dependency>
+
+	</dependencies>
+	<build>
+		<finalName>cache</finalName>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-war-plugin</artifactId>
+				<configuration>
+					<webResources>
+						<resource>
+							<directory>${build.sourceDirectory}</directory>
+							<targetPath>sources</targetPath>
+						</resource>
+					</webResources>
+				</configuration>
+			</plugin>
+
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>sonar-maven-plugin</artifactId>
+				<version>2.0</version>
+			</plugin>
+
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<configuration>
+					<source>1.7</source>
+					<target>1.7</target>
+				</configuration>
+			</plugin>
+
+		</plugins>
+
+	</build>
+
+</project>
+
+
+
+
+-Dtangosol.coherence.cacheconfig=D:/cnk-workspace/cache/src/main/resources/cache-config.xml 
+-Dtangosol.coherence.distributed.localstorage=true
+
+
+===========================================================================
+
+
+/**
+ * 
+ */
+package com.cnk.travelerp.cache;
+
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
+import com.tangosol.net.CacheFactory;
+import com.tangosol.net.NamedCache;
+import com.tangosol.util.Filter;
+import com.tangosol.util.extractor.IdentityExtractor;
+import com.tangosol.util.filter.LikeFilter;
+
+// TODO: Auto-generated Javadoc
+/**
+ * The Class DatabaseCache.
+ * 
+ * @author sivaiah.polamreddy
+ */
+public class DatabaseCache {
+
+    /** The cache. */
+    NamedCache cache;
+    NamedCache searchCache;
+
+    /**
+     * Instantiates a new database cache.
+     */
+    public DatabaseCache() {
+    }
+
+    /**
+     * Creates the cache.
+     */
+    public void createCache() {
+        searchCache = CacheFactory.getCache("DBSearchCache");
+        cache = CacheFactory.getCache("DBCache");
+        // cache.put(new String("catalog3"), new
+        // String("Evolving Grid Management"));
+        // System.out.println((String) cache.get( "catalog3"));
+
+    }
+
+    /**
+     * Adds the entry.
+     */
+    public void addEntry() {
+
+        cache.put(new String("catalog1"), new String(
+                "Tuning Coherence catalog1"));
+        cache.put(new String("catalog2"),
+                new String("Tuning Database catalog2"));
+        cache.put(new String("catalog3"),
+                new String("Tuning Database catalog3"));
+        cache.put(new String("catalog4"), new String(
+                "Tuning Coherence catalog4"));
+    }
+
+    /**
+     * Retrieve entry.
+     */
+    public void retrieveEntry() {
+        System.out.println((String) cache.get("catalog3"));
+        System.out.println((String) searchCache.get("103"));
+        System.out.println((String) cache.get("catalog3"));
+        System.out.println((String) searchCache.get("103"));
+    }
+
+    /**
+     * Erase entry.
+     */
+    public void eraseEntry() {
+        cache.remove(new String("catalog8"));
+        System.out.println("erase calling");
+    }
+
+    /**
+     * Query cache.
+     */
+    public void queryCache() {
+        Filter filter = new LikeFilter(IdentityExtractor.INSTANCE, "Tuning%",
+                '\\', true);
+        // HashSet hashSet = new HashSet<>();
+        // hashSet.add(new String("catalog5"));
+        // hashSet.add(new String("catalog1"));
+        // hashSet.add(new String("catalog2"));
+        // hashSet.add(new String("catalog3"));
+        // hashSet.add(new String("catalog4"));
+
+        // cache.getAll(hashSet);
+
+        // ContinuousQueryCache queryCache = new ContinuousQueryCache(cache,
+        // filter);
+        // Set results = queryCache.entrySet(filter);
+        Set results = cache.entrySet(filter);
+        /* Set results = cache.entrySet(filter); */
+
+        // if(results.isEmpty())
+        // System.out.println("Result Set Empty");
+        for (Iterator i = results.iterator(); i.hasNext();) {
+            Map.Entry e = (Map.Entry) i.next();
+            System.out.println("Catalog ID: " + e.getKey() + ", Title: "
+                    + e.getValue());
+        }
+    }
+
+    /**
+     * The main method.
+     * 
+     * @param args
+     *            the arguments
+     */
+    public static void main(String[] args) {
+        DatabaseCache databaseCache = new DatabaseCache();
+        databaseCache.createCache();
+        // databaseCache.addEntry();
+        // databaseCache.retrieveEntry();
+        databaseCache.retrieveEntry();
+        // databaseCache.eraseEntry();
+        // databaseCache.retrieveEntry();
+        // databaseCache.queryCache();
+
+    }
+}
+
+/**
+ * 
+ */
+package com.cnk.travelerp.cache;
+
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import com.tangosol.net.cache.CacheStore;
+import com.tangosol.util.Base;
+
+// TODO: Auto-generated Javadoc
+/**
+ * The Class DBCacheStore.
+ * 
+ * @author sivaiah.polamreddy
+ */
+public class DBCacheStore extends Base implements CacheStore {
+
+    /** The m_con. */
+    protected Connection m_con;
+
+    /** The m_s table name. */
+    protected String m_sTableName;
+
+    /** The Constant DB_DRIVER. */
+    private static final String DB_DRIVER = "oracle.jdbc.driver.OracleDriver";
+
+    /** The Constant DB_URL. */
+    private static final String DB_URL = "jdbc:oracle:thin:@10.21.12.129:1521:XE";
+
+    /** The Constant DB_USERNAME. */
+    private static final String DB_USERNAME = "siva_master";
+
+    /** The Constant DB_PASSWORD. */
+    private static final String DB_PASSWORD = "siva_master";
+
+    /**
+     * Instantiates a new dB cache store.
+     * 
+     * @param sTableName
+     *            the s table name
+     */
+    public DBCacheStore(String sTableName) {
+        m_sTableName = sTableName;
+
+        configureConnection();
+    }
+
+    /**
+     * Configure connection.
+     */
+    protected void configureConnection() {
+        try {
+            Class.forName(DB_DRIVER);
+            m_con = DriverManager.getConnection(DB_URL, DB_USERNAME,
+                    DB_PASSWORD);
+            m_con.setAutoCommit(true);
+        }
+        catch (Exception e) {
+            throw ensureRuntimeException(e, "Connection failed");
+        }
+    }
+
+    /**
+     * Gets the table name.
+     * 
+     * @return the table name
+     */
+    public String getTableName() {
+        return m_sTableName;
+    }
+
+    /**
+     * Gets the connection.
+     * 
+     * @return the connection
+     */
+    public Connection getConnection() {
+        return m_con;
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see com.tangosol.net.cache.CacheLoader#load(java.lang.Object)
+     */
+    @Override
+    public Object load(Object oKey) {
+        // getCallerStackFrame()
+        // getStackFrame()
+
+        System.out.println("load method calling tjug" + oKey);
+        Object oValue = null;
+        Connection con = getConnection();
+        String sSQL = "SELECT id, value FROM " + getTableName()
+                + " WHERE id = ?";
+        try {
+            PreparedStatement stmt = con.prepareStatement(sSQL);
+
+            stmt.setString(1, String.valueOf(oKey));
+            ResultSet rslt = stmt.executeQuery();
+            if (rslt.next()) {
+                oValue = rslt.getString(2);
+                if (rslt.next()) {
+                    throw new SQLException("Not a unique key: " + oKey);
+                }
+            }
+            stmt.close();
+        }
+        catch (SQLException e) {
+            throw ensureRuntimeException(e, "Load failed: key=" + oKey);
+        }
+        return oValue;
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see com.tangosol.net.cache.CacheLoader#loadAll(java.util.Collection)
+     */
+    @Override
+    public Map loadAll(Collection colKeys) {
+        System.out.println("load all calling...............");
+        throw new UnsupportedOperationException();
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see com.tangosol.net.cache.CacheStore#erase(java.lang.Object)
+     */
+    @Override
+    public void erase(Object oKey) {
+        System.out.println(" erase method calling " + oKey);
+        Connection con = getConnection();
+        String sSQL = "DELETE FROM " + getTableName() + " WHERE id=?";
+        try {
+            PreparedStatement stmt = con.prepareStatement(sSQL);
+
+            stmt.setString(1, String.valueOf(oKey));
+            stmt.executeUpdate();
+            stmt.close();
+        }
+        catch (SQLException e) {
+            throw ensureRuntimeException(e, "Erase failed: key=" + oKey);
+        }
+
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see com.tangosol.net.cache.CacheStore#eraseAll(java.util.Collection)
+     */
+    @Override
+    public void eraseAll(Collection colKeys) {
+        throw new UnsupportedOperationException();
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see com.tangosol.net.cache.CacheStore#store(java.lang.Object,
+     * java.lang.Object)
+     */
+    @Override
+    public void store(Object oKey, Object oValue) {
+        System.out.println("store method calling " + oKey + ":" + oValue);
+        Connection con = getConnection();
+        String sTable = getTableName();
+        String sSQL;
+
+        if (load(oKey) != null) {
+
+            sSQL = "UPDATE " + sTable + " SET value = ? where id = ?";
+            System.out.println("update method calling : " + sSQL);
+        }
+        else {
+
+            sSQL = "INSERT INTO " + sTable + " (value, id) VALUES (?,?)";
+            System.out.println("insert method calling : " + sSQL);
+        }
+        try {
+            PreparedStatement stmt = con.prepareStatement(sSQL);
+            int i = 0;
+            stmt.setString(++i, String.valueOf(oValue));
+            stmt.setString(++i, String.valueOf(oKey));
+            stmt.executeUpdate();
+            stmt.close();
+        }
+        catch (SQLException e) {
+            throw ensureRuntimeException(e, "Store failed: key=" + oKey);
+        }
+
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see com.tangosol.net.cache.CacheStore#storeAll(java.util.Map)
+     */
+    @Override
+    public void storeAll(Map mapEntries) {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * Keys.
+     * 
+     * @return the iterator
+     */
+    public Iterator keys() {
+        System.out.println("keys method calling");
+        Connection con = getConnection();
+        String sSQL = "SELECT id FROM " + getTableName();
+        List list = new LinkedList<>();
+
+        try {
+            PreparedStatement stmt = con.prepareStatement(sSQL);
+            ResultSet rslt = stmt.executeQuery();
+            while (rslt.next()) {
+                Object oKey = rslt.getString(1);
+                list.add(oKey);
+            }
+            stmt.close();
+        }
+        catch (SQLException e) {
+            throw ensureRuntimeException(e, "Iterator failed");
+        }
+
+        return list.iterator();
+    }
+
+}
+
+
+/**
+ * 
+ */
+package com.cnk.travelerp.cache;
+
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import com.tangosol.net.cache.CacheStore;
+import com.tangosol.util.Base;
+
+/**
+ * @author sivaiah.polamreddy
+ * 
+ */
+public class DBSearchCacheStore extends Base implements CacheStore {
+
+    /** The m_con. */
+    protected Connection m_con;
+
+    /** The m_s table name. */
+    protected String m_sTableName;
+
+    /** The Constant DB_DRIVER. */
+    private static final String DB_DRIVER = "oracle.jdbc.driver.OracleDriver";
+
+    /** The Constant DB_URL. */
+    private static final String DB_URL = "jdbc:oracle:thin:@10.21.12.129:1521:XE";
+
+    /** The Constant DB_USERNAME. */
+    private static final String DB_USERNAME = "santosh";
+
+    /** The Constant DB_PASSWORD. */
+    private static final String DB_PASSWORD = "santosh";
+
+    /**
+     * Instantiates a new dB cache store.
+     * 
+     * @param sTableName
+     *            the s table name
+     */
+    public DBSearchCacheStore(String sTableName) {
+        m_sTableName = sTableName;
+        System.out.println("calling search cocstruct");
+        configureConnection();
+    }
+
+    /**
+     * Configure connection.
+     */
+    protected void configureConnection() {
+        try {
+            Class.forName(DB_DRIVER);
+            m_con = DriverManager.getConnection(DB_URL, DB_USERNAME,
+                    DB_PASSWORD);
+            m_con.setAutoCommit(true);
+        }
+        catch (Exception e) {
+            throw ensureRuntimeException(e, "Connection failed");
+        }
+    }
+
+    /**
+     * Gets the table name.
+     * 
+     * @return the table name
+     */
+    public String getTableName() {
+        return m_sTableName;
+    }
+
+    /**
+     * Gets the connection.
+     * 
+     * @return the connection
+     */
+    public Connection getConnection() {
+        return m_con;
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see com.tangosol.net.cache.CacheLoader#load(java.lang.Object)
+     */
+    @Override
+    public Object load(Object oKey) {
+        System.out.println("load method calling search " + oKey);
+        Object oValue = null;
+        Connection con = getConnection();
+        String sSQL = "SELECT id, search_xml FROM " + getTableName()
+                + " WHERE id = ?";
+        try {
+            PreparedStatement stmt = con.prepareStatement(sSQL);
+
+            stmt.setString(1, String.valueOf(oKey));
+            ResultSet rslt = stmt.executeQuery();
+            if (rslt.next()) {
+                oValue = rslt.getString(2);
+                if (rslt.next()) {
+                    throw new SQLException("Not a unique key: " + oKey);
+                }
+            }
+            stmt.close();
+        }
+        catch (SQLException e) {
+            throw ensureRuntimeException(e, "Load failed: key=" + oKey);
+        }
+        return oValue;
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see com.tangosol.net.cache.CacheLoader#loadAll(java.util.Collection)
+     */
+    @Override
+    public Map loadAll(Collection colKeys) {
+        System.out.println("load all calling...............");
+        throw new UnsupportedOperationException();
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see com.tangosol.net.cache.CacheStore#erase(java.lang.Object)
+     */
+    @Override
+    public void erase(Object oKey) {
+        System.out.println(" erase method calling " + oKey);
+        Connection con = getConnection();
+        String sSQL = "DELETE FROM " + getTableName() + " WHERE id=?";
+        try {
+            PreparedStatement stmt = con.prepareStatement(sSQL);
+
+            stmt.setString(1, String.valueOf(oKey));
+            stmt.executeUpdate();
+            stmt.close();
+        }
+        catch (SQLException e) {
+            throw ensureRuntimeException(e, "Erase failed: key=" + oKey);
+        }
+
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see com.tangosol.net.cache.CacheStore#eraseAll(java.util.Collection)
+     */
+    @Override
+    public void eraseAll(Collection colKeys) {
+        throw new UnsupportedOperationException();
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see com.tangosol.net.cache.CacheStore#store(java.lang.Object,
+     * java.lang.Object)
+     */
+    @Override
+    public void store(Object oKey, Object oValue) {
+        System.out.println("store method calling " + oKey + ":" + oValue);
+        Connection con = getConnection();
+        String sTable = getTableName();
+        String sSQL;
+
+        if (load(oKey) != null) {
+
+            sSQL = "UPDATE " + sTable + " SET value = ? where id = ?";
+            System.out.println("update method calling : " + sSQL);
+        }
+        else {
+
+            sSQL = "INSERT INTO " + sTable + " (value, id) VALUES (?,?)";
+            System.out.println("insert method calling : " + sSQL);
+        }
+        try {
+            PreparedStatement stmt = con.prepareStatement(sSQL);
+            int i = 0;
+            stmt.setString(++i, String.valueOf(oValue));
+            stmt.setString(++i, String.valueOf(oKey));
+            stmt.executeUpdate();
+            stmt.close();
+        }
+        catch (SQLException e) {
+            throw ensureRuntimeException(e, "Store failed: key=" + oKey);
+        }
+
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see com.tangosol.net.cache.CacheStore#storeAll(java.util.Map)
+     */
+    @Override
+    public void storeAll(Map mapEntries) {
+        throw new UnsupportedOperationException();
+    }
+
+    /**
+     * Keys.
+     * 
+     * @return the iterator
+     */
+    public Iterator keys() {
+        System.out.println("keys method calling");
+        Connection con = getConnection();
+        String sSQL = "SELECT id FROM " + getTableName();
+        List list = new LinkedList<>();
+
+        try {
+            PreparedStatement stmt = con.prepareStatement(sSQL);
+            ResultSet rslt = stmt.executeQuery();
+            while (rslt.next()) {
+                Object oKey = rslt.getString(1);
+                list.add(oKey);
+            }
+            stmt.close();
+        }
+        catch (SQLException e) {
+            throw ensureRuntimeException(e, "Iterator failed");
+        }
+
+        return list.iterator();
+    }
+
+}
+<?xml version="1.0"?>
+<!DOCTYPE cache-config SYSTEM "cache-config.dtd">
+<cache-config>
+	<caching-scheme-mapping>
+		<!-- Caches with names that start with 'DBBacked' will be created as distributed-db-backed. -->
+		<!-- <cache-mapping>
+			<cache-name>DBSearchCache</cache-name>
+			<scheme-name>distributed-db-DBSearchCache</scheme-name>
+		</cache-mapping> -->
+		<cache-mapping>
+            <cache-name>DB*</cache-name>
+            <scheme-name>distributed-db-DBCache</scheme-name>
+        </cache-mapping>
+	</caching-scheme-mapping>
+	<caching-schemes>
+		<!-- DB Backed Distributed caching scheme. -->
+		<!-- <distributed-scheme>
+			<scheme-name>distributed-db-DBSearchCache</scheme-name>
+			<service-name>DistributedCache</service-name>
+			<backing-map-scheme>
+				<read-write-backing-map-scheme>
+					<internal-cache-scheme>
+						<local-scheme>
+							<expiry-delay>1m</expiry-delay>
+						</local-scheme>
+						<class-scheme>
+							<class-name>com.tangosol.util.ObservableHashMap</class-name>
+						</class-scheme>
+					</internal-cache-scheme>
+					<cachestore-scheme>
+                        <class-scheme>
+                            <class-name>com.cnk.travelerp.cache.DBSearchCacheStore</class-name>
+                            <init-params>
+                                <init-param>
+                                    <param-type>java.lang.String</param-type>
+                                    <param-value>SEARCH</param-value>
+                                </init-param>
+                            </init-params>
+                        </class-scheme>
+                         <operation-bundling>
+                            <bundle-config>
+                                <operation-name>load</operation-name>
+                                <preferred-size>10</preferred-size>
+                                <delay-millis>1</delay-millis>
+                                <thread-threshold>2</thread-threshold>
+                                <auto-adjust>true</auto-adjust>
+                            </bundle-config>
+                        </operation-bundling>
+                    </cachestore-scheme>
+					<read-only>false</read-only>
+					To make this a write-through cache just change the value below 
+						to 0 (zero)
+					<write-delay-seconds>0</write-delay-seconds>
+					<refresh-ahead-factor>0.5</refresh-ahead-factor>
+				</read-write-backing-map-scheme>
+			</backing-map-scheme>
+			<listener />
+			<autostart>true</autostart>
+		</distributed-scheme> -->
+		
+		<distributed-scheme>
+            <scheme-name>distributed-db-DBCache</scheme-name>
+            <service-name>DistributedCache</service-name>
+            <backing-map-scheme>
+                <read-write-backing-map-scheme>
+                    <internal-cache-scheme>
+                        <local-scheme>
+                            <expiry-delay>1m</expiry-delay>
+                        </local-scheme>
+                        <!-- <class-scheme>
+                            <class-name>com.tangosol.util.ObservableHashMap</class-name>
+                        </class-scheme> -->
+                    </internal-cache-scheme>
+                    <cachestore-scheme>
+                        <class-scheme>
+                            <class-name>com.cnk.travelerp.cache.DBCacheStore</class-name>
+                            <init-params>
+                                <init-param>
+                                    <param-type>java.lang.String</param-type>
+                                    <param-value>CACHEDATA</param-value>
+                                </init-param>
+                            </init-params>
+                        </class-scheme>
+                         <operation-bundling>
+                            <bundle-config>
+                                <operation-name>load</operation-name>
+                                <preferred-size>10</preferred-size>
+                                <delay-millis>1</delay-millis>
+                                <thread-threshold>2</thread-threshold>
+                                <auto-adjust>true</auto-adjust>
+                            </bundle-config>
+                        </operation-bundling>
+                    </cachestore-scheme>
+                    <read-only>false</read-only>
+                    <!-- To make this a write-through cache just change the value below 
+                        to 0 (zero) -->
+                    <write-delay-seconds>0</write-delay-seconds>
+                    <refresh-ahead-factor>0.5</refresh-ahead-factor>
+                </read-write-backing-map-scheme>
+            </backing-map-scheme>
+            <listener />
+            <autostart>true</autostart>
+        </distributed-scheme>
+	</caching-schemes>
+</cache-config>
+
+<coherence xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns="http://xmlns.oracle.com/coherence/coherence-operational-config"
+	xsi:schemaLocation="http://xmlns.oracle.com/coherence/coherence-operational-config coherence-operational-config.xsd">
+	<cluster-config>
+		<member-identity>
+			<cluster-name system-property="tangosol.coherence.cluster">CoherenceCluster</cluster-name>
+		</member-identity>
+		<unicast-listener>
+			<!--<address system-property="tangosol.coherence.localhost">localhost</address>
+			<port system-property="tangosol.coherence.localport">2014</port>
+			 <port-auto-adjust system-property="tangosol.coherence.localport.adjust">true
+			</port-auto-adjust> -->
+		</unicast-listener>
+		<multicast-listener>
+			<address system-property="tangosol.coherence.clusteraddress">231.1.1.2</address>
+			<port system-property="tangosol.coherence.clusterport">4545</port>
+			<time-to-live system-property="tangosol.coherence.ttl">3</time-to-live>
+			<join-timeout-milliseconds>30000</join-timeout-milliseconds>
+			<multicast-threshold-percent>25</multicast-threshold-percent>
+		</multicast-listener>
+	</cluster-config>
+</coherence>
+
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<groupId>com.cnk.travelerp</groupId>
+	<artifactId>cache</artifactId>
+	<version>0.0.1-SNAPSHOT</version>
+	<name>cache</name>
+	<description>this is sample cache application intraction with oracle database</description>
+
+	<properties>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<sonar.language>java</sonar.language>
+	</properties>
+
+	<dependencies>
+		<dependency>
+			<groupId>jstl</groupId>
+			<artifactId>jstl</artifactId>
+			<version>1.2</version>
+		</dependency>
+		<dependency>
+			<groupId>javax.servlet</groupId>
+			<artifactId>servlet-api</artifactId>
+			<version>2.5</version>
+		</dependency>
+		<dependency>
+			<groupId>javax.servlet</groupId>
+			<artifactId>jsp-api</artifactId>
+			<version>2.0</version>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.tangosol.net</groupId>
+			<artifactId>coherence</artifactId>
+			<version>3.7</version>
+		</dependency>
+		<dependency>
+			<groupId>org.tangosol.net</groupId>
+			<artifactId>coherence-web</artifactId>
+			<version>3.7</version>
+		</dependency>
+		
+		<dependency>
+            <groupId>com.oracle</groupId>
+            <artifactId>ojdbc5</artifactId>
+            <version>11.2.0</version>
+        </dependency>
+
+	</dependencies>
+	<build>
+		<finalName>cache</finalName>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-war-plugin</artifactId>
+				<configuration>
+					<webResources>
+						<resource>
+							<directory>${build.sourceDirectory}</directory>
+							<targetPath>sources</targetPath>
+						</resource>
+					</webResources>
+				</configuration>
+			</plugin>
+
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>sonar-maven-plugin</artifactId>
+				<version>2.0</version>
+			</plugin>
+
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<!-- Remove me as soon as all of droolsjbpm requires at least Java 6 -->
+				<configuration>
+					<source>1.7</source>
+					<target>1.7</target>
+				</configuration>
+			</plugin>
+
+		</plugins>
+
+	</build>
+
+</project>
+
+
+/**
+ * 
+ */
+package com.cnk.travelerp.cache;
+
+import com.tangosol.net.CacheFactory;
+import com.tangosol.net.NamedCache;
+
+// TODO: Auto-generated Javadoc
+/**
+ * The Class CoherenceCache.
+ * 
+ * @author sivaiah.polamreddy
+ */
+public class CoherenceCache {
+
+    /** The cache. */
+    NamedCache cache;
+
+    /**
+     * Instantiates a new coherence cache.
+     */
+    public CoherenceCache() {
+    }
+
+    /**
+     * Put cache.
+     */
+    public void putCache() {
+        cache = CacheFactory.getCache("DBBacked");
+        String key = "hello";
+        cache.put(key, "Hello Cache1");
+
+    }
+
+    /**
+     * Retrieve cache.
+     */
+    public void retrieveCache() {
+
+        System.out.println((String) cache.get("catalog3"));
+
+    }
+
+    /**
+     * The main method.
+     * 
+     * @param args
+     *            the arguments
+     */
+    public static void main(String[] args) {
+        CoherenceCache cache = new CoherenceCache();
+        cache.putCache();
+        cache.retrieveCache();
+    }
+}
+
+
+

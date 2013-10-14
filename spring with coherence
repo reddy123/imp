@@ -1,0 +1,1252 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans:beans xmlns="http://www.springframework.org/schema/mvc"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:beans="http://www.springframework.org/schema/beans"
+    xmlns:context="http://www.springframework.org/schema/context" xmlns:tx="http://www.springframework.org/schema/tx"
+    xsi:schemaLocation="http://www.springframework.org/schema/mvc http://www.springframework.org/schema/mvc/spring-mvc-3.0.xsd
+        http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.0.xsd
+        http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx.xsd
+        http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.0.xsd">
+
+    <annotation-driven />
+    <context:annotation-config />
+
+   <context:component-scan base-package="com.cnk.travelerp" />
+    <resources mapping="/resources/**" location="/resources/" />
+    <beans:bean
+        class="org.springframework.web.servlet.view.InternalResourceViewResolver">
+        <beans:property name="prefix" value="/WEB-INF/views/" />
+        <beans:property name="suffix" value=".jsp" />
+    </beans:bean>
+
+    
+    <beans:bean id="cacheService" depends-on="baseCacheStore" class="com.cnk.travelerp.common.caching.service.CacheService"/>
+    
+     <beans:bean id="baseCacheStore" class="com.cnk.travelerp.common.caching.cacheStore.BaseCacheStore"/>
+     
+    <beans:bean id="propertyConfigurer"
+        class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+
+        <beans:property name="locations">
+            <beans:list>
+                <beans:value>/resources/cacheQueries.properties</beans:value>
+                <beans:value>/resources/queries.properties</beans:value>
+            </beans:list>
+
+        </beans:property>
+    </beans:bean>
+
+    <!-- The servletContext is required by the ServerContextResource -->
+    <beans:bean id="servletContext"
+        class="org.springframework.web.context.support.ServletContextFactoryBean" />
+
+    <!-- Enable annotation driven transactions. Required by getCurrentSession(). -->
+    <tx:annotation-driven />
+    <beans:bean id="jaxb2Marshaller"
+        class="org.springframework.oxm.jaxb.Jaxb2Marshaller">
+        <beans:property name="classesToBeBound">
+            <beans:list>
+                <beans:value>com.cnk.travelerp.common.search.model.SearchMetaData</beans:value>
+            </beans:list>
+        </beans:property>
+    </beans:bean>
+
+    <!-- <beans:bean id="dataSource" class="org.apache.commons.dbcp.BasicDataSource" 
+        destroy-method="close"> <beans:property name="driverClassName" value="oracle.jdbc.driver.OracleDriver" 
+        /> <beans:property name="url" value="jdbc:oracle:thin:@10.21.12.129:1521/XE" 
+        /> <beans:property name="username" value="santosh" /> <beans:property name="password" 
+        value="santosh" /> </beans:bean> -->
+
+
+    <beans:bean id="namedParameterJdbcTemplate"
+        class="org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate">
+        <beans:constructor-arg ref="dataSource" />
+    </beans:bean>
+
+    <beans:bean id="dataSource"
+        class="org.springframework.jdbc.datasource.DriverManagerDataSource">
+        <beans:property name="driverClassName" value="oracle.jdbc.driver.OracleDriver" />
+        <beans:property name="url"
+            value="jdbc:oracle:thin:@10.21.12.129:1521:XE" />
+        <beans:property name="username" value="santosh" />
+        <beans:property name="password" value="santosh" />
+    </beans:bean>
+    
+    <!-- <beans:import resource="classpath:application-context.xml"/> -->
+
+    <beans:bean id="cacheFactory"
+        class="com.cnk.travelerp.common.caching.service.SpringAwareCacheFactory">
+    </beans:bean>
+    <beans:bean
+        class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
+        <beans:property name="targetClass" value="com.tangosol.net.CacheFactory" />
+        <beans:property name="targetMethod" value="setConfigurableCacheFactory" />
+        <beans:property name="arguments" ref="cacheFactory" />
+    </beans:bean>
+ 
+</beans:beans>
+
+/**
+ * 
+ */
+package com.cnk.travelerp.common.caching.cacheStore;
+
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.RowMapper;
+import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
+import org.springframework.jdbc.core.namedparam.SqlParameterSource;
+import com.cnk.travelerp.common.caching.model.SearchMetaDataCacheKey;
+import com.tangosol.net.cache.CacheStore;
+import com.tangosol.util.Base;
+
+/**
+ * The Class SearchCacheStore.
+ * 
+ * @author sivaiah.polamreddy
+ */
+
+// @Component("baseCacheStore")
+public class BaseCacheStore extends Base implements CacheStore {
+
+    public BaseCacheStore() {
+        System.out.println("BaseCacheStore calling");
+    }
+
+    @Autowired
+    private NamedParameterJdbcTemplate namedParameterJdbcTemplate; // getting
+                                                                   // NamedParameterJdbcTemplate
+                                                                   // instance
+
+    @Override
+    public Object load(Object oKey) {
+        System.out.println("load() calling");
+        final DataCacheStore dataCacheStore = CacheStoreFactory
+                .getCacheStore(oKey);
+        // factory class which will have factory method..
+        // based upon key class it will return instance of the query object...
+
+        String query = (String) dataCacheStore.getQueryForObject(); // getting
+                                                                    // query
+        System.out.println("select query for search cachedata: " + query);
+        SqlParameterSource namedParameters = criteriaForLoadObject(oKey); // setting
+                                                                          // Criteria
+        return namedParameterJdbcTemplate.queryForObject(query,
+                namedParameters, new RowMapper<Object>() {
+
+                    @Override
+                    public Object mapRow(ResultSet rs, int index)
+                            throws SQLException {
+                        return dataCacheStore.mappingCacheModel(rs);
+                    }
+
+                });
+    }
+
+    @SuppressWarnings({ "rawtypes", "unused" })
+    @Override
+    public Map loadAll(Collection colKeys) {
+        final DataCacheStore dataCacheStore = CacheStoreFactory
+                .getCacheStore(colKeys.toArray()[0]);
+        String query = null;
+        SqlParameterSource namedParameters = null;
+
+        System.out.println("loadAll(keys) calling");
+        query = (String) dataCacheStore.getQueryForLoadKeys(); // getting
+                                                               // query
+        System.out.println("select query for all cachedata: " + query);
+        namedParameters = criteriaForLoadObjects(colKeys); // setting
+
+        List<Object> cacheModelList = namedParameterJdbcTemplate.query(query,
+                namedParameters, new RowMapper<Object>() {
+
+                    @Override
+                    public Object mapRow(ResultSet rs, int index)
+                            throws SQLException {
+                        return dataCacheStore.mappingCacheModel(rs);
+                    }
+                });
+        Map map = dataCacheStore.convertListToMap(cacheModelList);
+        return map;
+
+    }
+
+    @Override
+    public void erase(Object oKey) {
+
+    }
+
+    @Override
+    public void eraseAll(Collection colKeys) {
+    }
+
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    @Override
+    public void store(Object oKey, Object oValue) {
+        System.out.println("store() calling");
+        final DataCacheStore dataCacheStore = CacheStoreFactory
+                .getCacheStore(oKey);
+        String query = (String) dataCacheStore.getQueryForStore(); // getting
+                                                                   // insert
+                                                                   // query
+        System.out.println("select query for cachedata: " + query);
+        Map param = dataCacheStore.addParameters(oValue); // adding
+        // named
+        // parameters
+        try {
+            namedParameterJdbcTemplate.update(query, param);
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Override
+    public void storeAll(Map mapEntries) {
+
+        System.out.println("storeAll()  method calling");
+    }
+
+    public SqlParameterSource criteriaForLoadObject(Object oKey) {
+        SqlParameterSource sqlParameterSource = new MapSqlParameterSource("id",
+                ((SearchMetaDataCacheKey) oKey).getId());
+
+        return sqlParameterSource;
+    }
+
+    public SqlParameterSource criteriaForLoadObjects(Collection oKeys) {
+        SqlParameterSource sqlParameterSource = null;
+        List<Integer> listKeys = new ArrayList<Integer>();
+        for (Object key : oKeys) {
+            listKeys.add(((SearchMetaDataCacheKey) key).getId());
+        }
+        sqlParameterSource = new MapSqlParameterSource("id", listKeys);
+        return sqlParameterSource;
+    }
+
+}
+package com.cnk.travelerp.common.caching.cacheStore;
+
+import com.cnk.travelerp.common.caching.model.SearchMetaDataCacheKey;
+import com.cnk.travelerp.common.caching.util.ApplicationContextUtils;
+
+public class CacheStoreFactory {
+
+    public static DataCacheStore getCacheStore(Object cacheKey) {
+        DataCacheStore dataCacheStore = null;
+        if (cacheKey instanceof SearchMetaDataCacheKey) {
+            dataCacheStore = (DataCacheStore) ApplicationContextUtils
+                    .getApplicationContext()
+                    .getBean("searchMetaDataCacheStore");
+        }
+        return dataCacheStore;
+    }
+
+}
+package com.cnk.travelerp.common.caching.cacheStore;
+
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.List;
+import java.util.Map;
+
+public interface DataCacheStore {
+
+    public Object getQueryForObject(); // load query
+
+    public Object getQueryForLoadKeys(); // loadKeys query
+
+    public Object getQueryForLoadAll(); // loadAll query
+
+    public Object getQueryForStore(); // store query
+
+    public Object getQueryForStoreAll(); // storeAll query
+
+    public Object getQueryForEarse(); // earse query
+
+    public Object getQueryForEarseAll(); // earseAll query
+
+    public Object mappingCacheModel(ResultSet rs) throws SQLException;
+
+    public Map convertListToMap(List<Object> object);
+
+    public Map addParameters(Object oValue);
+}
+package com.cnk.travelerp.common.caching.cacheStore;
+
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
+import com.cnk.travelerp.common.caching.model.SearchMetaDataCacheKey;
+import com.cnk.travelerp.common.caching.model.SearchMetaDataCacheValue;
+
+@Component("searchMetaDataCacheStore")
+public class SearchMetaDataCacheStore implements DataCacheStore {
+
+    @Value("${searchLoadForObjectQuery}")
+    private String searchLoadForObjectQuery;
+
+    @Value("${insertCacheData}")
+    private String insertCacheData;
+
+    @Value("${searchLoadAllForObjectQuery}")
+    private String searchLoadAllForObjectQuery;
+
+    @Value("${loadAllObjectQuery}")
+    private String loadAllObjectQuery;
+
+    @Override
+    public Object getQueryForObject() {
+
+        return searchLoadForObjectQuery;
+    }
+
+    @Override
+    public Object getQueryForLoadKeys() {
+        return searchLoadAllForObjectQuery;
+    }
+
+    @Override
+    public Object getQueryForLoadAll() {
+        return loadAllObjectQuery;
+    }
+
+    @Override
+    public Object getQueryForStore() {
+        return insertCacheData;
+    }
+
+    @Override
+    public Object getQueryForStoreAll() {
+        return null;
+    }
+
+    @Override
+    public Object getQueryForEarse() {
+        return null;
+    }
+
+    @Override
+    public Object getQueryForEarseAll() {
+        return null;
+    }
+
+    @Override
+    public Object mappingCacheModel(ResultSet rs) throws SQLException {
+
+        SearchMetaDataCacheValue searchCacheModel = new SearchMetaDataCacheValue();
+        searchCacheModel.setId(rs.getInt("id"));
+        searchCacheModel.setSearchXml(rs.getString("search_xml"));
+        searchCacheModel.setParentId(rs.getInt("parent_id"));
+        return searchCacheModel;
+    }
+
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    @Override
+    public Map convertListToMap(List<Object> object) {
+        Map map = new HashMap<>();
+        for (Object serCacheModel : object) {
+            map.put(new SearchMetaDataCacheKey(
+                    ((SearchMetaDataCacheValue) serCacheModel).getId()),
+                    serCacheModel);
+        }
+        return map;
+    }
+
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    @Override
+    public Map addParameters(Object oValue) {
+        SearchMetaDataCacheValue searchCacheModel = (SearchMetaDataCacheValue) oValue;
+        Map param = new HashMap<>();
+        param.put("id", searchCacheModel.getId());
+        param.put("search", searchCacheModel.getSearchXml());
+        param.put("parentId", searchCacheModel.getParentId());
+        return param;
+    }
+
+}
+package com.cnk.travelerp.common.caching.dao;
+
+import java.util.List;
+
+public interface CacheDAO {
+
+    List<Object> bulkLoadForSearchMetaDataCache();
+}
+package com.cnk.travelerp.common.caching.dao;
+
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.List;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.jdbc.core.RowMapper;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
+import org.springframework.stereotype.Repository;
+import com.cnk.travelerp.common.caching.model.SearchMetaDataCacheKey;
+
+@Repository("cacheDAO")
+public class CacheDAOImpl implements CacheDAO {
+
+    @Autowired
+    private NamedParameterJdbcTemplate namedParameterJdbcTemplate;
+
+    @Value("${loadAllObjectQuery}")
+    private String loadAllObjectQuery;
+
+    @Override
+    public List<Object> bulkLoadForSearchMetaDataCache() {
+
+        return executeQuery(loadAllObjectQuery);
+    }
+
+    @SuppressWarnings("unused")
+    private List<Object> executeQuery(String query) {
+
+        List<Object> cacheModelList = namedParameterJdbcTemplate.query(query,
+                new RowMapper<Object>() {
+
+                    @Override
+                    public Object mapRow(ResultSet rs, int id)
+                            throws SQLException {
+
+                        SearchMetaDataCacheKey searchCacheModel = new SearchMetaDataCacheKey(
+                                rs.getInt("id"));
+
+                        return searchCacheModel;
+                    }
+
+                });
+
+        return cacheModelList;
+    }
+}
+package com.cnk.travelerp.common.caching.model;
+
+import java.io.Serializable;
+
+public class SearchMetaDataCacheKey implements Serializable {
+
+    /**
+     * 
+     */
+    private static final long serialVersionUID = 1L;
+    private Integer id;
+
+    public SearchMetaDataCacheKey(Integer id) {
+        this.id = id;
+    }
+
+    public Integer getId() {
+        return id;
+    }
+
+    public void setId(Integer id) {
+        this.id = id;
+    }
+
+    @Override
+    public boolean equals(Object object) {
+        boolean result = false;
+        SearchMetaDataCacheKey searchMetaDataCacheKey = (SearchMetaDataCacheKey) object;
+        if (searchMetaDataCacheKey != null
+                && searchMetaDataCacheKey.getId() != null) {
+            if (this.getId().intValue() == searchMetaDataCacheKey.getId()
+                    .intValue()) {
+                result = true;
+            }
+        }
+        return result;
+    }
+
+    @Override
+    public int hashCode() {
+        int hash = 7 * 3 + this.id.hashCode();
+        return hash;
+    }
+
+}
+/*
+ * 
+ */
+package com.cnk.travelerp.common.caching.model;
+
+import java.io.Serializable;
+
+/**
+ * The Class SearchCacheModel.
+ */
+public class SearchMetaDataCacheValue implements Serializable {
+
+    /** The Constant serialVersionUID. */
+    private static final long serialVersionUID = -745833991149442489L;
+
+    /** The id. */
+    private Integer id;
+
+    /** The search xml. */
+    private String searchXml;
+
+    /** The parent id. */
+    private int parentId;
+
+    /**
+     * Gets the id.
+     * 
+     * @return the id
+     */
+    public Integer getId() {
+        return id;
+    }
+
+    /**
+     * Sets the id.
+     * 
+     * @param id
+     *            the new id
+     */
+    public void setId(Integer id) {
+        this.id = id;
+    }
+
+    /**
+     * Gets the search xml.
+     * 
+     * @return the search xml
+     */
+    public String getSearchXml() {
+        return searchXml;
+    }
+
+    /**
+     * Sets the search xml.
+     * 
+     * @param searchXml
+     *            the new search xml
+     */
+    public void setSearchXml(String searchXml) {
+        this.searchXml = searchXml;
+    }
+
+    /**
+     * Gets the parent id.
+     * 
+     * @return the parent id
+     */
+    public int getParentId() {
+        return parentId;
+    }
+
+    /**
+     * Sets the parent id.
+     * 
+     * @param parentId
+     *            the new parent id
+     */
+    public void setParentId(int parentId) {
+        this.parentId = parentId;
+    }
+
+}
+/**
+ * 
+ */
+package com.cnk.travelerp.common.caching.service;
+
+import java.util.Collection;
+import org.springframework.beans.factory.annotation.Autowired;
+import com.cnk.travelerp.common.caching.dao.CacheDAO;
+import com.tangosol.net.CacheFactory;
+import com.tangosol.net.NamedCache;
+
+// TODO: Auto-generated Javadoc
+/**
+ * The Class CacheService.
+ * 
+ * @author sivaiah.polamreddy
+ */
+// @Service("cacheService")
+public class CacheService implements ICacheService {
+
+    private NamedCache searchMetaDataCache;
+
+    @Autowired
+    private CacheDAO cacheDAO;
+
+    public void setSearchMetaDataCache(NamedCache searchMetaDataCache) {
+        this.searchMetaDataCache = searchMetaDataCache;
+    }
+
+    /**
+     * Instantiates a new cache service.
+     */
+    public CacheService() {
+        System.out.println("cache service");
+        searchMetaDataCache = CacheFactory.getCache("DBCache");
+    }
+
+    @Override
+    public Object addToCache(Object key, Object value) {
+
+        return searchMetaDataCache.put(key, value);
+    }
+
+    @Override
+    public Object getFromCache(Object key) {
+        return searchMetaDataCache.get(key);
+    }
+
+    @Override
+    public Object deleteFromCache(Object key) {
+        return searchMetaDataCache.remove(key);
+    }
+
+    @Override
+    public NamedCache getCache() {
+
+        return searchMetaDataCache;
+    }
+
+    @SuppressWarnings("rawtypes")
+    @Override
+    public Object getListFromCache(Collection keys) {
+
+        return searchMetaDataCache.getAll(keys);
+    }
+
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    @Override
+    public void bulkLoad() {
+
+        // List buffer = new ArrayList<>();
+        // int count = 0;
+        //
+        // List li = new ArrayList<>();
+        // li.add(new SearchMetaDataCacheKey(0));
+        // // li.add("ALL");
+        // Map<Object, Object> m = searchMetaDataCache.getAll(li);
+        // Iterator iterator = m.entrySet().iterator();
+        // while (iterator.hasNext()) {
+        // Map.Entry entry = (Map.Entry) iterator.next();
+        // buffer.add(entry.getValue());
+        // if (count++ == 1000) {
+        // searchMetaDataCache.getAll(buffer);
+        // buffer.clear();
+        // }
+        // }
+        // if (!li.isEmpty()) {
+        // searchMetaDataCache.getAll(buffer);
+        // }
+
+        searchMetaDataCache.getAll(cacheDAO.bulkLoadForSearchMetaDataCache());
+
+    }
+
+}
+/**
+ * 
+ */
+package com.cnk.travelerp.common.caching.service;
+
+import java.util.Collection;
+import com.tangosol.net.NamedCache;
+
+// TODO: Auto-generated Javadoc
+/**
+ * The Interface CacheService.
+ * 
+ * @author sivaiah.polamreddy
+ */
+public interface ICacheService {
+
+    public Object addToCache(Object key, Object value);
+
+    public Object getFromCache(Object key);
+
+    public Object deleteFromCache(Object key);
+
+    public Object getListFromCache(Collection keys);
+
+    public void bulkLoad();
+
+    public NamedCache getCache();
+}
+/**
+ * 
+ */
+package com.cnk.travelerp.common.caching.service;
+
+/**
+ * @author sivaiah.polamreddy
+ *
+ */
+import java.util.Iterator;
+import org.springframework.beans.factory.BeanFactory;
+import org.springframework.beans.factory.BeanFactoryAware;
+import org.springframework.context.support.AbstractApplicationContext;
+import org.springframework.context.support.ClassPathXmlApplicationContext;
+import org.springframework.context.support.FileSystemXmlApplicationContext;
+import com.tangosol.net.BackingMapManagerContext;
+import com.tangosol.net.DefaultConfigurableCacheFactory;
+import com.tangosol.run.xml.SimpleElement;
+import com.tangosol.run.xml.XmlElement;
+import com.tangosol.run.xml.XmlHelper;
+import com.tangosol.util.ClassHelper;
+
+/**
+ * SpringAwareCacheFactory provides a facility to access caches declared in a
+ * "cache-config.dtd" compliant configuration file, similar to its super class
+ * {@link DefaultConfigurableCacheFactory}. In addition, this factory provides
+ * the ability to reference beans in a Spring application context through the
+ * use of a class-scheme element.
+ * 
+ * This factory can be configured to start its own Spring application context
+ * from which to retrieve these beans. This can be useful for standalone JVMs
+ * such as cache servers. It can also be configured at run time with a
+ * preconfigured Spring bean factory. This can be useful for Coherence
+ * applications running in an environment that is itself responsible for
+ * starting the Spring bean factory, such as a web container.
+ * 
+ * @see #instantiateAny(CacheInfo, XmlElement, BackingMapManagerContext,
+ *      ClassLoader)
+ * 
+ */
+
+public class SpringAwareCacheFactory extends DefaultConfigurableCacheFactory
+        implements BeanFactoryAware {
+
+    // ----- constructors -------------------------------------------------
+
+    /**
+     * Construct a default DefaultConfigurableCacheFactory using the default
+     * configuration file name.
+     */
+    public SpringAwareCacheFactory() {
+        super();
+    }
+
+    /**
+     * Construct a SpringAwareCacheFactory using the specified path to a
+     * "cache-config.dtd" compliant configuration file or resource. This will
+     * also create a Spring ApplicationContext based on the supplied path to a
+     * Spring compliant configuration file or resource.
+     * 
+     * @param sCacheConfig
+     *            location of a cache configuration
+     * @param sAppContext
+     *            location of a Spring application context
+     */
+    public SpringAwareCacheFactory(String sCacheConfig, String sAppContext) {
+        super(sCacheConfig);
+
+        azzert(sAppContext != null && sAppContext.length() > 0,
+                "Application context location required");
+
+        m_beanFactory = sCacheConfig.startsWith("file:") ? (BeanFactory) new FileSystemXmlApplicationContext(
+                sAppContext) : new ClassPathXmlApplicationContext(sAppContext);
+
+        // register a shutdown hook so the bean factory cleans up
+        // upon JVM exit
+        ((AbstractApplicationContext) m_beanFactory).registerShutdownHook();
+    }
+
+    /**
+     * Construct a SpringAwareCacheFactory using the specified path to a
+     * "cache-config.dtd" compliant configuration file or resource and the
+     * supplied Spring BeanFactory.
+     * 
+     * @param sPath
+     *            the configuration resource name or file path
+     * @param beanFactory
+     *            Spring BeanFactory used to load Spring beans
+     */
+    public SpringAwareCacheFactory(String sPath, BeanFactory beanFactory) {
+        super(sPath);
+
+        m_beanFactory = beanFactory;
+    }
+
+    // ----- extended methods -----------------------------------------------
+
+    /**
+     * Create an Object using the "class-scheme" element.
+     * 
+     * In addition to the functionality provided by the super class, this will
+     * retreive an object from the configured Spring BeanFactory for class names
+     * that use the following format:
+     * 
+     * &lt;class-name&gt;spring-bean:sampleCacheStore&lt;/class-name&gt;
+     * 
+     * 
+     * Parameters may be passed to these beans through setter injection as well:
+     * 
+     * &lt;init-params&gt; &lt;init-param&gt;
+     * &lt;param-name&gt;setEntityName&lt;/param-name&gt;
+     * &lt;param-value&gt;{cache-name}&lt;/param-value&gt; &lt;/init-param&gt;
+     * &lt;/init-params&gt;
+     * 
+     * 
+     * Note that Coherence will manage the lifecycle of the instantiated Spring
+     * bean, therefore any beans that are retrieved using this method should be
+     * scoped as a prototype in the Spring configuration file, for example:
+     * 
+     * &lt;bean id="sampleCacheStore" class="com.company.SampleCacheStore"
+     * scope="prototype"/&gt;
+     * 
+     * 
+     * @param info
+     *            the cache info
+     * @param xmlClass
+     *            "class-scheme" element.
+     * @param context
+     *            BackingMapManagerContext to be used
+     * @param loader
+     *            the ClassLoader to instantiate necessary classes
+     * 
+     * @return a newly instantiated Object
+     * 
+     * @see DefaultConfigurableCacheFactory#instantiateAny(CacheInfo,
+     *      XmlElement, BackingMapManagerContext, ClassLoader)
+     */
+    @Override
+    public Object instantiateAny(CacheInfo info, XmlElement xmlClass,
+            BackingMapManagerContext context, ClassLoader loader) {
+        if (translateSchemeType(xmlClass.getName()) != SCHEME_CLASS) {
+            throw new IllegalArgumentException("Invalid class definition: "
+                    + xmlClass);
+        }
+
+        String sClass = xmlClass.getSafeElement("class-name").getString();
+
+        if (sClass.startsWith(SPRING_BEAN_PREFIX)) {
+            String sBeanName = sClass.substring(SPRING_BEAN_PREFIX.length());
+
+            azzert(sBeanName != null && sBeanName.length() > 0,
+                    "Bean name required");
+
+            XmlElement xmlParams = xmlClass.getElement("init-params");
+            XmlElement xmlConfig = null;
+            if (xmlParams != null) {
+                xmlConfig = new SimpleElement("config");
+                XmlHelper.transformInitParams(xmlConfig, xmlParams);
+            }
+
+            Object oBean = getBeanFactory().getBean(sBeanName);
+
+            if (xmlConfig != null) {
+                for (Iterator iter = xmlConfig.getElementList().iterator(); iter
+                        .hasNext();) {
+                    XmlElement xmlElement = (XmlElement) iter.next();
+
+                    String sMethod = xmlElement.getName();
+                    String sParam = xmlElement.getString();
+                    try {
+                        ClassHelper.invoke(oBean, sMethod,
+                                new Object[] { sParam });
+                    }
+                    catch (Exception e) {
+                        ensureRuntimeException(e, "Could not invoke " + sMethod
+                                + "(" + sParam + ") on bean " + oBean);
+                    }
+                }
+            }
+            return oBean;
+        }
+        else {
+            return super.instantiateAny(info, xmlClass, context, loader);
+        }
+    }
+
+    /**
+     * Get the Spring BeanFactory used by this CacheFactory.
+     * 
+     * @return the Spring {@link BeanFactory} used by this CacheFactory
+     */
+    public BeanFactory getBeanFactory() {
+        azzert(m_beanFactory != null, "Spring BeanFactory == null");
+        return m_beanFactory;
+    }
+
+    /**
+     * Set the Spring BeanFactory used by this CacheFactory.
+     * 
+     * @param beanFactory
+     *            the Spring {@link BeanFactory} used by this CacheFactory
+     */
+    @Override
+    public void setBeanFactory(BeanFactory beanFactory) {
+        m_beanFactory = beanFactory;
+    }
+
+    // ----- data fields ----------------------------------------------------
+
+    /**
+     * Spring BeanFactory used by this CacheFactory
+     */
+    private BeanFactory m_beanFactory;
+
+    /**
+     * Prefix used in cache configuration "class-name" element to indicate this
+     * bean is in Spring.
+     */
+    private static final String SPRING_BEAN_PREFIX = "spring-bean:";
+}
+package com.cnk.travelerp.common.caching.util;
+
+import org.springframework.beans.BeansException;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationContextAware;
+import org.springframework.stereotype.Component;
+
+@Component("applicationContextUtils")
+public class ApplicationContextUtils implements ApplicationContextAware {
+
+    private static ApplicationContext ctx;
+
+    @Override
+    public void setApplicationContext(ApplicationContext appContext)
+            throws BeansException {
+        ctx = appContext;
+
+    }
+
+    public static ApplicationContext getApplicationContext() {
+        return ctx;
+    }
+}
+/**
+ * 
+ */
+package com.cnk.travelerp.common.caching.client;
+
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.support.ClassPathXmlApplicationContext;
+import com.cnk.travelerp.common.caching.model.SearchMetaDataCacheKey;
+import com.cnk.travelerp.common.caching.model.SearchMetaDataCacheValue;
+import com.cnk.travelerp.common.caching.service.CacheService;
+
+// TODO: Auto-generated Javadoc
+/**
+ * The Class DatabaseCache.
+ * 
+ * @author sivaiah.polamreddy
+ */
+public class Test {
+
+    public static void main(String[] args) {
+        ApplicationContext context = new ClassPathXmlApplicationContext(
+                "application-context.xml");
+        CacheService cacheService = (CacheService) context
+                .getBean("cacheService");
+
+        cacheService.bulkLoad();
+
+        System.out.println(((SearchMetaDataCacheValue) cacheService
+                .getFromCache(new SearchMetaDataCacheKey(101))).getSearchXml());
+
+        System.out.println(((SearchMetaDataCacheValue) cacheService
+                .getFromCache(new SearchMetaDataCacheKey(103))).getSearchXml());
+        System.out.println(((SearchMetaDataCacheValue) cacheService
+                .getFromCache(new SearchMetaDataCacheKey(103))).getSearchXml());
+    }
+}
+
+application-context.xml:
+
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:p="http://www.springframework.org/schema/p"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:mvc="http://www.springframework.org/schema/mvc"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans 
+       http://www.springframework.org/schema/beans/spring-beans-2.5.xsd
+    http://www.springframework.org/schema/context 
+       http://www.springframework.org/schema/context/spring-context-2.5.xsd">
+
+	
+	<context:component-scan base-package="com.cnk.travelerp" />
+	
+	<bean id="cacheService" depends-on="baseCacheStore" class="com.cnk.travelerp.common.caching.service.CacheService"/>
+    
+     <bean id="baseCacheStore" class="com.cnk.travelerp.common.caching.cacheStore.BaseCacheStore"/>
+	
+	<bean id="dataSource"
+		class="org.springframework.jdbc.datasource.DriverManagerDataSource">
+		<property name="driverClassName" value="oracle.jdbc.driver.OracleDriver" />
+		<property name="url" value="jdbc:oracle:thin:@10.21.12.129:1521:XE" />
+		<property name="username" value="santosh" />
+		<property name="password" value="santosh" />
+	</bean>
+
+	 
+
+	<bean id="cacheFactory"
+		class="com.cnk.travelerp.common.caching.service.SpringAwareCacheFactory">
+	</bean>
+	 <bean
+		class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
+		<property name="targetClass" value="com.tangosol.net.CacheFactory" />
+		<property name="targetMethod" value="setConfigurableCacheFactory" />
+		<property name="arguments" ref="cacheFactory" />
+	</bean> 
+
+	<!--configuring property file -->
+	<bean id="propertyConfigurer"
+		class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer"
+		scope="prototype">
+		<property name="location" value="cacheQueries.properties">
+		</property>
+	</bean>
+
+	 <bean class="org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate" 
+		id="namedParameterJdbcTemplate"> <constructor-arg ref="dataSource" /> </bean> 
+	 
+
+</beans>
+
+cacheQueries.properties:
+
+searchLoadForObjectQuery=SELECT id, search_xml, parent_id FROM SEARCH_TEST WHERE id=:id
+searchLoadAllForObjectQuery=SELECT id, search_xml, parent_id FROM SEARCH_TEST WHERE id in (:id)
+insertCacheData= INSERT INTO SEARCH_TEST (id, search_xml, parent_id) VALUES (:id,:search,:parentId)
+loadAllObjectQuery= SELECT id, search_xml, parent_id FROM SEARCH_TEST
+searchMetaDataLoadAllQuery= SELECT DISTINCT ID FROM SEARCH_TEST
+
+coherence-cache-config.xml:
+
+<?xml version="1.0"?>
+<!DOCTYPE cache-config SYSTEM "cache-config.dtd">
+<cache-config>
+	<caching-scheme-mapping>
+		<!-- Caches with names that start with 'DBBacked' will be created as distributed-db-backed. -->
+		<cache-mapping>
+			<cache-name>DBCache</cache-name>
+			<scheme-name>distributed-db-DBCache</scheme-name>
+		</cache-mapping>
+	</caching-scheme-mapping>
+	<caching-schemes>
+		<!-- DB Backed Distributed caching scheme. -->
+		<distributed-scheme>
+			<scheme-name>distributed-db-DBCache</scheme-name>
+			<service-name>DistributedCache</service-name>
+			<backing-map-scheme>
+				<read-write-backing-map-scheme>
+					<internal-cache-scheme>
+						<local-scheme>
+							<expiry-delay>1m</expiry-delay>
+						</local-scheme>
+						<!-- <class-scheme>
+							<class-name>com.tangosol.util.ObservableHashMap</class-name>
+						</class-scheme> -->
+					</internal-cache-scheme>
+					<cachestore-scheme>
+						<class-scheme>
+							<!--<class-name>com.cnk.travelerp.common.caching.cacheStore.SearchCacheStore</class-name> -->
+							<class-name>spring-bean:baseCacheStore</class-name>
+						</class-scheme>
+						
+						<operation-bundling>
+							<bundle-config>
+								<operation-name>load</operation-name>
+								<preferred-size>10</preferred-size>
+								<delay-millis>1</delay-millis>
+								<thread-threshold>50</thread-threshold>
+								<auto-adjust>true</auto-adjust>
+							</bundle-config>
+						</operation-bundling>
+					</cachestore-scheme>
+					<read-only>false</read-only>
+					<!-- To make this a write-through cache just change the value below 
+						to 0 (zero) -->
+					<write-delay-seconds>0</write-delay-seconds>
+					<refresh-ahead-factor>0.5</refresh-ahead-factor>
+				</read-write-backing-map-scheme>
+			</backing-map-scheme>
+			<listener />
+			<autostart>true</autostart>
+		</distributed-scheme>
+	</caching-schemes>
+</cache-config>
+
+tangosol-coherence-override.xml:
+
+<?xml version="1.0" encoding="UTF-8"?>
+<coherence xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns="http://xmlns.oracle.com/coherence/coherence-operational-config"
+	xsi:schemaLocation="http://xmlns.oracle.com/coherence/coherence-operational-config coherence-operational-config.xsd">
+
+
+	<cluster-config>
+		<member-identity>
+			<cluster-name system-property="tangosol.coherence.cluster">CoherenceCluster
+			</cluster-name>
+		</member-identity>
+		<unicast-listener>
+		</unicast-listener>
+		<multicast-listener>
+			<address system-property="tangosol.coherence.clusteraddress">231.1.1.1</address>
+			<port system-property="tangosol.coherence.clusterport">7777</port>
+			<time-to-live system-property="tangosol.coherence.ttl">3</time-to-live>
+			<join-timeout-milliseconds>30000</join-timeout-milliseconds>
+			<multicast-threshold-percent>25</multicast-threshold-percent>
+		</multicast-listener>
+	</cluster-config>
+
+	<!-- <configurable-cache-factory-config> <class-name>com.cnk.travelerp.common.caching.service.SpringAwareCacheFactory 
+		</class-name> <init-params> <init-param> <param-type>java.lang.String</param-type> 
+		<param-value system-property="tangosol.coherence.cacheconfig">coherence-cache-config.xml 
+		</param-value> </init-param> <init-param id="1"> <param-type>java.lang.String</param-type> 
+		<param-value system-property="tangosol.coherence.springconfig">application-context.xml 
+		</param-value> </init-param> </init-params> </configurable-cache-factory-config> -->
+
+</coherence>
+
+
+package com.cnk.travelerp.common.caching.test;
+
+import org.junit.runner.RunWith;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+
+@RunWith(SpringJUnit4ClassRunner.class)
+@ContextConfiguration(locations = { "classpath:application-context.xml" })
+@ActiveProfiles("dev")
+public abstract class AbstractConfigurationTest {
+
+}
+/**
+ * 
+ */
+package com.cnk.travelerp.common.caching.test;
+
+import org.junit.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import com.cnk.travelerp.common.caching.model.SearchMetaDataCacheKey;
+import com.cnk.travelerp.common.caching.model.SearchMetaDataCacheValue;
+import com.cnk.travelerp.common.caching.service.ICacheService;
+
+public class CacheTest0 extends AbstractConfigurationTest {
+
+    @Autowired
+    private ICacheService cacheService;
+
+    @Test
+    public void cacheTest() {
+
+        System.out.println(((SearchMetaDataCacheValue) cacheService
+                .getFromCache(new SearchMetaDataCacheKey(101))).getSearchXml());
+        System.out.println(((SearchMetaDataCacheValue) cacheService
+                .getFromCache(new SearchMetaDataCacheKey(101))).getSearchXml());
+    }
+
+    // @Test
+    public void bulkLoadTest() {
+
+        cacheService.bulkLoad();
+
+        System.out.println(((SearchMetaDataCacheValue) cacheService
+                .getFromCache(new SearchMetaDataCacheKey(101))).getSearchXml());
+        System.out.println(((SearchMetaDataCacheValue) cacheService
+                .getFromCache(new SearchMetaDataCacheKey(103))).getSearchXml());
+    }
+
+}
+
+pom.xml:
+
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>com.cnk.travelerpibe.common</groupId>
+		<artifactId>common</artifactId>
+		<version>1.0.0-SNAPSHOT</version>
+		<!-- relativePath causes out-of-date problems on hudson slaves -->
+		<relativePath>../pom.xml</relativePath>
+	</parent>
+
+	<artifactId>cnk-common-caching</artifactId>
+	<packaging>jar</packaging>
+	<name>cnk-common-caching</name>
+	<description>this is caching component</description>
+
+	<dependencies>
+
+		<!-- <dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-core</artifactId>
+			<version>3.2.4.RELEASE</version>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-beans</artifactId>
+			<version>3.2.4.RELEASE</version>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-context</artifactId>
+			<version>3.2.4.RELEASE</version>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-jdbc</artifactId>
+			<version>3.2.3.RELEASE</version>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-test</artifactId>
+			<version>3.2.4.RELEASE</version>
+		</dependency>
+		<dependency>
+			<groupId>jstl</groupId>
+			<artifactId>jstl</artifactId>
+			<version>1.2</version>
+		</dependency>
+		<dependency>
+			<groupId>javax.servlet</groupId>
+			<artifactId>servlet-api</artifactId>
+			<version>2.5</version>
+		</dependency>
+		<dependency>
+			<groupId>javax.servlet</groupId>
+			<artifactId>jsp-api</artifactId>
+			<version>2.0</version>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>com.oracle</groupId>
+			<artifactId>ojdbc5</artifactId>
+			<version>11.2.0</version>
+		</dependency>
+		<dependency>
+			<groupId>org.tangosol.net</groupId>
+			<artifactId>coherence</artifactId>
+			<version>3.7</version>
+		</dependency>
+		<dependency>
+			<groupId>org.tangosol.net</groupId>
+			<artifactId>coherence-web</artifactId>
+			<version>3.7</version>
+
+		</dependency> -->
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-jdbc</artifactId>
+			<version>3.2.3.RELEASE</version><!--$NO-MVN-MAN-VER$ -->
+		</dependency>
+		<!-- <dependency> <groupId>com.cnk.travelerpibe.common</groupId> <artifactId>customexception</artifactId> 
+			<version>1.0.0-SNAPSHOT</version> </dependency> -->
+	</dependencies>
+
+</project>
+

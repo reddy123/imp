@@ -1,0 +1,539 @@
+--------------------------------------------------------
+--  File created - Sunday-January-05-2014   
+--------------------------------------------------------
+--------------------------------------------------------
+--  DDL for Table GROUPMEMBERS
+--------------------------------------------------------
+
+  CREATE TABLE "SOASUITE"."GROUPMEMBERS" 
+   (	"G_NAME" VARCHAR2(200 BYTE), 
+	"G_MEMBER" VARCHAR2(200 BYTE)
+   ) SEGMENT CREATION IMMEDIATE 
+  PCTFREE 10 PCTUSED 40 INITRANS 1 MAXTRANS 255 NOCOMPRESS LOGGING
+  STORAGE(INITIAL 65536 NEXT 1048576 MINEXTENTS 1 MAXEXTENTS 2147483645
+  PCTINCREASE 0 FREELISTS 1 FREELIST GROUPS 1 BUFFER_POOL DEFAULT FLASH_CACHE DEFAULT CELL_FLASH_CACHE DEFAULT)
+  TABLESPACE "SYSTEM" ;
+--------------------------------------------------------
+--  DDL for Table GROUPS
+--------------------------------------------------------
+
+  CREATE TABLE "SOASUITE"."GROUPS" 
+   (	"G_NAME" VARCHAR2(200 BYTE), 
+	"G_DESCRIPTION" VARCHAR2(1000 BYTE)
+   ) SEGMENT CREATION IMMEDIATE 
+  PCTFREE 10 PCTUSED 40 INITRANS 1 MAXTRANS 255 NOCOMPRESS LOGGING
+  STORAGE(INITIAL 65536 NEXT 1048576 MINEXTENTS 1 MAXEXTENTS 2147483645
+  PCTINCREASE 0 FREELISTS 1 FREELIST GROUPS 1 BUFFER_POOL DEFAULT FLASH_CACHE DEFAULT CELL_FLASH_CACHE DEFAULT)
+  TABLESPACE "SYSTEM" ;
+--------------------------------------------------------
+--  DDL for Table USERS
+--------------------------------------------------------
+
+  CREATE TABLE "SOASUITE"."USERS" 
+   (	"U_NAME" VARCHAR2(200 BYTE), 
+	"U_PASSWORD" VARCHAR2(50 BYTE), 
+	"U_DESCRIPTION" VARCHAR2(1000 BYTE)
+   ) SEGMENT CREATION IMMEDIATE 
+  PCTFREE 10 PCTUSED 40 INITRANS 1 MAXTRANS 255 NOCOMPRESS LOGGING
+  STORAGE(INITIAL 65536 NEXT 1048576 MINEXTENTS 1 MAXEXTENTS 2147483645
+  PCTINCREASE 0 FREELISTS 1 FREELIST GROUPS 1 BUFFER_POOL DEFAULT FLASH_CACHE DEFAULT CELL_FLASH_CACHE DEFAULT)
+  TABLESPACE "SYSTEM" ;
+REM INSERTING into SOASUITE.GROUPMEMBERS
+SET DEFINE OFF;
+Insert into SOASUITE.GROUPMEMBERS (G_NAME,G_MEMBER) values ('Administrators','adminuser');
+Insert into SOASUITE.GROUPMEMBERS (G_NAME,G_MEMBER) values ('Administrators','jcooper');
+Insert into SOASUITE.GROUPMEMBERS (G_NAME,G_MEMBER) values ('Administrators','mohan');
+Insert into SOASUITE.GROUPMEMBERS (G_NAME,G_MEMBER) values ('Administrators','weblogic');
+Insert into SOASUITE.GROUPMEMBERS (G_NAME,G_MEMBER) values ('BPMWorkflowAdmin','bpmuser1');
+Insert into SOASUITE.GROUPMEMBERS (G_NAME,G_MEMBER) values ('creator','pankaj');
+Insert into SOASUITE.GROUPMEMBERS (G_NAME,G_MEMBER) values ('creator','reddy');
+Insert into SOASUITE.GROUPMEMBERS (G_NAME,G_MEMBER) values ('creator','testuser');
+Insert into SOASUITE.GROUPMEMBERS (G_NAME,G_MEMBER) values ('developers','naveen');
+Insert into SOASUITE.GROUPMEMBERS (G_NAME,G_MEMBER) values ('manager','mohan');
+Insert into SOASUITE.GROUPMEMBERS (G_NAME,G_MEMBER) values ('manager','testuser2');
+Insert into SOASUITE.GROUPMEMBERS (G_NAME,G_MEMBER) values ('managers','bpmuser2');
+REM INSERTING into SOASUITE.GROUPS
+SET DEFINE OFF;
+Insert into SOASUITE.GROUPS (G_NAME,G_DESCRIPTION) values ('California','California group');
+Insert into SOASUITE.GROUPS (G_NAME,G_DESCRIPTION) values ('SalesClerk','Sales Clerk group');
+Insert into SOASUITE.GROUPS (G_NAME,G_DESCRIPTION) values ('Administrators','Admin group');
+Insert into SOASUITE.GROUPS (G_NAME,G_DESCRIPTION) values ('developers','Developer group');
+Insert into SOASUITE.GROUPS (G_NAME,G_DESCRIPTION) values ('manager','Manager Group');
+Insert into SOASUITE.GROUPS (G_NAME,G_DESCRIPTION) values ('creator','Creator Group');
+Insert into SOASUITE.GROUPS (G_NAME,G_DESCRIPTION) values ('managers',' group');
+Insert into SOASUITE.GROUPS (G_NAME,G_DESCRIPTION) values ('BPMWorkflowAdmin','BPMWorkflowAdmin');
+REM INSERTING into SOASUITE.USERS
+SET DEFINE OFF;
+Insert into SOASUITE.USERS (U_NAME,U_PASSWORD,U_DESCRIPTION) values ('jcooper','welcome1','demo user');
+Insert into SOASUITE.USERS (U_NAME,U_PASSWORD,U_DESCRIPTION) values ('mohan','welcome1','demo user');
+Insert into SOASUITE.USERS (U_NAME,U_PASSWORD,U_DESCRIPTION) values ('reddy','welcome1','demo user');
+Insert into SOASUITE.USERS (U_NAME,U_PASSWORD,U_DESCRIPTION) values ('pankaj','welcome1','demo user');
+Insert into SOASUITE.USERS (U_NAME,U_PASSWORD,U_DESCRIPTION) values ('naveen','welcome1','demo user');
+Insert into SOASUITE.USERS (U_NAME,U_PASSWORD,U_DESCRIPTION) values ('testuser','{SHA-1}slOJ5WN2YrOY3+a2KowS+SKPMBhbJBs=','testuser');
+Insert into SOASUITE.USERS (U_NAME,U_PASSWORD,U_DESCRIPTION) values ('testuser2','{SHA-1}GdIpKRkxM1u4t6KHjPUWXSNwrrlnOVM=','tseruser2');
+Insert into SOASUITE.USERS (U_NAME,U_PASSWORD,U_DESCRIPTION) values ('bpmuser1','bpmuser1','bpmuser1');
+Insert into SOASUITE.USERS (U_NAME,U_PASSWORD,U_DESCRIPTION) values ('bpmuser2','bpmuser2','bpmuser2');
+Insert into SOASUITE.USERS (U_NAME,U_PASSWORD,U_DESCRIPTION) values ('adminuser','adminuser1','adminuser1');
+Insert into SOASUITE.USERS (U_NAME,U_PASSWORD,U_DESCRIPTION) values ('weblogic','weblogic123','weblogic123');
+--------------------------------------------------------
+--  DDL for Index PK_GROUPMEMS
+--------------------------------------------------------
+
+  CREATE UNIQUE INDEX "SOASUITE"."PK_GROUPMEMS" ON "SOASUITE"."GROUPMEMBERS" ("G_NAME", "G_MEMBER") 
+  PCTFREE 10 INITRANS 2 MAXTRANS 255 COMPUTE STATISTICS 
+  STORAGE(INITIAL 65536 NEXT 1048576 MINEXTENTS 1 MAXEXTENTS 2147483645
+  PCTINCREASE 0 FREELISTS 1 FREELIST GROUPS 1 BUFFER_POOL DEFAULT FLASH_CACHE DEFAULT CELL_FLASH_CACHE DEFAULT)
+  TABLESPACE "SYSTEM" ;
+--------------------------------------------------------
+--  DDL for Index PK_GROUPS
+--------------------------------------------------------
+
+  CREATE UNIQUE INDEX "SOASUITE"."PK_GROUPS" ON "SOASUITE"."GROUPS" ("G_NAME") 
+  PCTFREE 10 INITRANS 2 MAXTRANS 255 COMPUTE STATISTICS 
+  STORAGE(INITIAL 65536 NEXT 1048576 MINEXTENTS 1 MAXEXTENTS 2147483645
+  PCTINCREASE 0 FREELISTS 1 FREELIST GROUPS 1 BUFFER_POOL DEFAULT FLASH_CACHE DEFAULT CELL_FLASH_CACHE DEFAULT)
+  TABLESPACE "SYSTEM" ;
+--------------------------------------------------------
+--  DDL for Index PK_USERS
+--------------------------------------------------------
+
+  CREATE UNIQUE INDEX "SOASUITE"."PK_USERS" ON "SOASUITE"."USERS" ("U_NAME") 
+  PCTFREE 10 INITRANS 2 MAXTRANS 255 COMPUTE STATISTICS 
+  STORAGE(INITIAL 65536 NEXT 1048576 MINEXTENTS 1 MAXEXTENTS 2147483645
+  PCTINCREASE 0 FREELISTS 1 FREELIST GROUPS 1 BUFFER_POOL DEFAULT FLASH_CACHE DEFAULT CELL_FLASH_CACHE DEFAULT)
+  TABLESPACE "SYSTEM" ;
+--------------------------------------------------------
+--  Constraints for Table GROUPMEMBERS
+--------------------------------------------------------
+
+  ALTER TABLE "SOASUITE"."GROUPMEMBERS" ADD CONSTRAINT "PK_GROUPMEMS" PRIMARY KEY ("G_NAME", "G_MEMBER")
+  USING INDEX PCTFREE 10 INITRANS 2 MAXTRANS 255 COMPUTE STATISTICS 
+  STORAGE(INITIAL 65536 NEXT 1048576 MINEXTENTS 1 MAXEXTENTS 2147483645
+  PCTINCREASE 0 FREELISTS 1 FREELIST GROUPS 1 BUFFER_POOL DEFAULT FLASH_CACHE DEFAULT CELL_FLASH_CACHE DEFAULT)
+  TABLESPACE "SYSTEM"  ENABLE;
+  ALTER TABLE "SOASUITE"."GROUPMEMBERS" MODIFY ("G_MEMBER" NOT NULL ENABLE);
+  ALTER TABLE "SOASUITE"."GROUPMEMBERS" MODIFY ("G_NAME" NOT NULL ENABLE);
+--------------------------------------------------------
+--  Constraints for Table GROUPS
+--------------------------------------------------------
+
+  ALTER TABLE "SOASUITE"."GROUPS" ADD CONSTRAINT "PK_GROUPS" PRIMARY KEY ("G_NAME")
+  USING INDEX PCTFREE 10 INITRANS 2 MAXTRANS 255 COMPUTE STATISTICS 
+  STORAGE(INITIAL 65536 NEXT 1048576 MINEXTENTS 1 MAXEXTENTS 2147483645
+  PCTINCREASE 0 FREELISTS 1 FREELIST GROUPS 1 BUFFER_POOL DEFAULT FLASH_CACHE DEFAULT CELL_FLASH_CACHE DEFAULT)
+  TABLESPACE "SYSTEM"  ENABLE;
+  ALTER TABLE "SOASUITE"."GROUPS" MODIFY ("G_NAME" NOT NULL ENABLE);
+--------------------------------------------------------
+--  Constraints for Table USERS
+--------------------------------------------------------
+
+  ALTER TABLE "SOASUITE"."USERS" ADD CONSTRAINT "PK_USERS" PRIMARY KEY ("U_NAME")
+  USING INDEX PCTFREE 10 INITRANS 2 MAXTRANS 255 COMPUTE STATISTICS 
+  STORAGE(INITIAL 65536 NEXT 1048576 MINEXTENTS 1 MAXEXTENTS 2147483645
+  PCTINCREASE 0 FREELISTS 1 FREELIST GROUPS 1 BUFFER_POOL DEFAULT FLASH_CACHE DEFAULT CELL_FLASH_CACHE DEFAULT)
+  TABLESPACE "SYSTEM"  ENABLE;
+  ALTER TABLE "SOASUITE"."USERS" MODIFY ("U_PASSWORD" NOT NULL ENABLE);
+  ALTER TABLE "SOASUITE"."USERS" MODIFY ("U_NAME" NOT NULL ENABLE);
+--------------------------------------------------------
+--  Ref Constraints for Table GROUPMEMBERS
+--------------------------------------------------------
+
+  ALTER TABLE "SOASUITE"."GROUPMEMBERS" ADD CONSTRAINT "FK1_GROUPMEMBERS" FOREIGN KEY ("G_NAME")
+	  REFERENCES "SOASUITE"."GROUPS" ("G_NAME") ON DELETE CASCADE ENABLE;
+
+
+<?xml version='1.0' encoding='UTF-8'?>
+<domain xmlns="http://xmlns.oracle.com/weblogic/domain" xmlns:sec="http://xmlns.oracle.com/weblogic/security" xmlns:wls="http://xmlns.oracle.com/weblogic/security/wls" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://xmlns.oracle.com/weblogic/security/xacml http://xmlns.oracle.com/weblogic/security/xacml/1.0/xacml.xsd http://xmlns.oracle.com/weblogic/security/providers/passwordvalidator http://xmlns.oracle.com/weblogic/security/providers/passwordvalidator/1.0/passwordvalidator.xsd http://xmlns.oracle.com/weblogic/domain http://xmlns.oracle.com/weblogic/1.0/domain.xsd http://xmlns.oracle.com/weblogic/security http://xmlns.oracle.com/weblogic/1.0/security.xsd http://www.bea.com/ns/90/weblogic/security/samples http://xmlns.oracle.com/weblogic/1.0/security.xsd http://xmlns.oracle.com/weblogic/security/wls http://xmlns.oracle.com/weblogic/security/wls/1.0/wls.xsd">
+  <name>mydomain</name>
+  <domain-version>12.1.1.0</domain-version>
+  <security-configuration>
+    <name>mydomain</name>
+    <realm>
+
+	<sec:authentication-provider xmlns:sam="http://www.bea.com/ns/90/weblogic/security/samples" xsi:type="sam:satix-db-authentication-providerType">
+        <sec:name>SampleAuth</sec:name>
+        <sec:control-flag>SUFFICIENT</sec:control-flag>
+      </sec:authentication-provider>
+
+      <sec:authentication-provider xsi:type="wls:default-authenticatorType">
+        <sec:control-flag>SUFFICIENT</sec:control-flag>
+      </sec:authentication-provider>
+      
+      <sec:authentication-provider xsi:type="wls:default-identity-asserterType">
+        <sec:active-type>AuthenticatedUser</sec:active-type>
+      </sec:authentication-provider>
+      <sec:authentication-provider xsi:type="wls:saml-identity-asserter-v2Type">
+        <sec:name>SAMLIdentityAsserter</sec:name>
+      </sec:authentication-provider>
+      <sec:role-mapper xmlns:xac="http://xmlns.oracle.com/weblogic/security/xacml" xsi:type="xac:xacml-role-mapperType"></sec:role-mapper>
+      <sec:authorizer xmlns:xac="http://xmlns.oracle.com/weblogic/security/xacml" xsi:type="xac:xacml-authorizerType"></sec:authorizer>
+      <sec:adjudicator xsi:type="wls:default-adjudicatorType"></sec:adjudicator>
+      <sec:credential-mapper xsi:type="wls:default-credential-mapperType"></sec:credential-mapper>
+      <sec:credential-mapper xsi:type="wls:saml-credential-mapper-v2Type">
+        <sec:name>myCredMapper</sec:name>
+        <wls:issuer-uri>http://www.bea.com/demoSAML</wls:issuer-uri>
+        <wls:name-qualifier>demoSAML</wls:name-qualifier>
+        <wls:signing-key-alias>testalias</wls:signing-key-alias>
+        <wls:signing-key-pass-phrase-encrypted>{AES}6LR/JdqXH3QPUJYYs7tZwP4COrw0Tp2R85rgDbbbCz0=</wls:signing-key-pass-phrase-encrypted>
+      </sec:credential-mapper>
+      <sec:cert-path-provider xsi:type="wls:web-logic-cert-path-providerType"></sec:cert-path-provider>
+      <sec:cert-path-builder>WebLogicCertPathProvider</sec:cert-path-builder>
+      <sec:name>myrealm</sec:name>
+      <sec:password-validator xmlns:pas="http://xmlns.oracle.com/weblogic/security/providers/passwordvalidator" xsi:type="pas:system-password-validatorType">
+        <sec:name>SystemPasswordValidator</sec:name>
+        <pas:min-password-length>8</pas:min-password-length>
+        <pas:min-numeric-or-special-characters>1</pas:min-numeric-or-special-characters>
+      </sec:password-validator>
+    </realm>
+    <default-realm>myrealm</default-realm>
+    <credential-encrypted>{AES}EqKaaunFKbCey94fwnDBx1kGH4wTGYUntkLl2edSu/2jIe1UC+Iv17TsXWJqWMjOonS7ZPW38Lr5yqzG0vI0YBrzGC5cGLuvQRMEqQDYq3XiPGLar2ACwnxqC5N5+/ke</credential-encrypted>
+    <node-manager-username>weblogic</node-manager-username>
+    <node-manager-password-encrypted>{AES}ws8VtmQWuFV5OByguo0nXJcUUzrQNyappgmv4YOIbVs=</node-manager-password-encrypted>
+  </security-configuration>
+  <server>
+    <name>myserver</name>
+    <ssl>
+      <enabled>true</enabled>
+      <listen-port>7005</listen-port>
+    </ssl>
+    <listen-port>7004</listen-port>
+    <server-debug>
+      <debug-scope>
+        <name>weblogic.security.saml</name>
+        <enabled>true</enabled>
+      </debug-scope>
+      <debug-scope>
+        <name>weblogic.security.saml2</name>
+        <enabled>true</enabled>
+      </debug-scope>
+    </server-debug>
+    <listen-address></listen-address>
+    <client-cert-proxy-enabled>false</client-cert-proxy-enabled>
+    <federation-services>
+      <source-site-enabled>true</source-site-enabled>
+      <source-site-url>http://localhost:7004/appB</source-site-url>
+      <intersite-transfer-uri>/samlits_ba/its</intersite-transfer-uri>
+      <intersite-transfer-uri>/samlits_ba/its/post</intersite-transfer-uri>
+      <intersite-transfer-uri>/samlits_ba/its/artifact</intersite-transfer-uri>
+      <intersite-transfer-uri>/samlits_cc/its</intersite-transfer-uri>
+      <intersite-transfer-uri>/samlits_cc/its/post</intersite-transfer-uri>
+      <intersite-transfer-uri>/samlits_cc/its/artifact</intersite-transfer-uri>
+      <assertion-retrieval-uri>/samlars/ars</assertion-retrieval-uri>
+      <ars-requires-two-way-ssl>true</ars-requires-two-way-ssl>
+      <signing-key-alias>testalias</signing-key-alias>
+      <signing-key-pass-phrase-encrypted>{AES}1sIwemFwnfwUh9MDXJnhEt25pAs0Bse2Mtnt6StDuXc=</signing-key-pass-phrase-encrypted>
+      <destination-site-enabled>true</destination-site-enabled>
+      <assertion-consumer-uri>/samlacs/acs</assertion-consumer-uri>
+      <acs-requires-ssl>true</acs-requires-ssl>
+      <used-assertion-cache-properties>APID=ap_00001</used-assertion-cache-properties>
+      <ssl-client-identity-alias>testalias</ssl-client-identity-alias>
+      <ssl-client-identity-pass-phrase-encrypted>{AES}OUDNtZwzHIb1NKiiiYHtoIs/qdriZRzHX3RNsUjBKPE=</ssl-client-identity-pass-phrase-encrypted>
+    </federation-services>
+  </server>
+  <embedded-ldap>
+    <name>mydomain</name>
+    <credential-encrypted>{AES}PHoB+cG1tkhWRlISZK2ZyFRGBzM6E6T1cwEq3bcIfUjAh5Zy6WFNBMEn0FyIsQ2z</credential-encrypted>
+  </embedded-ldap>
+  <configuration-version>12.1.1.0</configuration-version>
+  <app-deployment>
+    <name>appB</name>
+    <target>myserver</target>
+    <module-type>war</module-type>
+    <source-path>servers\myserver\upload\appB.war</source-path>
+    <security-dd-model>DDOnly</security-dd-model>
+  </app-deployment>
+  <app-deployment>
+    <name>appC</name>
+    <target>myserver</target>
+    <module-type>war</module-type>
+    <source-path>servers\myserver\upload\appC.war</source-path>
+    <security-dd-model>DDOnly</security-dd-model>
+  </app-deployment>
+  <jms-server>
+    <name>MyJMS</name>
+    <target>myserver</target>
+  </jms-server>
+  <jms-system-resource>
+    <name>MyJMSModule</name>
+    <target>myserver</target>
+    <sub-deployment>
+      <name>MySubDeployment</name>
+      <target>MyJMS</target>
+    </sub-deployment>
+    <descriptor-file-name>jms/MyJMSModule-jms.xml</descriptor-file-name>
+  </jms-system-resource>
+  <admin-server-name>myserver</admin-server-name>
+  <jdbc-system-resource>
+    <name>MyDS</name>
+    <target>myserver</target>
+    <descriptor-file-name>jdbc/MyDS-2379-jdbc.xml</descriptor-file-name>
+  </jdbc-system-resource>
+</domain>
+
+package com.demo.auth;
+
+
+import java.sql.Connection;
+
+import java.sql.PreparedStatement;
+
+import java.sql.ResultSet;
+
+import java.sql.SQLException;
+
+import java.util.Enumeration;
+
+import java.util.Hashtable;
+
+import java.util.Vector;
+
+import javax.naming.Context;
+
+import javax.naming.InitialContext;
+
+import javax.sql.DataSource;
+
+import weblogic.logging.NonCatalogLogger;
+
+import weblogic.management.utils.NotFoundException;
+
+import com.demo.auth.SatixDBAuthenticationProviderMBean;
+
+public class DatabaseAuthenticator {
+
+private NonCatalogLogger logger = new NonCatalogLogger("CustomDBAuthenticationProvider");
+
+private String dataSourceJNDIName;
+private String principalName;
+private String principalPassword;
+
+public DatabaseAuthenticator(SatixDBAuthenticationProviderMBean mbean) {
+
+logger.info("DatabaseAuthenticator: Initializing DatabaseAuthenticator");
+dataSourceJNDIName = mbean.getDataSourceJNDIName();
+logger.info("DatabaseAuthenticator: DataSource user authentication was set to:"+ dataSourceJNDIName);
+principalName = mbean.getPrincipalName();
+principalPassword = mbean.getPrincipalPassword();
+}
+
+
+public boolean userExists(String userName) {
+Connection conn = null;
+try {
+conn = getConnection();
+String sql = "SELECT U_NAME FROM USERS u WHERE u.U_NAME = ?";
+PreparedStatement stmt = conn.prepareStatement(sql);
+stmt.setString(1, userName);
+ResultSet rs = stmt.executeQuery();
+if (rs.next()) {
+String name = rs.getString("U_NAME");
+if (name.equals(userName)) {
+logger.info("DatabaseAuthenticator User " + userName+ " found in DataBase");
+return true;
+}
+}
+} catch (Exception e) {
+logger.warning("DatabaseAuthenticator: Error checking user in database: "+ e.getMessage());
+} finally {
+try {
+conn.close();
+} catch (SQLException e) {
+}
+}
+return false;
+
+}
+
+
+public String getUserPassword(String userName) throws NotFoundException {
+Connection conn = null;
+try {
+conn = getConnection();
+String sql = "SELECT U_NAME, U_PASSWORD FROM USERS u WHERE u.U_NAME = ?";
+PreparedStatement stmt = conn.prepareStatement(sql);
+stmt.setString(1, userName);
+
+
+ResultSet rs = stmt.executeQuery();
+
+
+if (rs.next()) {
+
+String name = rs.getString("U_NAME");
+
+
+if (name.equals(userName)) {
+
+logger.info("DatabaseAuthenticator: User " + userName+ " password found in DataBase");
+
+String pass = rs.getString("U_PASSWORD");
+
+return pass;
+
+}
+
+} else {
+
+throw new NotFoundException("DatabaseAuthenticator: User "+ userName + " not found in database");
+
+}
+
+
+} catch (NotFoundException nfe) {
+
+throw nfe;
+
+} catch (Exception e) {
+
+logger.warning("DatabaseAuthenticator: Error while checking user password in database: " + e.getMessage());
+
+} finally {
+
+try {
+
+conn.close();
+
+} catch (SQLException e) {
+
+}
+
+}
+
+
+return null;
+
+}
+
+
+public Enumeration<String> getUserGroups(String userName) {
+
+Vector<String> v = new Vector<String>();
+
+
+Connection conn = null;
+
+
+try {
+
+conn = getConnection();
+
+
+String sql = "SELECT g.G_NAME, g.G_DESCRIPTION FROM GROUPS g, GROUPMEMBERS r WHERE g.G_NAME = r.G_NAME AND r.G_MEMBER = ? ";
+
+
+PreparedStatement stmt = conn.prepareStatement(sql);
+
+
+stmt.setString(1, userName);
+
+
+ResultSet rs = stmt.executeQuery();
+
+
+while (rs.next()) {
+
+String group = rs.getString("G_NAME");
+
+v.add(group);
+
+}
+
+
+logger.info("DatabaseAuthenticator: Groups for User " + userName+ " found in Database: " + v.toString());
+
+
+} catch (Exception e) {
+
+logger.warning("DatabaseAuthenticator: Error while checking user groups in database: "+ e.getMessage());
+
+} finally {
+
+try {
+
+conn.close();
+
+} catch (SQLException e) {
+
+}
+
+}
+
+
+return v.elements();
+
+}
+
+
+public Connection getConnection() throws Exception {
+
+
+try {
+
+Hashtable<String, String> ht = new Hashtable<String, String>();
+
+ht.put(Context.INITIAL_CONTEXT_FACTORY,"weblogic.jndi.WLInitialContextFactory");
+
+ht.put(Context.PROVIDER_URL, "t3://localhost:7004");
+
+if (principalName != null && !"".equals(principalName)&& principalPassword != null && !"".equals(principalPassword)) {
+
+ht.put(Context.SECURITY_PRINCIPAL, principalName);
+
+ht.put(Context.SECURITY_CREDENTIALS, principalPassword);
+
+}
+
+
+Context ctx = new InitialContext(ht);
+
+
+return ((DataSource) ctx.lookup(dataSourceJNDIName)).getConnection();
+
+
+} catch (Exception e) {
+
+logger.warning("DatabaseAuthenticator: Error while Datasource Lookup: "+ e.getMessage());
+
+throw e;
+
+}
+
+}
+
+
+public boolean verifyUser(String userName, String password) {
+
+boolean result = false;
+
+try {
+
+String dbPass = getUserPassword(userName);
+
+
+if (password.equals(dbPass)) {
+
+result = true;
+
+}
+
+
+} catch (Exception e) {
+
+logger.warning("DatabaseAuthenticator: Error while validating user credentials: "+ e.getMessage());
+
+}
+
+logger.info("DatabaseAuthenticator: Verifying user:" + userName+ " returned " + result);
+
+return result;
+
+}
+
+
+
+}
+
+
+
+
+create datasource in weblogic and create authenticator in sequrity relam providers and arrnge order, flag sufficient

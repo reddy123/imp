@@ -1,0 +1,1784 @@
+package com.demo.auth;
+
+
+import java.sql.Connection;
+
+import java.sql.PreparedStatement;
+
+import java.sql.ResultSet;
+
+import java.sql.SQLException;
+
+import java.util.Enumeration;
+
+import java.util.Hashtable;
+
+import java.util.Vector;
+
+import javax.naming.Context;
+
+import javax.naming.InitialContext;
+
+import javax.sql.DataSource;
+
+import weblogic.logging.NonCatalogLogger;
+
+import weblogic.management.utils.NotFoundException;
+
+import com.demo.auth.SatixDBAuthenticationProviderMBean;
+
+public class DatabaseAuthenticator {
+
+private NonCatalogLogger logger = new NonCatalogLogger("CustomDBAuthenticationProvider");
+
+private String dataSourceJNDIName;
+private String principalName;
+private String principalPassword;
+
+public DatabaseAuthenticator(SatixDBAuthenticationProviderMBean mbean) {
+
+logger.info("DatabaseAuthenticator: Initializing DatabaseAuthenticator");
+dataSourceJNDIName = mbean.getDataSourceJNDIName();
+logger.info("DatabaseAuthenticator: DataSource user authentication was set to:"+ dataSourceJNDIName);
+principalName = mbean.getPrincipalName();
+principalPassword = mbean.getPrincipalPassword();
+}
+
+
+public boolean userExists(String userName) {
+Connection conn = null;
+try {
+conn = getConnection();
+String sql = "SELECT U_NAME FROM USERS u WHERE u.U_NAME = ?";
+PreparedStatement stmt = conn.prepareStatement(sql);
+stmt.setString(1, userName);
+ResultSet rs = stmt.executeQuery();
+if (rs.next()) {
+String name = rs.getString("U_NAME");
+if (name.equals(userName)) {
+logger.info("DatabaseAuthenticator User " + userName+ " found in DataBase");
+return true;
+}
+}
+} catch (Exception e) {
+logger.warning("DatabaseAuthenticator: Error checking user in database: "+ e.getMessage());
+} finally {
+try {
+conn.close();
+} catch (SQLException e) {
+}
+}
+return false;
+
+}
+
+
+public String getUserPassword(String userName) throws NotFoundException {
+Connection conn = null;
+try {
+conn = getConnection();
+String sql = "SELECT U_NAME, U_PASSWORD FROM USERS u WHERE u.U_NAME = ?";
+PreparedStatement stmt = conn.prepareStatement(sql);
+stmt.setString(1, userName);
+
+
+ResultSet rs = stmt.executeQuery();
+
+
+if (rs.next()) {
+
+String name = rs.getString("U_NAME");
+
+
+if (name.equals(userName)) {
+
+logger.info("DatabaseAuthenticator: User " + userName+ " password found in DataBase");
+
+String pass = rs.getString("U_PASSWORD");
+
+return pass;
+
+}
+
+} else {
+
+throw new NotFoundException("DatabaseAuthenticator: User "+ userName + " not found in database");
+
+}
+
+
+} catch (NotFoundException nfe) {
+
+throw nfe;
+
+} catch (Exception e) {
+
+logger.warning("DatabaseAuthenticator: Error while checking user password in database: " + e.getMessage());
+
+} finally {
+
+try {
+
+conn.close();
+
+} catch (SQLException e) {
+
+}
+
+}
+
+
+return null;
+
+}
+
+
+public Enumeration<String> getUserGroups(String userName) {
+
+Vector<String> v = new Vector<String>();
+
+
+Connection conn = null;
+
+
+try {
+
+conn = getConnection();
+
+
+String sql = "SELECT g.G_NAME, g.G_DESCRIPTION FROM GROUPS g, GROUPMEMBERS r WHERE g.G_NAME = r.G_NAME AND r.G_MEMBER = ? ";
+
+
+PreparedStatement stmt = conn.prepareStatement(sql);
+
+
+stmt.setString(1, userName);
+
+
+ResultSet rs = stmt.executeQuery();
+
+
+while (rs.next()) {
+
+String group = rs.getString("G_NAME");
+
+v.add(group);
+
+}
+
+
+logger.info("DatabaseAuthenticator: Groups for User " + userName+ " found in Database: " + v.toString());
+
+
+} catch (Exception e) {
+
+logger.warning("DatabaseAuthenticator: Error while checking user groups in database: "+ e.getMessage());
+
+} finally {
+
+try {
+
+conn.close();
+
+} catch (SQLException e) {
+
+}
+
+}
+
+
+return v.elements();
+
+}
+
+
+public Connection getConnection() throws Exception {
+
+
+try {
+
+Hashtable<String, String> ht = new Hashtable<String, String>();
+
+ht.put(Context.INITIAL_CONTEXT_FACTORY,"weblogic.jndi.WLInitialContextFactory");
+
+if (principalName != null && !"".equals(principalName)&& principalPassword != null && !"".equals(principalPassword)) {
+
+ht.put(Context.SECURITY_PRINCIPAL, principalName);
+
+ht.put(Context.SECURITY_CREDENTIALS, principalPassword);
+
+}
+
+
+Context ctx = new InitialContext(ht);
+
+
+return ((DataSource) ctx.lookup(dataSourceJNDIName)).getConnection();
+
+
+} catch (Exception e) {
+
+logger.warning("DatabaseAuthenticator: Error while Datasource Lookup: "+ e.getMessage());
+
+throw e;
+
+}
+
+}
+
+
+public boolean verifyUser(String userName, String password) {
+
+boolean result = false;
+
+try {
+
+String dbPass = getUserPassword(userName);
+
+
+if (password.equals(dbPass)) {
+
+result = true;
+
+}
+
+
+} catch (Exception e) {
+
+logger.warning("DatabaseAuthenticator: Error while validating user credentials: "+ e.getMessage());
+
+}
+
+logger.info("DatabaseAuthenticator: Verifying user:" + userName+ " returned " + result);
+
+return result;
+
+}
+
+
+
+}
+
+DBAuthenticationProviderMBean.xml:
+
+<?xml version="1.0" ?>
+<!DOCTYPE MBeanType SYSTEM "commo.dtd">
+
+
+<MBeanType
+ Name          = "SatixDBAuthenticationProvider"
+ DisplayName   = "Custom Database Authentication Provider"
+ Package       = "com.demo.auth"
+ Extends       = "weblogic.management.security.authentication.Authenticator"
+ PersistPolicy = "OnUpdate"
+>
+ <MBeanAttribute
+  Name          = "ProviderClassName"
+  Type          = "java.lang.String"
+  Writeable     = "false"
+  Default       = "&quot;com.demo.auth.DBAuthenticationProviderImpl&quot;"
+  Preprocessor  = "weblogic.management.configuration.LegalHelper.checkClassName(value)"
+   />
+ <MBeanAttribute
+  Name          = "Description"
+  Type          = "java.lang.String"
+  Default       = "&quot;Authentication Provider based on DB users and groups&quot;"
+  Writeable     = "false"
+   />
+ <MBeanAttribute
+  Name          = "Version"
+  Type          = "java.lang.String"
+  Default       = "&quot;1.0&quot;"
+  Writeable     = "false"
+   />
+ <MBeanAttribute
+  Name          = "DataSourceJNDIName"
+  Type          = "java.lang.String"
+  Default       = "&quot;MyDS&quot;"
+  DisplayName   = "&quot;The datasource to fetch users and groups from database.&quot;"
+  Writeable     = "true"
+  />
+ 
+ <MBeanAttribute
+  Name          = "PrincipalName"
+  Type          = "java.lang.String"
+  Default       = "&quot;weblogic&quot;"
+  DisplayName   = "&quot;Principal Name for Data Source Lookup.&quot;"
+  Writeable     = "true"
+  /> 
+ 
+ <MBeanAttribute
+  Name          = "PrincipalPassword"
+  Type          = "java.lang.String"
+  Writeable     = "true"
+  Default       = "&quot;weblogic123&quot;"
+  DisplayName   = "&quot;Principal Credentials for Data Source Lookup.&quot;"
+  Encrypted     = "true" />  
+
+</MBeanType>
+
+
+package com.demo.auth;
+
+
+import java.util.HashMap;
+
+import javax.security.auth.login.AppConfigurationEntry;
+import javax.security.auth.login.AppConfigurationEntry.LoginModuleControlFlag;
+
+import weblogic.logging.NonCatalogLogger;
+import weblogic.management.security.ProviderMBean;
+import weblogic.security.provider.PrincipalValidatorImpl;
+import weblogic.security.spi.AuthenticationProviderV2;
+import weblogic.security.spi.IdentityAsserterV2;
+import weblogic.security.spi.PrincipalValidator;
+import weblogic.security.spi.SecurityServices;
+import com.demo.auth.SatixDBAuthenticationProviderMBean;
+
+public class DBAuthenticationProviderImpl implements AuthenticationProviderV2 {
+	
+	private static final String LOGIN_MODULE_NAME = DBLoginModuleImpl.class.getName();
+
+    private NonCatalogLogger logger = new NonCatalogLogger("CustomDBAuthenticationProvider");
+
+    private String description; // a description of this provider
+    private DatabaseAuthenticator database; // manages the user and group definitions for this provider
+    private LoginModuleControlFlag controlFlag; // how this provider's login module should be used during the JAAS login
+
+    public void initialize(ProviderMBean mbean, SecurityServices services) {
+    	
+        logger.debug("DBAuthenticationProviderImpl: Initializing DBAuthenticationProviderImpl");
+
+        // Cast the mbean from a generic ProviderMBean to a SimpleSampleAuthenticatorMBean.
+        SatixDBAuthenticationProviderMBean myMBean = (SatixDBAuthenticationProviderMBean)mbean;
+
+        // Set the description to the simple sample authenticator's mbean's description and version
+        description = myMBean.getDescription() + "\n" + myMBean.getVersion();
+
+        // Instantiate the helper that manages this provider's user and group definitions
+        database = new DatabaseAuthenticator(myMBean);
+
+        // Extract the JAAS control flag from the simple sample authenticator's mbean.
+        // This flag controls how the simple sample authenticator's login module is used
+        // by the JAAS login, both for authentication and for identity assertion.
+        String flag = myMBean.getControlFlag();
+        if (flag.equalsIgnoreCase("REQUIRED")) {
+            controlFlag = LoginModuleControlFlag.REQUIRED;
+        } else if (flag.equalsIgnoreCase("OPTIONAL")) {
+            controlFlag = LoginModuleControlFlag.OPTIONAL;
+        } else if (flag.equalsIgnoreCase("REQUISITE")) {
+            controlFlag = LoginModuleControlFlag.REQUISITE;
+        } else if (flag.equalsIgnoreCase("SUFFICIENT")) {
+            controlFlag = LoginModuleControlFlag.SUFFICIENT;
+        } else {
+            throw new IllegalArgumentException("invalid flag value" + flag);
+        }
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void shutdown() {
+        logger.debug("DBAuthenticationProviderImpl: Shutting down DBUserAuthenticationProviderImpl");
+    }
+
+
+    private AppConfigurationEntry getConfiguration(HashMap options) {
+        // add the "database helper" object to the options so that the
+        // login module can access the user and group definitions
+        options.put("database", database);
+
+        // make sure to specify the simple sample authenticator's login module
+        // and to use the control flag from the simple sample authenticator's mbean.
+        return new AppConfigurationEntry(LOGIN_MODULE_NAME, controlFlag, options);
+    }
+
+    /**
+     * Create a JAAS AppConfigurationEntry (which tells JAAS
+     * how to create the login module and how to use it) when
+     * the authenticator is used to authenticate (vs. to
+     * complete identity assertion).
+     *
+     * @return An AppConfigurationEntry that tells JAAS how to use the
+     * authenticator's login module for authentication.
+     */
+    public AppConfigurationEntry getLoginModuleConfiguration() {
+        // Don't pass in any special options.
+        // By default, the simple sample authenticator's login module
+        // will authenticate (by checking that the passwords match).
+        HashMap options = new HashMap<String, String>();
+        return getConfiguration(options);
+    }
+
+    /**
+     * Create a JAAS AppConfigurationEntry (which tells JAAS
+     * how to create the login module and how to use it) when
+     * the simple sample authenticator is used to complete identity
+     * assertion (vs. to authenticate).
+     *
+     * @return An AppConfigurationEntry that tells JAAS how to use the 
+     * authenticator's login module for identity assertion.
+     */
+    public AppConfigurationEntry getAssertionModuleConfiguration() {
+        // Pass an option indicating that we're doing identity
+        // assertion (vs. authentication) therefore the login module
+        // should only check that the user exists (instead of checking
+        // the password)
+        HashMap options = new HashMap();
+        options.put("IdentityAssertion", "true");
+        return getConfiguration(options);
+    }
+
+    /**
+     * Return the principal validator that can validate the
+     * principals that the authenticator's login module
+     * puts into the subject.
+     *
+     * Since the authenticator uses the built in
+     * WLSUserImpl and WLSGroupImpl principal classes, just
+     * returns the built in PrincipalValidatorImpl that knows
+     * how to handle these kinds of principals.
+     *
+     * @return A PrincipalValidator that can validate the
+     * principals that the simple sample authenticator's login module
+     * puts in the subject.
+     */
+    public PrincipalValidator getPrincipalValidator() {
+        return new PrincipalValidatorImpl();
+    }
+
+    /**
+     * Returns this providers identity asserter object.
+     *
+     * @return null since the authenticator doesn't
+     * support identity assertion (that is, mapping a token
+     * to a user name).  Do not confuse this with using a
+     * login module in identity assertion mode where the
+     * login module shouldn't try to validate the user.
+     */
+    public IdentityAsserterV2 getIdentityAsserter() {
+        return null;
+    }
+}
+
+
+package com.demo.auth;
+
+
+import java.io.IOException;
+import java.util.Enumeration;
+import java.util.Map;
+import java.util.Vector;
+
+import javax.security.auth.Subject;
+import javax.security.auth.callback.Callback;
+import javax.security.auth.callback.CallbackHandler;
+import javax.security.auth.callback.NameCallback;
+import javax.security.auth.callback.PasswordCallback;
+import javax.security.auth.callback.UnsupportedCallbackException;
+import javax.security.auth.login.FailedLoginException;
+import javax.security.auth.login.LoginException;
+import javax.security.auth.spi.LoginModule;
+
+import weblogic.logging.NonCatalogLogger;
+import weblogic.security.principal.WLSGroupImpl;
+import weblogic.security.principal.WLSUserImpl;
+
+final public class DBLoginModuleImpl implements LoginModule {
+    /**
+     * Instance logger.
+     */
+    private NonCatalogLogger logger = new NonCatalogLogger("CustomDBAuthenticationProvider");
+
+    private Subject subject; // the subject for this login
+    private CallbackHandler callbackHandler; // where to get user names, passwords, ... for this login
+    private DatabaseAuthenticator database; // manages the user and group definitions for this provider
+    private boolean isIdentityAssertion; // are we in authentication or identity assertion mode?
+
+    // Authentication status
+    private boolean loginSucceeded; // have we successfully logged in?
+    private boolean principalsInSubject; // did we add principals to the subject?
+    private Vector principalsForSubject = new Vector(); // if so, what principals did we add to the subject
+    // (so we can remove the principals we added if the login is aborted)
+
+    /**
+     * Initialize a login attempt.
+     *
+     * @param subject the Subject this login attempt will populate.
+     *
+     * @param callbackHandler the CallbackHandler that can be used to
+     * get the user name, and in authentication mode, the user's password
+     *
+     * @param sharedState A Map containing data shared between login
+     * modules when there are multiple authenticators configured.  This
+     * simple sample does not use this parameter.
+     *
+     * @param options A Map containing options that the authenticator's
+     * authentication provider impl wants to pass to its login module impl.
+     * For example, it can be used to pass in configuration data (where
+     * is the database holding user and group info) and to pass in whether
+     * the login module is used for authentication or to complete identity
+     * assertion.
+     * The SimpleSampleAuthenticationProviderImpl adds an option named "database".
+     * The value is a DatabaseAuthenticatorUtil object.  It gives the
+     * login module access to the user and group definitions.
+     * When the authenticator is being used in identity assertion mode,
+     * the SimpleSampleAuthenticationProviderImpl also adds an option named
+     * "IdentityAssertion".  It indicates that the login module should only
+     * verify that the user exists (vs. checking the password too).  If
+     * this option is not specified (or is set to false), then the
+     * login module checks the user's password too (that is, it assumes
+     * authentication mode).
+     */
+    public void initialize(Subject subject, CallbackHandler callbackHandler,
+                           Map sharedState, Map options) {
+        // only called (once!) after the constructor and before login
+
+        logger.debug("DBUserLoginModuleImpl.initialize");
+        this.subject = subject;
+        this.callbackHandler = callbackHandler;
+
+        // Determine if we're in identity assertion or authentication mode
+        isIdentityAssertion =
+                "true".equalsIgnoreCase((String)options.get("IdentityAssertion"));
+
+        // Get the object that manages the user and group definitions
+        database = (DatabaseAuthenticator)options.get("database");
+    }
+
+    /**
+     * Attempt to login.
+     *
+     * If we're in authentication mode, extract the user name and password
+     * from the callback handler.  If the user exists and the password matches,
+     * then populate the subject with the user and the user's group.  Otherwise,
+     * the login fails.
+     *
+     * If we're in identity assertion mode, extract the user name (only)
+     * from the callback handler.  If the user exists, then populate the
+     * subject with the user and the user's groups.  Otherwise, the
+     * login fails.
+     *
+     * @return A boolean indicating whether or not the login for
+     * this login module succeeded.
+     */
+    public boolean login() throws LoginException {
+        // only called (once!) after initialize
+
+        logger.debug("DBUserLoginModuleImpl.login");
+
+        // loginSucceeded      should be false
+        // principalsInSubject should be false
+
+        // Call a method to get the callbacks.
+        // For authentication mode, it will have one for the
+        // username and one for the password.
+        // For identity assertion mode, it will have one for
+        // the user name.
+        Callback[] callbacks = getCallbacks();
+
+        // Get the user name.
+        String userName = getUserName(callbacks);
+
+        if (userName.length() > 0) {
+            // We have a user name
+
+            boolean success = database.verifyUser(userName, getPasswordHave(userName, callbacks));
+            if (! success) {
+                throwFailedLoginException("Authentication Failed: User " +
+                                          userName + " doesn't exist or invalid password.");
+            }
+        }
+        loginSucceeded = true;
+        // since the login succeeded, add the user and its groups to the
+        // list of principals we want to add to the subject.
+        principalsForSubject.add(new WLSUserImpl(userName));
+        addGroupsForSubject(userName);
+        logger.info("Result of login:" + loginSucceeded);
+        return loginSucceeded;
+    }
+
+    /**
+     * Completes the login by adding the user and the user's groups
+     * to the subject.
+     *
+     * @return A boolean indicating whether or not the commit succeeded.
+     */
+    public boolean commit() throws LoginException {
+        // only called (once!) after login
+
+        // loginSucceeded      should be true or false
+        // principalsInSubject should be false
+        // user  should be null if !loginSucceeded, null or not-null otherwise
+        // group should be null if user == null,    null or not-null otherwise
+
+        logger.debug("DBUserLoginModule.commit");
+        if (loginSucceeded) {
+            // put the user and the user's groups (computed during the
+            // login method and stored in the principalsForSubject object)
+            // into the subject.
+            subject.getPrincipals().addAll(principalsForSubject);
+            principalsInSubject = true;
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    /**
+     * Aborts the login attempt.  Remove any principals we put
+     * into the subject during the commit method from the subject.
+     *
+     * @return A boolean indicating whether or not the abort succeeded.
+     */
+    public boolean abort() throws LoginException {
+        // only called (once!) after login or commit
+        // or may be? called (n times) after abort
+
+        // loginSucceeded should be true or false
+        // principalsInSubject should be false if user is null, otherwise true or false
+
+        logger.debug("DBUserLoginModuleImpl.abort");
+        if (principalsInSubject) {
+            subject.getPrincipals().removeAll(principalsForSubject);
+            principalsInSubject = false;
+        }
+        return true;
+    }
+
+    /**
+     * Logout.  This should never be called.
+     *
+     * @return A boolean indicating whether or not the logout succeeded.
+     */
+    public boolean logout() throws LoginException {
+        // should never be called
+        logger.debug("DBUserLoginModuleImpl.logout");
+        return true;
+    }
+
+    /**
+     * Throw an invalid login exception.
+     *
+     * @param msg A String containing the text of the LoginException.
+     *
+     * @throws LoginException
+     */
+    private void throwLoginException(String msg) throws LoginException {
+        logger.warning("Throwing LoginException(" + msg + ")");
+        throw new LoginException(msg);
+    }
+
+    /**
+     * Throws a failed login excception.
+     *
+     * @param msg A String containing the text of the FailedLoginException.
+     *
+     * @throws LoginException
+     */
+    private void throwFailedLoginException(String msg) throws FailedLoginException {
+        logger.warning("Throwing FailedLoginException(" + msg + ")");
+        throw new FailedLoginException(msg);
+    }
+
+    /**
+     * Get the list of callbacks needed by the login module.
+     *
+     * @return The array of Callback objects by the login module.
+     * Returns one for the user name and password if in authentication mode.
+     * Returns one for the user name if in identity assertion mode.
+     */
+    private Callback[] getCallbacks() throws LoginException {
+        if (callbackHandler == null) {
+            throwLoginException("No CallbackHandler Specified");
+        }
+
+        if (database == null) {
+            throwLoginException("database not specified");
+        }
+
+        Callback[] callbacks;
+        if (isIdentityAssertion) {
+            callbacks = new Callback[1]; // need one for the user name
+        } else {
+            callbacks =
+                    new Callback[2]; // need one for the user name and one for the password
+
+            // add in the password callback
+            callbacks[1] = new PasswordCallback("password: ", false);
+        }
+
+        // add in the user name callback
+        callbacks[0] = new NameCallback("username: ");
+
+        // Call the callback handler, who in turn, calls back to the
+        // callback objects, handing them the user name and password.
+        // These callback objects hold onto the user name and password.
+        // The login module retrieves the user name and password from them later.
+        try {
+            callbackHandler.handle(callbacks);
+        } catch (IOException e) {
+            throw new LoginException(e.toString());
+        } catch (UnsupportedCallbackException e) {
+            throwLoginException(e.toString() + " " +
+                                e.getCallback().toString());
+        }
+
+        return callbacks;
+    }
+
+    /**
+     * Get the user name from the callbacks (that the callback handler
+     * has already handed the user name to).
+     *
+     * @param callbacks The array of Callback objects used by this login module.
+     * The first in the list must be the user name callback object.
+     *
+     * @return A String containing the user name (from the user name callback object)
+     */
+    private String getUserName(Callback[] callbacks) throws LoginException {
+        String userName = ((NameCallback)callbacks[0]).getName();
+        if (userName == null) {
+            throwLoginException("Username not supplied.");
+        }
+        logger.info("\tuserName\t= " + userName);
+        return userName;
+    }
+
+    /**
+     * Add the user's groups to the list of principals to be added to the subject.
+     *
+     * @param userName A String containing the user name the user's name.
+     */
+    private void addGroupsForSubject(String userName) {
+        // Get the user's list of groups (recursively - so, if user1 is a member
+        // of group1 and group1 is a member of group2, then it returns group1 and
+        // group2).  Iterate over the groups, adding each to the list of principals
+        // to add to the subject.
+        for (Enumeration e = database.getUserGroups(userName);
+             e.hasMoreElements(); ) {
+            String groupName = (String)e.nextElement();
+            logger.info("\tgroupName\t= " + groupName);
+            principalsForSubject.add(new WLSGroupImpl(groupName));
+        }
+    }
+
+    /**
+     * Get the password from the callbacks (that the callback handler
+     * has already handed the password to) - that is, the password from
+     * the login attempt.  Must only be used for authentication mode, not
+     * for identity assertion mode.
+     *
+     * @param userName A String containing the name of the user
+     * (already retrieved from the callbacks).  Only passed in
+     * so that we can print a better error message if the password
+     * is bogus.
+     *
+     * @param callbacks The array of Callback objects used by this login module.
+     * The second in the list must be the password callback object.
+     *
+     * @return A String containing the password from the login attempt
+     *
+     * @throws LoginException if no password was supplied in the login attempt.
+     */
+    private String getPasswordHave(String userName,
+                                   Callback[] callbacks) throws LoginException {
+        PasswordCallback passwordCallback = (PasswordCallback)callbacks[1];
+        char[] password = passwordCallback.getPassword();
+        passwordCallback.clearPassword();
+        if (password == null || password.length < 1) {
+            throwLoginException("Authentication Failed: User " + userName +
+                                ".  Password not supplied");
+        }
+        String passwd = new String(password);
+        logger.info("\tpasswordHave\t= " + passwd);
+        return passwd;
+    }
+}
+
+
+build.xml:
+
+<?xml version="1.0"?>
+
+<project name="dbuser_authentication_provider" default="all" basedir=".">
+
+<!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
+<!-- Ant build script for the db user security providers, which authenticates          -->
+<!-- a user identity, based on the Oracle database users dictionary.                   -->
+<!-- For instance: authorize scott/tiger account.                                      -->
+<!-- Adapted from the original simple sample providers provided by BEA.                -->                                                                  
+<!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
+<!--                                                                                   -->
+<!-- Usage:                                                                            -->
+<!--                                                                                   -->
+<!--   1) build and install the db user providers                                      -->
+<!--      prompt> ant                                                                  -->
+<!--                                                                                   -->
+<!--                                                                                   -->
+<!--   2) de-install the sample providers and restore this directory to                -->
+<!--      its original state.                                                          -->
+<!--      prompt> ant clean                                                            -->
+<!--                                                                                   -->
+<!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
+<!--                                                                                   -->
+<!-- Internal build targets (helpers)                                                  -->
+<!--                                                                                   -->
+<!--   1) build.mdf           : builds a provider's mbean definition                   -->
+<!--                            file (MDF)                                             -->
+<!--                                                                                   -->
+<!--                                                                                   -->
+<!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
+
+  <!-- global properties -->
+  <property environment="env"/>
+  <property name="lib"                 value="${env.WL_HOME}/server/lib"/>
+  <property name="mbeantypes"          value="${lib}/mbeantypes"/>
+  <property name="sampleprovidersjar"  value="sampledbuserprovider.jar"/>
+  <property name="sample_dir"          location="."/>
+  <property name="src_dir"             value="${sample_dir}"/>
+  <property name="provider_src_dir"    value="${sample_dir}/com"/>
+  <property name="build_dir"           value="${sample_dir}/build"/>
+  <property name="class_dir"           value="${sample_dir}/classes"/>
+  <property name="namespace"           value="http://www.bea.com/ns/90/weblogic/security/samples"/>
+  
+
+  <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
+  <!-- Build These Samples                                               -->
+  <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -->
+
+  <target name="all" depends="clean">
+
+    <!-- Set up the build directories -->
+    <mkdir dir="${build_dir}"/>
+    <mkdir dir="${class_dir}"/>
+
+    <!-- Only copy over the commo dtd and sample provider xml files for now -->
+    <copy todir="${build_dir}" flatten="true">
+      <fileset dir="${lib}">
+        <include name="commo.dtd"/>
+      </fileset>
+    </copy>
+    <copy todir="${build_dir}" flatten="true">
+      <fileset dir="${provider_src_dir}">
+        <include name="**/*.xml"/>
+        <include name="**/*.java"/>
+      </fileset>
+    </copy>
+
+    <!-- Build the sample security providers' jar file -->
+    <java classname="weblogic.management.commo.WebLogicMBeanMaker" fork="true" failonerror="true">
+      <jvmarg line="-Dfiles=${build_dir}  -DMDFDIR=${build_dir} -DMJF=${build_dir}/${sampleprovidersjar} -DtargetNameSpace=${namespace} -DpreserveStubs=true -DcreateStubs=true"/>
+    </java>
+
+    <!-- Deploy the sample security providers -->
+    <copy todir="${mbeantypes}" flatten="true">
+      <fileset dir="${build_dir}">
+        <include name="${sampleprovidersjar}"/>
+      </fileset>
+    </copy>
+  </target>
+
+  <target name="clean">
+    <delete quiet="true" dir="${build_dir}"/>
+    <delete quiet="true" dir="${class_dir}"/>
+    <delete quiet="true" file="${mbeantypes}/${sampleprovidersjar}"/>
+  </target>
+</project>
+===========================================================================
+
+DBAuthenticationProviderImpl.java 
+
+package ec.gob.supertel.authentication.impl;
+
+
+import java.util.HashMap;
+
+import javax.security.auth.login.AppConfigurationEntry;
+import javax.security.auth.login.AppConfigurationEntry.LoginModuleControlFlag;
+
+import weblogic.logging.NonCatalogLogger;
+import weblogic.management.security.ProviderMBean;
+import weblogic.security.provider.PrincipalValidatorImpl;
+import weblogic.security.spi.AuthenticationProviderV2;
+import weblogic.security.spi.IdentityAsserterV2;
+import weblogic.security.spi.PrincipalValidator;
+import weblogic.security.spi.SecurityServices;
+import ec.gob.supertel.authentication.mbeans.SatixDBAuthenticationProviderMBean;
+
+public class DBAuthenticationProviderImpl implements AuthenticationProviderV2 {
+	
+	private static final String LOGIN_MODULE_NAME = DBLoginModuleImpl.class.getName();
+
+    private NonCatalogLogger logger = new NonCatalogLogger("CustomDBAuthenticationProvider");
+
+    private String description; // a description of this provider
+    private DatabaseAuthenticator database; // manages the user and group definitions for this provider
+    private LoginModuleControlFlag controlFlag; // how this provider's login module should be used during the JAAS login
+
+    public void initialize(ProviderMBean mbean, SecurityServices services) {
+    	
+        logger.debug("DBAuthenticationProviderImpl: Initializing DBAuthenticationProviderImpl");
+
+        // Cast the mbean from a generic ProviderMBean to a SimpleSampleAuthenticatorMBean.
+        SatixDBAuthenticationProviderMBean myMBean = (SatixDBAuthenticationProviderMBean)mbean;
+
+        // Set the description to the simple sample authenticator's mbean's description and version
+        description = myMBean.getDescription() + "\n" + myMBean.getVersion();
+
+        // Instantiate the helper that manages this provider's user and group definitions
+        database = new DatabaseAuthenticator(myMBean);
+
+        // Extract the JAAS control flag from the simple sample authenticator's mbean.
+        // This flag controls how the simple sample authenticator's login module is used
+        // by the JAAS login, both for authentication and for identity assertion.
+        String flag = myMBean.getControlFlag();
+        if (flag.equalsIgnoreCase("REQUIRED")) {
+            controlFlag = LoginModuleControlFlag.REQUIRED;
+        } else if (flag.equalsIgnoreCase("OPTIONAL")) {
+            controlFlag = LoginModuleControlFlag.OPTIONAL;
+        } else if (flag.equalsIgnoreCase("REQUISITE")) {
+            controlFlag = LoginModuleControlFlag.REQUISITE;
+        } else if (flag.equalsIgnoreCase("SUFFICIENT")) {
+            controlFlag = LoginModuleControlFlag.SUFFICIENT;
+        } else {
+            throw new IllegalArgumentException("invalid flag value" + flag);
+        }
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void shutdown() {
+        logger.debug("DBAuthenticationProviderImpl: Shutting down DBUserAuthenticationProviderImpl");
+    }
+
+
+    private AppConfigurationEntry getConfiguration(HashMap options) {
+        // add the "database helper" object to the options so that the
+        // login module can access the user and group definitions
+        options.put("database", database);
+
+        // make sure to specify the simple sample authenticator's login module
+        // and to use the control flag from the simple sample authenticator's mbean.
+        return new AppConfigurationEntry(LOGIN_MODULE_NAME, controlFlag, options);
+    }
+
+    /**
+     * Create a JAAS AppConfigurationEntry (which tells JAAS
+     * how to create the login module and how to use it) when
+     * the authenticator is used to authenticate (vs. to
+     * complete identity assertion).
+     *
+     * @return An AppConfigurationEntry that tells JAAS how to use the
+     * authenticator's login module for authentication.
+     */
+    public AppConfigurationEntry getLoginModuleConfiguration() {
+        // Don't pass in any special options.
+        // By default, the simple sample authenticator's login module
+        // will authenticate (by checking that the passwords match).
+        HashMap options = new HashMap<String, String>();
+        return getConfiguration(options);
+    }
+
+    /**
+     * Create a JAAS AppConfigurationEntry (which tells JAAS
+     * how to create the login module and how to use it) when
+     * the simple sample authenticator is used to complete identity
+     * assertion (vs. to authenticate).
+     *
+     * @return An AppConfigurationEntry that tells JAAS how to use the 
+     * authenticator's login module for identity assertion.
+     */
+    public AppConfigurationEntry getAssertionModuleConfiguration() {
+        // Pass an option indicating that we're doing identity
+        // assertion (vs. authentication) therefore the login module
+        // should only check that the user exists (instead of checking
+        // the password)
+        HashMap options = new HashMap();
+        options.put("IdentityAssertion", "true");
+        return getConfiguration(options);
+    }
+
+    /**
+     * Return the principal validator that can validate the
+     * principals that the authenticator's login module
+     * puts into the subject.
+     *
+     * Since the authenticator uses the built in
+     * WLSUserImpl and WLSGroupImpl principal classes, just
+     * returns the built in PrincipalValidatorImpl that knows
+     * how to handle these kinds of principals.
+     *
+     * @return A PrincipalValidator that can validate the
+     * principals that the simple sample authenticator's login module
+     * puts in the subject.
+     */
+    public PrincipalValidator getPrincipalValidator() {
+        return new PrincipalValidatorImpl();
+    }
+
+    /**
+     * Returns this providers identity asserter object.
+     *
+     * @return null since the authenticator doesn't
+     * support identity assertion (that is, mapping a token
+     * to a user name).  Do not confuse this with using a
+     * login module in identity assertion mode where the
+     * login module shouldn't try to validate the user.
+     */
+    public IdentityAsserterV2 getIdentityAsserter() {
+        return null;
+    }
+}
+
+
+2. DBLoginModuleImpl.java 
+package ec.gob.supertel.authentication.impl;
+
+
+import java.io.IOException;
+import java.util.Enumeration;
+import java.util.Map;
+import java.util.Vector;
+
+import javax.security.auth.Subject;
+import javax.security.auth.callback.Callback;
+import javax.security.auth.callback.CallbackHandler;
+import javax.security.auth.callback.NameCallback;
+import javax.security.auth.callback.PasswordCallback;
+import javax.security.auth.callback.UnsupportedCallbackException;
+import javax.security.auth.login.FailedLoginException;
+import javax.security.auth.login.LoginException;
+import javax.security.auth.spi.LoginModule;
+
+import weblogic.logging.NonCatalogLogger;
+import weblogic.security.principal.WLSGroupImpl;
+import weblogic.security.principal.WLSUserImpl;
+
+final public class DBLoginModuleImpl implements LoginModule {
+    /**
+     * Instance logger.
+     */
+    private NonCatalogLogger logger = new NonCatalogLogger("CustomDBAuthenticationProvider");
+
+    private Subject subject; // the subject for this login
+    private CallbackHandler callbackHandler; // where to get user names, passwords, ... for this login
+    private DatabaseAuthenticator database; // manages the user and group definitions for this provider
+    private boolean isIdentityAssertion; // are we in authentication or identity assertion mode?
+
+    // Authentication status
+    private boolean loginSucceeded; // have we successfully logged in?
+    private boolean principalsInSubject; // did we add principals to the subject?
+    private Vector principalsForSubject = new Vector(); // if so, what principals did we add to the subject
+    // (so we can remove the principals we added if the login is aborted)
+
+    /**
+     * Initialize a login attempt.
+     *
+     * @param subject the Subject this login attempt will populate.
+     *
+     * @param callbackHandler the CallbackHandler that can be used to
+     * get the user name, and in authentication mode, the user's password
+     *
+     * @param sharedState A Map containing data shared between login
+     * modules when there are multiple authenticators configured.  This
+     * simple sample does not use this parameter.
+     *
+     * @param options A Map containing options that the authenticator's
+     * authentication provider impl wants to pass to its login module impl.
+     * For example, it can be used to pass in configuration data (where
+     * is the database holding user and group info) and to pass in whether
+     * the login module is used for authentication or to complete identity
+     * assertion.
+     * The SimpleSampleAuthenticationProviderImpl adds an option named "database".
+     * The value is a DatabaseAuthenticatorUtil object.  It gives the
+     * login module access to the user and group definitions.
+     * When the authenticator is being used in identity assertion mode,
+     * the SimpleSampleAuthenticationProviderImpl also adds an option named
+     * "IdentityAssertion".  It indicates that the login module should only
+     * verify that the user exists (vs. checking the password too).  If
+     * this option is not specified (or is set to false), then the
+     * login module checks the user's password too (that is, it assumes
+     * authentication mode).
+     */
+    public void initialize(Subject subject, CallbackHandler callbackHandler,
+                           Map sharedState, Map options) {
+        // only called (once!) after the constructor and before login
+
+        logger.debug("DBUserLoginModuleImpl.initialize");
+        this.subject = subject;
+        this.callbackHandler = callbackHandler;
+
+        // Determine if we're in identity assertion or authentication mode
+        isIdentityAssertion =
+                "true".equalsIgnoreCase((String)options.get("IdentityAssertion"));
+
+        // Get the object that manages the user and group definitions
+        database = (DatabaseAuthenticator)options.get("database");
+    }
+
+    /**
+     * Attempt to login.
+     *
+     * If we're in authentication mode, extract the user name and password
+     * from the callback handler.  If the user exists and the password matches,
+     * then populate the subject with the user and the user's group.  Otherwise,
+     * the login fails.
+     *
+     * If we're in identity assertion mode, extract the user name (only)
+     * from the callback handler.  If the user exists, then populate the
+     * subject with the user and the user's groups.  Otherwise, the
+     * login fails.
+     *
+     * @return A boolean indicating whether or not the login for
+     * this login module succeeded.
+     */
+    public boolean login() throws LoginException {
+        // only called (once!) after initialize
+
+        logger.debug("DBUserLoginModuleImpl.login");
+
+        // loginSucceeded      should be false
+        // principalsInSubject should be false
+
+        // Call a method to get the callbacks.
+        // For authentication mode, it will have one for the
+        // username and one for the password.
+        // For identity assertion mode, it will have one for
+        // the user name.
+        Callback[] callbacks = getCallbacks();
+
+        // Get the user name.
+        String userName = getUserName(callbacks);
+
+        if (userName.length() > 0) {
+            // We have a user name
+
+            boolean success = database.verifyUser(userName, getPasswordHave(userName, callbacks));
+            if (! success) {
+                throwFailedLoginException("Authentication Failed: User " +
+                                          userName + " doesn't exist or invalid password.");
+            }
+        }
+        loginSucceeded = true;
+        // since the login succeeded, add the user and its groups to the
+        // list of principals we want to add to the subject.
+        principalsForSubject.add(new WLSUserImpl(userName));
+        addGroupsForSubject(userName);
+        logger.info("Result of login:" + loginSucceeded);
+        return loginSucceeded;
+    }
+
+    /**
+     * Completes the login by adding the user and the user's groups
+     * to the subject.
+     *
+     * @return A boolean indicating whether or not the commit succeeded.
+     */
+    public boolean commit() throws LoginException {
+        // only called (once!) after login
+
+        // loginSucceeded      should be true or false
+        // principalsInSubject should be false
+        // user  should be null if !loginSucceeded, null or not-null otherwise
+        // group should be null if user == null,    null or not-null otherwise
+
+        logger.debug("DBUserLoginModule.commit");
+        if (loginSucceeded) {
+            // put the user and the user's groups (computed during the
+            // login method and stored in the principalsForSubject object)
+            // into the subject.
+            subject.getPrincipals().addAll(principalsForSubject);
+            principalsInSubject = true;
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    /**
+     * Aborts the login attempt.  Remove any principals we put
+     * into the subject during the commit method from the subject.
+     *
+     * @return A boolean indicating whether or not the abort succeeded.
+     */
+    public boolean abort() throws LoginException {
+        // only called (once!) after login or commit
+        // or may be? called (n times) after abort
+
+        // loginSucceeded should be true or false
+        // principalsInSubject should be false if user is null, otherwise true or false
+
+        logger.debug("DBUserLoginModuleImpl.abort");
+        if (principalsInSubject) {
+            subject.getPrincipals().removeAll(principalsForSubject);
+            principalsInSubject = false;
+        }
+        return true;
+    }
+
+    /**
+     * Logout.  This should never be called.
+     *
+     * @return A boolean indicating whether or not the logout succeeded.
+     */
+    public boolean logout() throws LoginException {
+        // should never be called
+        logger.debug("DBUserLoginModuleImpl.logout");
+        return true;
+    }
+
+    /**
+     * Throw an invalid login exception.
+     *
+     * @param msg A String containing the text of the LoginException.
+     *
+     * @throws LoginException
+     */
+    private void throwLoginException(String msg) throws LoginException {
+        logger.warning("Throwing LoginException(" + msg + ")");
+        throw new LoginException(msg);
+    }
+
+    /**
+     * Throws a failed login excception.
+     *
+     * @param msg A String containing the text of the FailedLoginException.
+     *
+     * @throws LoginException
+     */
+    private void throwFailedLoginException(String msg) throws FailedLoginException {
+        logger.warning("Throwing FailedLoginException(" + msg + ")");
+        throw new FailedLoginException(msg);
+    }
+
+    /**
+     * Get the list of callbacks needed by the login module.
+     *
+     * @return The array of Callback objects by the login module.
+     * Returns one for the user name and password if in authentication mode.
+     * Returns one for the user name if in identity assertion mode.
+     */
+    private Callback[] getCallbacks() throws LoginException {
+        if (callbackHandler == null) {
+            throwLoginException("No CallbackHandler Specified");
+        }
+
+        if (database == null) {
+            throwLoginException("database not specified");
+        }
+
+        Callback[] callbacks;
+        if (isIdentityAssertion) {
+            callbacks = new Callback[1]; // need one for the user name
+        } else {
+            callbacks =
+                    new Callback[2]; // need one for the user name and one for the password
+
+            // add in the password callback
+            callbacks[1] = new PasswordCallback("password: ", false);
+        }
+
+        // add in the user name callback
+        callbacks[0] = new NameCallback("username: ");
+
+        // Call the callback handler, who in turn, calls back to the
+        // callback objects, handing them the user name and password.
+        // These callback objects hold onto the user name and password.
+        // The login module retrieves the user name and password from them later.
+        try {
+            callbackHandler.handle(callbacks);
+        } catch (IOException e) {
+            throw new LoginException(e.toString());
+        } catch (UnsupportedCallbackException e) {
+            throwLoginException(e.toString() + " " +
+                                e.getCallback().toString());
+        }
+
+        return callbacks;
+    }
+
+    /**
+     * Get the user name from the callbacks (that the callback handler
+     * has already handed the user name to).
+     *
+     * @param callbacks The array of Callback objects used by this login module.
+     * The first in the list must be the user name callback object.
+     *
+     * @return A String containing the user name (from the user name callback object)
+     */
+    private String getUserName(Callback[] callbacks) throws LoginException {
+        String userName = ((NameCallback)callbacks[0]).getName();
+        if (userName == null) {
+            throwLoginException("Username not supplied.");
+        }
+        logger.info("\tuserName\t= " + userName);
+        return userName;
+    }
+
+    /**
+     * Add the user's groups to the list of principals to be added to the subject.
+     *
+     * @param userName A String containing the user name the user's name.
+     */
+    private void addGroupsForSubject(String userName) {
+        // Get the user's list of groups (recursively - so, if user1 is a member
+        // of group1 and group1 is a member of group2, then it returns group1 and
+        // group2).  Iterate over the groups, adding each to the list of principals
+        // to add to the subject.
+        for (Enumeration e = database.getUserGroups(userName);
+             e.hasMoreElements(); ) {
+            String groupName = (String)e.nextElement();
+            logger.info("\tgroupName\t= " + groupName);
+            principalsForSubject.add(new WLSGroupImpl(groupName));
+        }
+    }
+
+    /**
+     * Get the password from the callbacks (that the callback handler
+     * has already handed the password to) - that is, the password from
+     * the login attempt.  Must only be used for authentication mode, not
+     * for identity assertion mode.
+     *
+     * @param userName A String containing the name of the user
+     * (already retrieved from the callbacks).  Only passed in
+     * so that we can print a better error message if the password
+     * is bogus.
+     *
+     * @param callbacks The array of Callback objects used by this login module.
+     * The second in the list must be the password callback object.
+     *
+     * @return A String containing the password from the login attempt
+     *
+     * @throws LoginException if no password was supplied in the login attempt.
+     */
+    private String getPasswordHave(String userName,
+                                   Callback[] callbacks) throws LoginException {
+        PasswordCallback passwordCallback = (PasswordCallback)callbacks[1];
+        char[] password = passwordCallback.getPassword();
+        passwordCallback.clearPassword();
+        if (password == null || password.length < 1) {
+            throwLoginException("Authentication Failed: User " + userName +
+                                ".  Password not supplied");
+        }
+        String passwd = new String(password);
+        logger.info("\tpasswordHave\t= " + passwd);
+        return passwd;
+    }
+}
+
+3. DatabaseAuthenticator.java
+package ec.gob.supertel.authentication.impl;
+
+
+import java.sql.Connection;
+
+import java.sql.PreparedStatement;
+
+import java.sql.ResultSet;
+
+import java.sql.SQLException;
+
+import java.util.Enumeration;
+
+import java.util.Hashtable;
+
+import java.util.Vector;
+
+
+import javax.naming.Context;
+
+import javax.naming.InitialContext;
+
+import javax.sql.DataSource;
+
+
+import weblogic.logging.NonCatalogLogger;
+
+import weblogic.management.utils.NotFoundException;
+
+import ec.gob.supertel.authentication.mbeans.SatixDBAuthenticationProviderMBean;
+
+
+public class DatabaseAuthenticator {
+
+
+private NonCatalogLogger logger = new NonCatalogLogger(
+
+"CustomDBAuthenticationProvider");
+
+
+private String dataSourceJNDIName;
+
+
+private String principalName;
+
+
+private String principalPassword;
+
+
+public DatabaseAuthenticator(SatixDBAuthenticationProviderMBean mbean) {
+
+logger.info("DatabaseAuthenticator: Initializing DatabaseAuthenticator");
+
+dataSourceJNDIName = mbean.getDataSourceJNDIName();
+
+logger.info("DatabaseAuthenticator: DataSource user authentication was set to:"
+
++ dataSourceJNDIName);
+
+principalName = mbean.getPrincipalName();
+
+principalPassword = mbean.getPrincipalPassword();
+
+}
+
+
+public boolean userExists(String userName) {
+
+Connection conn = null;
+
+
+try {
+
+
+conn = getConnection();
+
+
+String sql = "SELECT usuario FROM stx_usuario u WHERE u.usuario = ?";
+
+
+PreparedStatement stmt = conn.prepareStatement(sql);
+
+
+stmt.setString(1, userName);
+
+
+ResultSet rs = stmt.executeQuery();
+
+
+if (rs.next()) {
+
+String email = rs.getString("usuario");
+
+
+if (email.equals(userName)) {
+
+logger.info("DatabaseAuthenticator User " + userName
+
++ " found in DataBase");
+
+return true;
+
+}
+
+}
+
+
+} catch (Exception e) {
+
+logger.warning("DatabaseAuthenticator: Error checking user in database: "
+
++ e.getMessage());
+
+} finally {
+
+try {
+
+conn.close();
+
+} catch (SQLException e) {
+
+}
+
+}
+
+
+return false;
+
+}
+
+
+public String getUserPassword(String userName) throws NotFoundException {
+
+
+Connection conn = null;
+
+
+try {
+
+conn = getConnection();
+
+
+String sql = "SELECT usuario, password FROM stx_usuario u WHERE u.usuario = ?";
+
+
+PreparedStatement stmt = conn.prepareStatement(sql);
+
+
+stmt.setString(1, userName);
+
+
+ResultSet rs = stmt.executeQuery();
+
+
+if (rs.next()) {
+
+String email = rs.getString("usuario");
+
+
+if (email.equals(userName)) {
+
+logger.info("DatabaseAuthenticator: User " + userName
+
++ " password found in DataBase");
+
+String pass = rs.getString("PASSWORD");
+
+return pass;
+
+}
+
+} else {
+
+throw new NotFoundException("DatabaseAuthenticator: User "
+
++ userName + " not found in database");
+
+}
+
+
+} catch (NotFoundException nfe) {
+
+throw nfe;
+
+} catch (Exception e) {
+
+logger.warning("DatabaseAuthenticator: Error while checking user password in database: "
+
++ e.getMessage());
+
+} finally {
+
+try {
+
+conn.close();
+
+} catch (SQLException e) {
+
+}
+
+}
+
+
+return null;
+
+}
+
+
+public Enumeration<String> getUserGroups(String userName) {
+
+Vector<String> v = new Vector<String>();
+
+
+Connection conn = null;
+
+
+try {
+
+conn = getConnection();
+
+
+String sql = "SELECT r.cod_rol, r.nombre FROM stx_usuario u, stx_rol r WHERE u.cod_rol = r.cod_rol AND u.usuario = ? ";
+
+
+PreparedStatement stmt = conn.prepareStatement(sql);
+
+
+stmt.setString(1, userName);
+
+
+ResultSet rs = stmt.executeQuery();
+
+
+while (rs.next()) {
+
+String group = rs.getString("nombre");
+
+v.add(group);
+
+}
+
+
+logger.info("DatabaseAuthenticator: Groups for User " + userName
+
++ " found in Database: " + v.toString());
+
+
+} catch (Exception e) {
+
+logger.warning("DatabaseAuthenticator: Error while checking user groups in database: "
+
++ e.getMessage());
+
+} finally {
+
+try {
+
+conn.close();
+
+} catch (SQLException e) {
+
+}
+
+}
+
+
+return v.elements();
+
+}
+
+
+public Connection getConnection() throws Exception {
+
+
+try {
+
+Hashtable<String, String> ht = new Hashtable<String, String>();
+
+ht.put(Context.INITIAL_CONTEXT_FACTORY,
+
+"weblogic.jndi.WLInitialContextFactory");
+
+
+if (principalName != null && !"".equals(principalName)
+
+&& principalPassword != null
+
+&& !"".equals(principalPassword)) {
+
+
+ht.put(Context.SECURITY_PRINCIPAL, principalName);
+
+ht.put(Context.SECURITY_CREDENTIALS, principalPassword);
+
+}
+
+
+Context ctx = new InitialContext(ht);
+
+
+return ((DataSource) ctx.lookup(dataSourceJNDIName))
+
+.getConnection();
+
+
+} catch (Exception e) {
+
+logger.warning("DatabaseAuthenticator: Error while Datasource Lookup: "
+
++ e.getMessage());
+
+throw e;
+
+}
+
+}
+
+
+public boolean verifyUser(String userName, String password) {
+
+boolean result = false;
+
+try {
+
+String dbPass = getUserPassword(userName);
+
+
+if (password.equals(dbPass)) {
+
+result = true;
+
+}
+
+
+} catch (Exception e) {
+
+logger.warning("DatabaseAuthenticator: Error while validating user credentials: "
+
++ e.getMessage());
+
+}
+
+logger.info("DatabaseAuthenticator: Verifying user:" + userName
+
++ " returned " + result);
+
+return result;
+
+}
+
+}
+
+4. DBAuthenticationProviderMBean.xml
+
+<?xml version="1.0" ?>
+<!DOCTYPE MBeanType SYSTEM "commo.dtd">
+
+
+<MBeanType
+ Name          = "SatixDBAuthenticationProvider"
+ DisplayName   = "Custom Database Authentication Provider"
+ Package       = "ec.gob.supertel.authentication.mbeans"
+ Extends       = "weblogic.management.security.authentication.Authenticator"
+ PersistPolicy = "OnUpdate"
+>
+ <MBeanAttribute
+  Name          = "ProviderClassName"
+  Type          = "java.lang.String"
+  Writeable     = "false"
+  Preprocessor  = "weblogic.management.configuration.LegalHelper.checkClassName(value)"
+  Default       = ""ec.gob.supertel.authentication.impl.DBAuthenticationProviderImpl""
+ />
+ <MBeanAttribute
+  Name          = "Description"
+  Type          = "java.lang.String"
+  Writeable     = "false"
+  Default       = ""Authentication Provider based on DB users and groups""
+ />
+ <MBeanAttribute
+  Name          = "Version"
+  Type          = "java.lang.String"
+  Writeable     = "false"
+  Default       = ""1.0""
+ />
+ <MBeanAttribute
+  Name          = "DataSourceJNDIName"
+  Type          = "java.lang.String"
+  Writeable     = "true"
+  Default       = ""MyDS""
+  DisplayName   = ""The datasource to fetch users and groups from database.""
+ />
+ 
+ <MBeanAttribute
+  Name          = "PrincipalName"
+  Type          = "java.lang.String"
+  Writeable     = "true"
+  Default       = ""weblogic""
+  DisplayName   = ""Principal Name for Data Source Lookup.""
+ /> 
+ 
+ <MBeanAttribute
+  Name          = "PrincipalPassword"
+  Type          = "java.lang.String"
+  Writeable     = "true"
+  Default       = ""weblogic123""
+  DisplayName   = ""Principal Credentials for Data Source Lookup.""
+  Encrypted     = "true"
+ />  
+
+</MBeanType>
+
